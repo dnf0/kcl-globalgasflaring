@@ -12,7 +12,7 @@ import epr
 import numpy as np
 from datetime import datetime
 
-import src.config.constants as constants
+import src.config.constants as proc_const
 import src.config.filepaths as filepaths
 
 
@@ -20,58 +20,44 @@ def sun_earth_distance(doy):
     return 1 + 0.01672 * np.sin(2 * np.pi * (doy - 93.5) / 365.0)
 
 
-def radiance_from_reflectance():
+def radiance_from_reflectance(pixels, ats_product):
 
     # get sun earth distance abd use to compute radiance
-    obs_doy = datetime.strptime(product.id_string[14:22], "%Y%m%d").timetuple().tm_yday
-    se_dist = sun_earth_distance(obs_doy)
+    obs_doy = datetime.strptime(ats_product.id_string[14:22], "%Y%m%d").timetuple().tm_yday
+    sun_earth_dist = sun_earth_distance(obs_doy)
 
     # convert from reflectance to radiance see Smith and Cox 2013
-    data_dict['radiance_16'] = (data_dict['reflectance_16'] /
-                                100.0 * data_dict['solar_irradiance']) * se_dist ** 2 / np.pi
+    return pixels / 100.0 * proc_const.solar_irradiance * sun_earth_dist ** 2 / np.pi
 
 
-def read_atsr():
-    ats_product = epr.Product()
-    prod_keys = ['reflec_nadir_1600',
-                 'btemp_nadir_1200',
-                 'latitude',
-                 'longitude',
-                 'sun_elev_nadir']
-
-    data_dict = {k: product.get_band(v).read_as_array(atsr_pixel_roi['x_samples'],
-                                                      atsr_pixel_roi['y_lines'],
-                                                      xoffset=atsr_pixel_roi['x_offset'],
-                                                      yoffset=atsr_pixel_roi['y_offset'])
-                 for k, v in zip(data_keys, prod_keys)}
-
-    return ats_product
+def read_atsr(path_to_ats_data):
+    return epr.Product(path_to_ats_data)
 
 
-
-def night_day_mask():
-    pass
+def night_day_mask(ats_product):
+    return ats_product.get_band('sun_elev_nadir').read_as_array() >= proc_const.day_night_angle
 
 
 def land_sea_mask():
     pass
 
 
-def cloud_mask():
+def cloud_mask(ats_product):
+    vis_mask = ats_product.get_band('reflec_nadir_0550').read_as_array() > proc_const.vis_thresh
+    tir_mask = ats_product.get_band('btemp_nadir_1200').read_as_array() < proc_const.tir_thresh
+    return vis_mask | tir_mask
+
+
+def detect_flares(ats_product, mask):
+    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
+    masked_swir = np.ma.masked_array(swir, mask)
+    return swir > (masked_swir.mean() + proc_const.n_std * masked_swir.std())
+
+def mean_background_reflectance(flare_mask, day_sea_mask):
     pass
 
-
-def detect_flares_night():
-    pass
-
-
-def detect_flares_day_sea():
-    pass
-
-
-def compute_frp():
-    data_dict['frp'] = ((data_dict['pixel_size'] * constants.sigma / 8.03483163431e-09)
-                        * data_dict['radiance_16']) / 1000000  # in MW
+def compute_frp(pixel_radiances):
+    return proc_const.atsr_pixel_size * proc_const.frp_coeff * pixel_radiances / 1000000  # in MW
 
 
 def save_output():
@@ -89,7 +75,28 @@ def ggf_main():
 
 
 def main():
-    pass
+
+    # read in the atsr prodcut
+
+    # get day/night mask
+
+    # get land/ sea and cloud mask and combine both with day mask
+
+    # get nighttime flare mask
+
+    # get daytime flare mask
+
+    # get mean background reflectance information for daytime flares
+
+    # get nighttime flare radiances and frp and write out with meta data
+
+    # get daytime flare radiances and frp and write our with meta data
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
