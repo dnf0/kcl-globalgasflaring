@@ -14,6 +14,8 @@ import epr
 import numpy as np
 from netCDF4 import Dataset
 import pyresample as pr
+import scipy.ndimage as ndimage
+import matplotlib.pyplot as plt
 
 import src.config.constants as proc_const
 import src.config.filepaths as filepaths
@@ -41,19 +43,57 @@ def read_land_water_mask(path_to_land_water_mask):
     return Dataset(path_to_land_water_mask)
 
 
-def make_atsr_swath_def():
-    pass
+def make_night_mask(ats_product):
+    return ats_product.get_band('sun_elev_nadir').read_as_array() < proc_const.day_night_angle
 
 
-def mask_land_water_grid_def():
-    pass
+def find_day_geo_subset(day_mask, product):
+    '''
+
+    :param day_mask: The daylight mask
+    :param product: The atsr product
+    :return start_row: The index of where day time starts (to insert the mask back into the full array)
+    :return sub_lats: Array subset of lats
+    :return sub_lon: Array subset of lons
+    '''
+
+    rows, columns = np.where(day_mask == 1)
+    start_row = np.min(rows)
+    stop_row = np.max(rows)
+
+    sub_lats = product.get_band('latitude').read_as_array(512,
+                                                          stop_row - start_row,
+                                                          xoffset=0,
+                                                          yoffset=start_row)
+    sub_lons = product.get_band('longitude').read_as_array(512,
+                                                           stop_row - start_row,
+                                                           xoffset=0,
+                                                           yoffset=start_row)
+
+    plt.imshow(sub_lons, cmap='gray')
+    plt.colorbar()
+    plt.show()
+
+    return start_row, sub_lats, sub_lons
 
 
-def night_day_mask(ats_product):
-    return ats_product.get_band('sun_elev_nadir').read_as_array() >= proc_const.day_night_angle
+def setup_water_mask(water_mask_data, min_lat, max_lat, min_lon, max_lon):
+
+    cols = np.where((water_mask_data['lon'][:] >= min_lon) & (water_mask_data['lon'][:] <= max_lon))
+    rows = np.where((water_mask_data['lat'][:] >= min_lat) & (water_mask_data['lat'][:] <= max_lat))
+
+    min_row = np.min(rows) - 5
+    max_row = np.max(rows) + 5
+    min_col = np.min(cols) - 5
+    max_col = np.max(cols) + 5
+
+    water_mask_subset = water_mask_data['wb_class'][min_row:max_row, min_col,max_col]
+
+    lats = water_mask_data['lat'][:]
+    lons = water_mask_data['lon'][:]
 
 
-def land_sea_mask():
+def make_land_sea_mask():
 
     # resample land water mask to ATSR grid
 
@@ -99,11 +139,28 @@ def main():
     # read in the atsr prodcut and land water
     atsr_fname = 'ATS_TOA_1PUUPA20120406_181820_000065273113_00242_52842_6784.N1'
     atsr_data = read_atsr(filepaths.path_to_aatsr_test_data + atsr_fname)
-    landwater_data = read_land_water_mask(filepaths.path_to_landcover_test)
+    water_mask_data = read_land_water_mask(filepaths.path_to_landcover_test)
+
+    # get day/night mask first, we can use this to get only the part of the water mask
+    # that we are interested in.  This should massively speed processing.
+    night_mask = make_night_mask(atsr_data)
+    day_mask = ~night_mask
+
+    # find the geographic bounds of the day mask (WHAT ABOUT DATE LINE CROSSING? In such cases, the geographic bounds
+    # will cover the extent of the water mask and the speed up will be minimal.  Th
+    start_row, lat_subset, lon_subset = find_day_geo_subset(day_mask, atsr_data)
+
+    # set up water mask
+    water_mask, water_lat, water_lon = setup_water_mask(water_mask_data, min_lat, max_lat, min_lon, max_lon)
 
     # set up pyresample geographic grids
+    water_mask_def = pr.geometry.GridDefinition(lons=atsr_data.get_band('longitude').read_as_array(),
+                                                lats=atsr_data.get_band('latitude').read_as_array())
+    atsr_swath_def = pr.geometry.SwathDefinition(lons=atsr_data.get_band('longitude').read_as_array(),
+                                                 lats=atsr_data.get_band('latitude').read_as_array())
 
-    # get day/night mask
+
+
 
     # get land/water and cloud mask and combine both with day mask
 
