@@ -13,8 +13,7 @@ tir_thresh = 290  # kelvin
 # number of standard deviations which constitutes a glas flare
 n_std = 4
 
-
 # frp calculation parameters
 atsr_pixel_size = 1000000  # metres
-atsr_planck_approx =   # TODO define this
+atsr_planck_approx = 99999  # TODO define this
 frp_coeff = const.sigma / atsr_planck_approx

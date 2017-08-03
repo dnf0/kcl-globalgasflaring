@@ -7,10 +7,13 @@ data from ATSR are contained in here.
 
 import os
 import logging
+import csv
+from datetime import datetime
 
 import epr
 import numpy as np
-from datetime import datetime
+from netCDF4 import Dataset
+import pyresample as pr
 
 import src.config.constants as proc_const
 import src.config.filepaths as filepaths
@@ -34,11 +37,28 @@ def read_atsr(path_to_ats_data):
     return epr.Product(path_to_ats_data)
 
 
+def read_land_water_mask(path_to_land_water_mask):
+    return Dataset(path_to_land_water_mask)
+
+
+def make_atsr_swath_def():
+    pass
+
+
+def mask_land_water_grid_def():
+    pass
+
+
 def night_day_mask(ats_product):
     return ats_product.get_band('sun_elev_nadir').read_as_array() >= proc_const.day_night_angle
 
 
 def land_sea_mask():
+
+    # resample land water mask to ATSR grid
+
+    # return where there is water (flag == 2)
+
     pass
 
 
@@ -76,11 +96,16 @@ def ggf_main():
 
 def main():
 
-    # read in the atsr prodcut
+    # read in the atsr prodcut and land water
+    atsr_fname = 'ATS_TOA_1PUUPA20120406_181820_000065273113_00242_52842_6784.N1'
+    atsr_data = read_atsr(filepaths.path_to_aatsr_test_data + atsr_fname)
+    landwater_data = read_land_water_mask(filepaths.path_to_landcover_test)
+
+    # set up pyresample geographic grids
 
     # get day/night mask
 
-    # get land/ sea and cloud mask and combine both with day mask
+    # get land/water and cloud mask and combine both with day mask
 
     # get nighttime flare mask
 
