@@ -70,27 +70,41 @@ def find_day_geo_subset(day_mask, product):
                                                            xoffset=0,
                                                            yoffset=start_row)
 
-    plt.imshow(sub_lons, cmap='gray')
-    plt.colorbar()
-    plt.show()
-
     return start_row, sub_lats, sub_lons
 
 
-def setup_water_mask(water_mask_data, min_lat, max_lat, min_lon, max_lon):
+def setup_water_mask(water_mask_data, sub_lats, sub_lons):
 
-    cols = np.where((water_mask_data['lon'][:] >= min_lon) & (water_mask_data['lon'][:] <= max_lon))
-    rows = np.where((water_mask_data['lat'][:] >= min_lat) & (water_mask_data['lat'][:] <= max_lat))
+    # Dealing with dateline crossings.  First ATSR observes from East to West
+    if (np.min(sub_lons) - -180) < 0.01:
+        first_line_max_lon = np.max(sub_lons[0,:])
+        min_max_lon = np.min(sub_lons[sub_lons > first_line_max_lon]) # the min of the longitudes that cross dateline
 
-    min_row = np.min(rows) - 5
-    max_row = np.max(rows) + 5
-    min_col = np.min(cols) - 5
-    max_col = np.max(cols) + 5
+        lon_index_west = (first_line_max_lon - (-180)) / 360 * water_mask_data['lon'].size  # lon index
+        lon_index_east = (min_max_lon - (-180)) / 360 * water_mask_data['lon'].size  # lon index
+        lat_index_north = (- (-90)) / 180 * water_mask_data['lat'].size  # lat index
+        lat_index_south = (- (-90)) / 180 * water_mask_data['lat'].size  # lat index
 
-    water_mask_subset = water_mask_data['wb_class'][min_row:max_row, min_col,max_col]
+        # we can run from 0 up to lon_index
+        water_mask_west = water_mask_data['wb_class'][lat_index_north:lat_index_south, 0:lon_index_west]
+        water_mask_east = water_mask_data['wb_class'][lat_index_north:lat_index_south, lon_index_east:]
 
-    lats = water_mask_data['lat'][:]
-    lons = water_mask_data['lon'][:]
+    else:
+        pass
+
+
+    # cols = np.where((water_mask_data['lon'][:] >= min_lon) & (water_mask_data['lon'][:] <= max_lon))
+    # rows = np.where((water_mask_data['lat'][:] >= min_lat) & (water_mask_data['lat'][:] <= max_lat))
+    #
+    # min_row = np.min(rows) - 5
+    # max_row = np.max(rows) + 5
+    # min_col = np.min(cols) - 5
+    # max_col = np.max(cols) + 5
+    #
+    # water_mask_subset = water_mask_data['wb_class'][min_row:max_row, min_col,max_col]
+    #
+    # lats = water_mask_data['lat'][:]
+    # lons = water_mask_data['lon'][:]
 
 
 def make_land_sea_mask():
@@ -146,12 +160,11 @@ def main():
     night_mask = make_night_mask(atsr_data)
     day_mask = ~night_mask
 
-    # find the geographic bounds of the day mask (WHAT ABOUT DATE LINE CROSSING? In such cases, the geographic bounds
-    # will cover the extent of the water mask and the speed up will be minimal.  Th
+    # find the grids of the subset and get where they start in the array
     start_row, lat_subset, lon_subset = find_day_geo_subset(day_mask, atsr_data)
 
     # set up water mask
-    water_mask, water_lat, water_lon = setup_water_mask(water_mask_data, min_lat, max_lat, min_lon, max_lon)
+    water_mask, water_lat, water_lon = setup_water_mask(water_mask_data, lat_subset, lon_subset)
 
     # set up pyresample geographic grids
     water_mask_def = pr.geometry.GridDefinition(lons=atsr_data.get_band('longitude').read_as_array(),
