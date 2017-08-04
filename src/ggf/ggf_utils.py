@@ -86,16 +86,19 @@ def setup_water_mask(water_mask_data, sub_lats, sub_lons):
         lat_index_south = int((np.min(sub_lats) - 90)*-1 / 180 * water_mask_data['lat'].size)  # lat index
 
         # we can run from 0 up to lon_index
-        print 'start read'
-        water_mask_west = water_mask_data['wb_class'][lat_index_north:lat_index_south, 0:lon_index_west]
-        water_mask_east = water_mask_data['wb_class'][lat_index_north:lat_index_south, lon_index_east:]
-        print 'done read'
+        water_mask_west = np.array(water_mask_data['wb_class'][lat_index_north:lat_index_south, 0:lon_index_west])
+        water_mask_east = np.array(water_mask_data['wb_class'][lat_index_north:lat_index_south, lon_index_east:])
 
+        # now lets join the masks
+        water_mask = np.concatenate((water_mask_east, water_mask_west), axis=1)
+
+        plt.imshow(water_mask, cmap='gray', interpolation='none')
+        plt.show()
 
     else:
         pass
 
-
+    hold = 1
     # cols = np.where((water_mask_data['lon'][:] >= min_lon) & (water_mask_data['lon'][:] <= max_lon))
     # rows = np.where((water_mask_data['lat'][:] >= min_lat) & (water_mask_data['lat'][:] <= max_lat))
     #

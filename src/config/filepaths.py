@@ -22,6 +22,6 @@ root = '/Users/danielfisher/Projects/kcl-globalgasflaring/data/'
 path_to_aatsr_test_data = root + 'raw/atsr/'
 path_to_atsr2_test_data = ''
 path_to_atsr1_test_data = ''
-path_to_landcover_test = root + 'raw/landwater/ESACCI-LC-L4-WB-Map-150m-P13Y-2000-v4.0.nc'
+path_to_landcover_test = root + 'raw/landwater/land_water_mask_reduced_mode_900m.nc'
 path_to_output_test = ''
 
