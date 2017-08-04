@@ -99,9 +99,16 @@ def setup_water_mask(water_mask_data, sub_lats, sub_lons):
         lats = np.transpose(np.tile(water_mask_data['lat'][lat_index_north:lat_index_south],
                                     (water_mask_east.shape[1] + water_mask_west.shape[1], 1)))
 
-
     else:
-        pass
+        lon_index_west = int((np.min(sub_lons) - (-180)) / 360 * water_mask_data['lon'].size)  # lon index
+        lon_index_east = int((np.max(sub_lons) - (-180)) / 360 * water_mask_data['lon'].size)  # lon index
+        lat_index_north = int((np.max(sub_lats) - 90) * -1 / 180 * water_mask_data['lat'].size)  # lat index
+        lat_index_south = int((np.min(sub_lats) - 90) * -1 / 180 * water_mask_data['lat'].size)  # lat index
+
+        water_mask = np.array(water_mask_data['wb_class'][lat_index_north:lat_index_south,
+                              lon_index_west:lon_index_east])
+        lons = np.tile(water_mask_data['lon'][lon_index_west:lon_index_east], (water_mask.shape[0], 1))
+        lats = np.transpose(np.tile(water_mask_data['lat'][lat_index_north:lat_index_south], (water_mask.shape[1], 1)))
 
     return water_mask, lons, lats
 
