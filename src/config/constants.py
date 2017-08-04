@@ -4,7 +4,7 @@ This file contains some constants used in the processing
 import scipy.constants as const
 
 solar_irradiance = 254.484  # W m-2 sr-1 um-1  see email from Dave Smith
-day_night_angle = 15  # 0 less than this angle is considered night
+day_night_angle = 0  # 0 less than this angle is considered night
 
 # thresholds for masking out clouds over sea
 vis_thresh = 10  # percent

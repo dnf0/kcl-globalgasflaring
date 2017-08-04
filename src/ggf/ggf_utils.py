@@ -82,12 +82,12 @@ def setup_water_mask(water_mask_data, sub_lats, sub_lons):
 
         lon_index_west = int((first_line_max_lon - (-180)) / 360 * water_mask_data['lon'].size)  # lon index
         lon_index_east = int((min_max_lon - (-180)) / 360 * water_mask_data['lon'].size)  # lon index
-        lat_index_north = int((np.max(sub_lats) - 90)*-1 / 180 * water_mask_data['lat'].size) # lat index
-        lat_index_south = int((np.min(sub_lats) - 90)*-1 / 180 * water_mask_data['lat'].size)  # lat index
+        #lat_index_north = int((np.max(sub_lats) - 90)*-1 / 180 * water_mask_data['lat'].size) # lat index
+        #lat_index_south = int((np.min(sub_lats) - 90)*-1 / 180 * water_mask_data['lat'].size)  # lat index
 
         # we can run from 0 up to lon_index
-        water_mask_west = np.array(water_mask_data['wb_class'][lat_index_north:lat_index_south, 0:lon_index_west])
-        water_mask_east = np.array(water_mask_data['wb_class'][lat_index_north:lat_index_south, lon_index_east:])
+        water_mask_west = np.array(water_mask_data['wb_class'][:, 0:lon_index_west])
+        water_mask_east = np.array(water_mask_data['wb_class'][:, lon_index_east:])
 
         # now lets join the masks
         water_mask = np.concatenate((water_mask_east, water_mask_west), axis=1)
@@ -96,19 +96,18 @@ def setup_water_mask(water_mask_data, sub_lats, sub_lons):
         lons_west = np.tile(water_mask_data['lon'][0:lon_index_west], (water_mask_west.shape[0], 1))
         lons_east = np.tile(water_mask_data['lon'][lon_index_east:], (water_mask_east.shape[0], 1))
         lons = np.concatenate((lons_east, lons_west), axis=1)
-        lats = np.transpose(np.tile(water_mask_data['lat'][lat_index_north:lat_index_south],
+        lats = np.transpose(np.tile(water_mask_data['lat'][:],
                                     (water_mask_east.shape[1] + water_mask_west.shape[1], 1)))
 
     else:
         lon_index_west = int((np.min(sub_lons) - (-180)) / 360 * water_mask_data['lon'].size)  # lon index
         lon_index_east = int((np.max(sub_lons) - (-180)) / 360 * water_mask_data['lon'].size)  # lon index
-        lat_index_north = int((np.max(sub_lats) - 90) * -1 / 180 * water_mask_data['lat'].size)  # lat index
-        lat_index_south = int((np.min(sub_lats) - 90) * -1 / 180 * water_mask_data['lat'].size)  # lat index
+        #lat_index_north = int((np.max(sub_lats) - 90) * -1 / 180 * water_mask_data['lat'].size)  # lat index
+        #lat_index_south = int((np.min(sub_lats) - 90) * -1 / 180 * water_mask_data['lat'].size)  # lat index
 
-        water_mask = np.array(water_mask_data['wb_class'][lat_index_north:lat_index_south,
-                              lon_index_west:lon_index_east])
+        water_mask = np.array(water_mask_data['wb_class'][:, lon_index_west:lon_index_east])
         lons = np.tile(water_mask_data['lon'][lon_index_west:lon_index_east], (water_mask.shape[0], 1))
-        lats = np.transpose(np.tile(water_mask_data['lat'][lat_index_north:lat_index_south], (water_mask.shape[1], 1)))
+        lats = np.transpose(np.tile(water_mask_data['lat'][:], (water_mask.shape[1], 1)))
 
     return water_mask, lons, lats
 
@@ -170,13 +169,17 @@ def main():
     start_row, lat_subset, lon_subset = find_day_geo_subset(day_mask, atsr_data)
 
     # set up water mask
-    water_mask, water_lat, water_lon = setup_water_mask(water_mask_data, lat_subset, lon_subset)
+    water_mask, water_lons, water_lats = setup_water_mask(water_mask_data, lat_subset, lon_subset)
 
     # set up pyresample geographic grids
-    water_mask_def = pr.geometry.GridDefinition(lons=atsr_data.get_band('longitude').read_as_array(),
-                                                lats=atsr_data.get_band('latitude').read_as_array())
-    atsr_swath_def = pr.geometry.SwathDefinition(lons=atsr_data.get_band('longitude').read_as_array(),
-                                                 lats=atsr_data.get_band('latitude').read_as_array())
+    water_mask_def = pr.geometry.GridDefinition(lons=water_lons,
+                                                lats=water_lats)
+    atsr_swath_def = pr.geometry.SwathDefinition(lons=lon_subset,
+                                                 lats=lat_subset)
+
+    # resample the water mask onto the atsr grid
+    resampled_water_mask = pr.kd_tree.resample_nearest(water_mask_def, water_mask, atsr_swath_def,
+                                                    radius_of_influence=1000, epsilon=0.5)
 
 
 
