@@ -80,14 +80,17 @@ def setup_water_mask(water_mask_data, sub_lats, sub_lons):
         first_line_max_lon = np.max(sub_lons[0,:])
         min_max_lon = np.min(sub_lons[sub_lons > first_line_max_lon]) # the min of the longitudes that cross dateline
 
-        lon_index_west = (first_line_max_lon - (-180)) / 360 * water_mask_data['lon'].size  # lon index
-        lon_index_east = (min_max_lon - (-180)) / 360 * water_mask_data['lon'].size  # lon index
-        lat_index_north = (- (-90)) / 180 * water_mask_data['lat'].size  # lat index
-        lat_index_south = (- (-90)) / 180 * water_mask_data['lat'].size  # lat index
+        lon_index_west = int((first_line_max_lon - (-180)) / 360 * water_mask_data['lon'].size)  # lon index
+        lon_index_east = int((min_max_lon - (-180)) / 360 * water_mask_data['lon'].size)  # lon index
+        lat_index_north = int((np.max(sub_lats) - 90)*-1 / 180 * water_mask_data['lat'].size) # lat index
+        lat_index_south = int((np.min(sub_lats) - 90)*-1 / 180 * water_mask_data['lat'].size)  # lat index
 
         # we can run from 0 up to lon_index
+        print 'start read'
         water_mask_west = water_mask_data['wb_class'][lat_index_north:lat_index_south, 0:lon_index_west]
         water_mask_east = water_mask_data['wb_class'][lat_index_north:lat_index_south, lon_index_east:]
+        print 'done read'
+
 
     else:
         pass
