@@ -92,25 +92,18 @@ def setup_water_mask(water_mask_data, sub_lats, sub_lons):
         # now lets join the masks
         water_mask = np.concatenate((water_mask_east, water_mask_west), axis=1)
 
-        plt.imshow(water_mask, cmap='gray', interpolation='none')
-        plt.show()
+        # build the geo grids for the masks
+        lons_west = np.tile(water_mask_data['lon'][0:lon_index_west], (water_mask_west.shape[0], 1))
+        lons_east = np.tile(water_mask_data['lon'][lon_index_east:], (water_mask_east.shape[0], 1))
+        lons = np.concatenate((lons_east, lons_west), axis=1)
+        lats = np.transpose(np.tile(water_mask_data['lat'][lat_index_north:lat_index_south],
+                                    (water_mask_east.shape[1] + water_mask_west.shape[1], 1)))
+
 
     else:
         pass
 
-    hold = 1
-    # cols = np.where((water_mask_data['lon'][:] >= min_lon) & (water_mask_data['lon'][:] <= max_lon))
-    # rows = np.where((water_mask_data['lat'][:] >= min_lat) & (water_mask_data['lat'][:] <= max_lat))
-    #
-    # min_row = np.min(rows) - 5
-    # max_row = np.max(rows) + 5
-    # min_col = np.min(cols) - 5
-    # max_col = np.max(cols) + 5
-    #
-    # water_mask_subset = water_mask_data['wb_class'][min_row:max_row, min_col,max_col]
-    #
-    # lats = water_mask_data['lat'][:]
-    # lons = water_mask_data['lon'][:]
+    return water_mask, lons, lats
 
 
 def make_land_sea_mask():
