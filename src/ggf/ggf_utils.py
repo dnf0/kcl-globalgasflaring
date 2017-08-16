@@ -31,7 +31,13 @@ def radiance_from_reflectance(pixels, ats_product):
     sun_earth_dist = sun_earth_distance(obs_doy)
 
     # convert from reflectance to radiance see Smith and Cox 2013
-    return pixels / 100.0 * proc_const.solar_irradiance * sun_earth_dist ** 2 / np.pi
+    if 'ATS' in ats_product.id_string:
+        solar_irradiance = proc_const.ats_solar_irradiance
+    elif 'AT2' in ats_product.id_string:
+        solar_irradiance = proc_const.at2_solar_irradiance
+    elif 'AT1' in ats_product.id_string:
+        solar_irradiance = proc_const.at1_solar_irradiance
+    return pixels / 100.0 * solar_irradiance * sun_earth_dist ** 2 / np.pi
 
 
 def read_atsr(path_to_ats_data):
@@ -138,12 +144,31 @@ def compute_frp(pixel_radiances):
     return proc_const.atsr_pixel_size * proc_const.frp_coeff * pixel_radiances / 1000000  # in MW
 
 
+def flare_data(ats_product, mask):
+
+    # first get data from sensor
+    lines, samples = np.where(mask)
+    lats = ats_product.get_band('latitude').read_as_array()[mask]
+    lons = ats_product.get_band('longitude').read_as_array()[mask]
+    reflectances = ats_product.get_band('reflec_nadir_1600').read_as_array()[mask]
+    solar_elev_angle = ats_product.get_band('sun_elev_nadir').read_as_array()[mask]
+    view_elev_angle = ats_product.get_band('view_elev_nadir').read_as_array()[mask]
+
+    # next radiances from reflectances
+    radiances = radiance_from_reflectance(reflectances, ats_product)
+
+    # next get FRP
+
+    # insert all into dataframe
+
+    # return df
+
 def save_output():
     f = open(path, 'wb')
     try:
         writer = csv.writer(f)
-        writer.writerow(('Power', "Radiance", 'BT',
-                         'Lat', "Lon", 'Scan Angle', 'Time'))
+        writer.writerow(('FRP', 'Radiance', 'Reflectance', 'FRP Coefficient', 'Solar Elevation',
+                         'Lat', 'Lon', 'Line', 'Sample', 'View Angle', 'Time', 'Sensor'))
     finally:
         f.close()
 
@@ -157,16 +182,16 @@ def main():
     # read in the atsr prodcut and land water
     atsr_fname = 'ATS_TOA_1PUUPA20120406_181820_000065273113_00242_52842_6784.N1'
     atsr_data = read_atsr(filepaths.path_to_aatsr_test_data + atsr_fname)
-    water_mask_data = read_land_water_mask(filepaths.path_to_landcover_test)
 
     # get day/night mask first, we can use this to get only the part of the water mask
     # that we are interested in.  This should massively speed processing.
     night_mask = make_night_mask(atsr_data)
 
     # get nighttime flare mask
+    flare_mask = detect_flares(atsr_data, night_mask)
 
     # get nighttime flare radiances and frp and write out with meta data
-
+    df = flare_data(atsr_data, flare_mask)
 
 
 
