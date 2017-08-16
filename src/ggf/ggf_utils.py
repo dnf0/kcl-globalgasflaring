@@ -207,11 +207,9 @@ def main():
     # get nighttime flare radiances and frp and write out with meta data
     df = flare_data(atsr_data, flare_mask)
 
-
-
-
-
-
+    # write out
+    csv_path = os.path.join(filepaths.path_to_output_test, atsr_fname.split('.')[0] + '_flares.csv')
+    df.to_csv(csv_path)
 
 
 if __name__ == "__main__":
