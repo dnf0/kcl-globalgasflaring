@@ -15,20 +15,18 @@ import numpy as np
 from netCDF4 import Dataset
 import pyresample as pr
 import matplotlib.pyplot as plt
+import pandas as pd
 
 import src.config.constants as proc_const
 import src.config.filepaths as filepaths
 
 
-def sun_earth_distance(doy):
+def sun_earth_distance(ats_product):
+    doy = datetime.strptime(ats_product.id_string[14:22], "%Y%m%d").timetuple().tm_yday
     return 1 + 0.01672 * np.sin(2 * np.pi * (doy - 93.5) / 365.0)
 
 
 def radiance_from_reflectance(pixels, ats_product):
-
-    # get sun earth distance abd use to compute radiance
-    obs_doy = datetime.strptime(ats_product.id_string[14:22], "%Y%m%d").timetuple().tm_yday
-    sun_earth_dist = sun_earth_distance(obs_doy)
 
     # convert from reflectance to radiance see Smith and Cox 2013
     if 'ATS' in ats_product.id_string:
@@ -37,7 +35,7 @@ def radiance_from_reflectance(pixels, ats_product):
         solar_irradiance = proc_const.at2_solar_irradiance
     elif 'AT1' in ats_product.id_string:
         solar_irradiance = proc_const.at1_solar_irradiance
-    return pixels / 100.0 * solar_irradiance * sun_earth_dist ** 2 / np.pi
+    return pixels / 100.0 * solar_irradiance * sun_earth_distance(ats_product) ** 2 / np.pi
 
 
 def read_atsr(path_to_ats_data):
@@ -147,7 +145,7 @@ def compute_frp(pixel_radiances, ats_product):
         frp_coeff = proc_const.at2_frp_coeff
     elif 'AT1' in ats_product.id_string:
         frp_coeff = proc_const.at1_frp_coeff
-    return proc_const.atsr_pixel_size * frp_coeff * pixel_radiances / 1000000  # in MW
+    return proc_const.atsr_pixel_size * frp_coeff * pixel_radiances / 1000000, frp_coeff  # in MW
 
 
 def flare_data(ats_product, mask):
@@ -164,18 +162,27 @@ def flare_data(ats_product, mask):
     radiances = radiance_from_reflectance(reflectances, ats_product)
 
     # next get FRP
-    frp = compute_frp(radiances, ats_product)
+    frp, frp_coeff = compute_frp(radiances, ats_product)
 
-    # insert all into dataframe
+    # insert data into dataframe
+    df = pd.DataFrame()
+    datasets = [lines, samples, lats, lons, frp, radiances, reflectances, solar_elev_angle, view_elev_angle]
+    names = ['lines', 'samples', 'lats', 'lons', 'frp', 'radiances', 'reflectances', 'sun_elev', 'view_elev', ]
+    for k,v in zip(names, datasets):
+        df[k] = v
+    df['fname'] = ats_product.id_string
+    df['se_dist'] = sun_earth_distance(ats_product)
+    df['frp_coeff'] = frp_coeff
 
     # return df
+    return df
 
 def save_output():
     f = open(path, 'wb')
     try:
         writer = csv.writer(f)
         writer.writerow(('FRP', 'Radiance', 'Reflectance', 'FRP Coefficient', 'Solar Elevation',
-                         'Lat', 'Lon', 'Line', 'Sample', 'View Angle', 'Time', 'Sensor'))
+                         'Lat', 'Lon', 'Line', 'Sample', 'View Angle', 'Time', 'Sensor', 'SE_dist'))
     finally:
         f.close()
 
