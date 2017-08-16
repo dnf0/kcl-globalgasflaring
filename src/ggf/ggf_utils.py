@@ -134,14 +134,20 @@ def cloud_mask(ats_product):
 
 def detect_flares(ats_product, mask):
     swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
-    masked_swir = np.ma.masked_array(swir, mask)
-    return swir > (masked_swir.mean() + proc_const.n_std * masked_swir.std())
+    masked_swir = np.ma.masked_array(swir, ~mask)
+    return (swir > (masked_swir.mean() + proc_const.n_std * masked_swir.std())) & mask
 
 def mean_background_reflectance(flare_mask, day_sea_mask):
     pass
 
-def compute_frp(pixel_radiances):
-    return proc_const.atsr_pixel_size * proc_const.frp_coeff * pixel_radiances / 1000000  # in MW
+def compute_frp(pixel_radiances, ats_product):
+    if 'ATS' in ats_product.id_string:
+        frp_coeff = proc_const.ats_frp_coeff
+    elif 'AT2' in ats_product.id_string:
+        frp_coeff = proc_const.at2_frp_coeff
+    elif 'AT1' in ats_product.id_string:
+        frp_coeff = proc_const.at1_frp_coeff
+    return proc_const.atsr_pixel_size * frp_coeff * pixel_radiances / 1000000  # in MW
 
 
 def flare_data(ats_product, mask):
@@ -158,6 +164,7 @@ def flare_data(ats_product, mask):
     radiances = radiance_from_reflectance(reflectances, ats_product)
 
     # next get FRP
+    frp = compute_frp(radiances, ats_product)
 
     # insert all into dataframe
 
