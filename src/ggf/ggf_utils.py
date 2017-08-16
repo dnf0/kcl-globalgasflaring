@@ -14,7 +14,6 @@ import epr
 import numpy as np
 from netCDF4 import Dataset
 import pyresample as pr
-import scipy.ndimage as ndimage
 import matplotlib.pyplot as plt
 
 import src.config.constants as proc_const
@@ -163,38 +162,11 @@ def main():
     # get day/night mask first, we can use this to get only the part of the water mask
     # that we are interested in.  This should massively speed processing.
     night_mask = make_night_mask(atsr_data)
-    day_mask = ~night_mask
-
-    # find the grids of the subset and get where they start in the array
-    start_row, lat_subset, lon_subset = find_day_geo_subset(day_mask, atsr_data)
-
-    # set up water mask
-    water_mask, water_lons, water_lats = setup_water_mask(water_mask_data, lat_subset, lon_subset)
-
-    # set up pyresample geographic grids
-    water_mask_def = pr.geometry.GridDefinition(lons=water_lons,
-                                                lats=water_lats)
-    atsr_swath_def = pr.geometry.SwathDefinition(lons=lon_subset,
-                                                 lats=lat_subset)
-
-    # resample the water mask onto the atsr grid
-    resampled_water_mask = pr.kd_tree.resample_nearest(water_mask_def, water_mask, atsr_swath_def,
-                                                    radius_of_influence=1000, epsilon=0.5)
-
-
-
-
-    # get land/water and cloud mask and combine both with day mask
 
     # get nighttime flare mask
 
-    # get daytime flare mask
-
-    # get mean background reflectance information for daytime flares
-
     # get nighttime flare radiances and frp and write out with meta data
 
-    # get daytime flare radiances and frp and write our with meta data
 
 
 
