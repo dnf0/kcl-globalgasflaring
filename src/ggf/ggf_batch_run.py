@@ -1,5 +1,9 @@
 import re
-import ggf_utils
+import os
+
+import src.ggf.ggf_utils as ggf_utils
+import src.config.filepaths as filepaths
+
 
 class BatchSystem:
     """Container for syntax to call a batch queuing system.
@@ -69,6 +73,7 @@ bsub = BatchSystem('bsub',
 
 
 # iterate over all ATSR files in directory
+for root, dirs, files in os.walk(filepaths.path_to_data):
 
 # for each ATSR file generate a bash script that calls ggf
 
