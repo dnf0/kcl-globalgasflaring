@@ -29,13 +29,7 @@ def sun_earth_distance(ats_product):
 def radiance_from_reflectance(pixels, ats_product):
 
     # convert from reflectance to radiance see Smith and Cox 2013
-    if 'ATS' in ats_product.id_string:
-        solar_irradiance = proc_const.ats_solar_irradiance
-    elif 'AT2' in ats_product.id_string:
-        solar_irradiance = proc_const.at2_solar_irradiance
-    elif 'AT1' in ats_product.id_string:
-        solar_irradiance = proc_const.at1_solar_irradiance
-    return pixels / 100.0 * solar_irradiance * sun_earth_distance(ats_product) ** 2 / np.pi
+    return pixels / 100.0 * proc_const.solar_irradiance * sun_earth_distance(ats_product) ** 2 / np.pi
 
 
 def read_atsr(path_to_ats_data):
@@ -138,31 +132,26 @@ def detect_flares(ats_product, mask):
 def mean_background_reflectance(flare_mask, day_sea_mask):
     pass
 
-def compute_frp(pixel_radiances, ats_product):
-    if 'ATS' in ats_product.id_string:
-        frp_coeff = proc_const.ats_frp_coeff
-    elif 'AT2' in ats_product.id_string:
-        frp_coeff = proc_const.at2_frp_coeff
-    elif 'AT1' in ats_product.id_string:
-        frp_coeff = proc_const.at1_frp_coeff
-    return proc_const.atsr_pixel_size * frp_coeff * pixel_radiances / 1000000, frp_coeff  # in MW
+def compute_frp(pixel_radiances):
+
+    return proc_const.atsr_pixel_size * proc_const.frp_coeff * pixel_radiances / 1000000  # in MW
 
 
-def flare_data(ats_product, mask):
+def flare_data(product, mask):
 
     # first get data from sensor
     lines, samples = np.where(mask)
-    lats = ats_product.get_band('latitude').read_as_array()[mask]
-    lons = ats_product.get_band('longitude').read_as_array()[mask]
-    reflectances = ats_product.get_band('reflec_nadir_1600').read_as_array()[mask]
-    solar_elev_angle = ats_product.get_band('sun_elev_nadir').read_as_array()[mask]
-    view_elev_angle = ats_product.get_band('view_elev_nadir').read_as_array()[mask]
+    lats = product.get_band('latitude').read_as_array()[mask]
+    lons = product.get_band('longitude').read_as_array()[mask]
+    reflectances = product.get_band('reflec_nadir_1600').read_as_array()[mask]
+    solar_elev_angle = product.get_band('sun_elev_nadir').read_as_array()[mask]
+    view_elev_angle = product.get_band('view_elev_nadir').read_as_array()[mask]
 
     # next radiances from reflectances
-    radiances = radiance_from_reflectance(reflectances, ats_product)
+    radiances = radiance_from_reflectance(reflectances, product)
 
     # next get FRP
-    frp, frp_coeff = compute_frp(radiances, ats_product)
+    frp = compute_frp(radiances, product)
 
     # insert data into dataframe
     df = pd.DataFrame()
@@ -170,9 +159,9 @@ def flare_data(ats_product, mask):
     names = ['lines', 'samples', 'lats', 'lons', 'frp', 'radiances', 'reflectances', 'sun_elev', 'view_elev', ]
     for k,v in zip(names, datasets):
         df[k] = v
-    df['fname'] = ats_product.id_string
-    df['se_dist'] = sun_earth_distance(ats_product)
-    df['frp_coeff'] = frp_coeff
+    df['fname'] = product.id_string
+    df['se_dist'] = sun_earth_distance(product)
+    df['frp_coeff'] = proc_const.frp_coeff
 
     # return df
     return df

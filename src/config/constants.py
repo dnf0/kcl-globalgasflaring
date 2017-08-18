@@ -3,9 +3,14 @@ This file contains some constants used in the processing
 '''
 import scipy.constants as const
 
-ats_solar_irradiance = 254.484  # W m-2 sr-1 um-1  see email from Dave Smith
-at2_solar_irradiance = 254.484  # W m-2 sr-1 um-1  this needs updating
-at1_solar_irradiance = 254.484  # W m-2 sr-1 um-1  this needs updating
+sensor = 'ats'  # 'at2', 'at1'
+
+if sensor == 'ats':
+    solar_irradiance = 254.484  # W m-2 sr-1 um-1  see email from Dave Smith
+elif sensor == 'at2':
+    solar_irradiance = 254.484  # W m-2 sr-1 um-1  this needs updating
+elif sensor == 'at1':
+    solar_irradiance = 254.484  # W m-2 sr-1 um-1  this needs updating
 
 day_night_angle = -5  # 0 less than this angle is considered night
 
@@ -19,10 +24,12 @@ n_std = 4
 # frp calculation parameters
 atsr_pixel_size = 1000000  # metres
 
-ats_planck_approx = 99999 # TODO define this
-at2_planck_approx = 99999 # TODO define this
-at1_planck_approx = 99999 # TODO define this
 
-ats_frp_coeff = const.sigma / ats_planck_approx
-at2_frp_coeff = const.sigma / at2_planck_approx
-at1_frp_coeff = const.sigma / at1_planck_approx
+if sensor == 'ats':
+    planck_approx = 99999  # TODO define this
+elif sensor == 'at2':
+    planck_approx = 99999  # TODO define this
+elif sensor == 'at1':
+    planck_approx = 99999  # TODO define this
+
+frp_coeff = const.sigma / planck_approx
