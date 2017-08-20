@@ -6,15 +6,13 @@ data from ATSR are contained in here.
 '''
 
 import os
+import sys
 import logging
-import csv
 from datetime import datetime
 
 import epr
 import numpy as np
 from netCDF4 import Dataset
-import pyresample as pr
-import matplotlib.pyplot as plt
 import pandas as pd
 
 import src.config.constants as proc_const
@@ -109,15 +107,6 @@ def setup_water_mask(water_mask_data, sub_lats, sub_lons):
     return water_mask, lons, lats
 
 
-def make_land_sea_mask():
-
-    # resample land water mask to ATSR grid
-
-    # return where there is water (flag == 2)
-
-    pass
-
-
 def cloud_mask(ats_product):
     vis_mask = ats_product.get_band('reflec_nadir_0550').read_as_array() > proc_const.vis_thresh
     tir_mask = ats_product.get_band('btemp_nadir_1200').read_as_array() < proc_const.tir_thresh
@@ -166,25 +155,13 @@ def flare_data(product, mask):
     # return df
     return df
 
-def save_output():
-    f = open(path, 'wb')
-    try:
-        writer = csv.writer(f)
-        writer.writerow(('FRP', 'Radiance', 'Reflectance', 'FRP Coefficient', 'Solar Elevation',
-                         'Lat', 'Lon', 'Line', 'Sample', 'View Angle', 'Time', 'Sensor', 'SE_dist'))
-    finally:
-        f.close()
-
-
-def ggf_main():
-    pass
-
 
 def main():
 
     # read in the atsr prodcut and land water
-    atsr_fname = 'ATS_TOA_1PUUPA20120406_181820_000065273113_00242_52842_6784.N1'
-    atsr_data = read_atsr(filepaths.path_to_aatsr_test_data + atsr_fname)
+    path_to_data = sys.argv[1]
+    path_to_output = sys.argv[2]
+    atsr_data = read_atsr(path_to_data)
 
     # get day/night mask first, we can use this to get only the part of the water mask
     # that we are interested in.  This should massively speed processing.
@@ -197,9 +174,8 @@ def main():
     df = flare_data(atsr_data, flare_mask)
 
     # write out
-    csv_path = os.path.join(filepaths.path_to_output_test, atsr_fname.split('.')[0] + '_flares.csv')
+    csv_path = os.path.join(path_to_output, atsr_data.id_string.split('.')[0] + '_flares.csv')
     df.to_csv(csv_path)
-
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

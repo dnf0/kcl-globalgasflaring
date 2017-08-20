@@ -1,9 +1,10 @@
 import re
 import os
+import tempfile
 
-import src.ggf.ggf_utils as ggf_utils
+import src.ggf.ggf_processor as ggf_processor
 import src.config.filepaths as filepaths
-
+import subprocess
 
 class BatchSystem:
     """Container for syntax to call a batch queuing system.
@@ -54,29 +55,45 @@ class BatchSystem:
             return m.groupdict()
 
 
-# BSUB, used by the JASMIN cluster at RAL
-bsub = BatchSystem('bsub',
-                   'Job <(?P<ID>\d+)> is submitted to (?P<desc>\w*) queue '
-                   '<(?P<queue>[\w\.-]+)>.',
-                   '-w "done({})"', ') && done(',
-                   {'duration' : '-W {}'.format,
-                    'email'    : '-u {}'.format,
-                    'err_file' : '-e {}'.format,
-                    'job_name' : '-J {}'.format,
-                    'log_file' : '-o {}'.format,
-                    'order'    : '-R "order[{}]"'.format,
-                    'procs'    : '-n {}'.format,
-                    'priority' : '-p {}'.format,
-                    'queue'    : '-q {}'.format,
-                    'ram'      : '-R "rusage[mem={}]"'.format})
-
-
+# setup the batch running class
+batch = BatchSystem()
+batch_values = {'email'    : 'daniel.fisher@kcl.ac.uk'}
 
 # iterate over all ATSR files in directory
 for root, dirs, files in os.walk(filepaths.path_to_data):
+    for f in files:
 
-# for each ATSR file generate a bash script that calls ggf
+        path_to_data = root + f
+        print path_to_data
+        continue
 
-# generate bsub call using print_batch
+        # build path to output
+        out_dir = filepaths.path_to_output + ''
+        print out_dir
+        continue
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
 
-# use subprocess to call the print batch command
+        # for each ATSR file generate a bash script that calls ggf
+        (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
+                                             out_dir, True)
+        print script_file
+        continue
+        g = os.fdopen(gd, "w")
+        g.write(filepaths.ggf_dir + 'ggf_processor.py ' +
+                path_to_data + ' ' +
+                out_dir + " \n")
+        g.write("rm -f " + script_file + "\n")
+        g.close()
+        os.chmod(script_file, 0o700)
+        continue
+
+        # generate bsub call using print_batch
+        cmd = batch.PrintBatch(batch_values, exe=script_file)
+        print cmd
+        continue
+
+        # use subprocess to call the print batch command
+        out = subprocess.check_output(cmd.split(' '))
+        jid = batch.ParseOut(out, 'ID')
+        print jid

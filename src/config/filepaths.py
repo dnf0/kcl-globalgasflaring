@@ -4,17 +4,23 @@ Holds the filepaths for the project
 
 import src.config.constants as constants
 
+# path to ggf code
+ggf_root_path = ''
+ggf_dir = ggf_root_path + ''
+
 # Paths to ATSR data on CEMS
+data_root_path = ''
 if constants.sensor == 'ats':
-    path_to_data = '/neodc/aatsr_multimission/aatsr-v3/data/ats_toa_1p'
+    path_to_data = data_root_path + '/neodc/aatsr_multimission/aatsr-v3/data/ats_toa_1p'
 elif constants.sensor == 'at2':
-    path_to_data = '/neodc/aatsr_multimission/atsr2-v3/data/at2_toa_1p'
+    path_to_data = data_root_path + '/neodc/aatsr_multimission/atsr2-v3/data/at2_toa_1p'
 elif constants.sensor == 'at1':
-    path_to_data = '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p'
+    path_to_data = data_root_path + '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p'
 
 
 # Paths to processing output folder on CEMS
-path_to_processing_output = '/home/users/dnfisher/projects/kcl-globalgasflaring/data/flare_files/ats'
+output_root_path = ''
+path_to_output = output_root_path + constants.sensor + '/'
 
 
 # data analysis paths
