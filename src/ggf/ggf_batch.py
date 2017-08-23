@@ -72,40 +72,46 @@ batch = BatchSystem('bsub',
 batch_values = {'email'    : 'daniel.fisher@kcl.ac.uk'}
 
 # iterate over all ATSR files in directory
-for root, dirs, files in os.walk(filepaths.path_to_data):
-    for f in files:
-
-        path_to_data = os.path.join(root, f)
-        print path_to_data
+years = os.listdir(filepaths.path_to_data)
+for yr in years:
+    if len(yr) > 4:
         continue
 
-        # build path to output
-        out_dir = filepaths.path_to_output + ''
-        print out_dir
-        continue
-        if not os.path.exists(out_dir):
-            os.makedirs(out_dir)
+    path = os.join(filepaths.path_to_data, yr)
+    for root, dirs, files in os.walk(path):
+        for f in files:
 
-        # for each ATSR file generate a bash script that calls ggf
-        (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
-                                             out_dir, True)
-        print script_file
-        continue
-        g = os.fdopen(gd, "w")
-        g.write(filepaths.ggf_dir + 'ggf_processor.py ' +
-                path_to_data + ' ' +
-                out_dir + " \n")
-        g.write("rm -f " + script_file + "\n")
-        g.close()
-        os.chmod(script_file, 0o700)
-        continue
+            path_to_data = os.path.join(root, f)
+            print path_to_data
+            continue
 
-        # generate bsub call using print_batch
-        cmd = batch.PrintBatch(batch_values, exe=script_file)
-        print cmd
-        continue
+            # build path to output
+            out_dir = filepaths.path_to_output + ''
+            print out_dir
+            continue
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
 
-        # use subprocess to call the print batch command
-        out = subprocess.check_output(cmd.split(' '))
-        jid = batch.ParseOut(out, 'ID')
-        print jid
+            # for each ATSR file generate a bash script that calls ggf
+            (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
+                                                 out_dir, True)
+            print script_file
+            continue
+            g = os.fdopen(gd, "w")
+            g.write(filepaths.ggf_dir + 'ggf_processor.py ' +
+                    path_to_data + ' ' +
+                    out_dir + " \n")
+            g.write("rm -f " + script_file + "\n")
+            g.close()
+            os.chmod(script_file, 0o700)
+            continue
+
+            # generate bsub call using print_batch
+            cmd = batch.PrintBatch(batch_values, exe=script_file)
+            print cmd
+            continue
+
+            # use subprocess to call the print batch command
+            out = subprocess.check_output(cmd.split(' '))
+            jid = batch.ParseOut(out, 'ID')
+            print jid
