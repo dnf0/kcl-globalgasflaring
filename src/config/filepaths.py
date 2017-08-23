@@ -9,13 +9,12 @@ ggf_root_path = ''
 ggf_dir = ggf_root_path + ''
 
 # Paths to ATSR data on CEMS
-data_root_path = ''
 if constants.sensor == 'ats':
-    path_to_data = data_root_path + '/neodc/aatsr_multimission/aatsr-v3/data/ats_toa_1p'
+    path_to_data = '/neodc/aatsr_multimission/aatsr-v3/data/ats_toa_1p'
 elif constants.sensor == 'at2':
-    path_to_data = data_root_path + '/neodc/aatsr_multimission/atsr2-v3/data/at2_toa_1p'
+    path_to_data = '/neodc/aatsr_multimission/atsr2-v3/data/at2_toa_1p'
 elif constants.sensor == 'at1':
-    path_to_data = data_root_path + '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p'
+    path_to_data = '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p'
 
 
 # Paths to processing output folder on CEMS

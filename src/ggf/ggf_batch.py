@@ -2,7 +2,6 @@ import re
 import os
 import tempfile
 
-import src.ggf.ggf_processor as ggf_processor
 import src.config.filepaths as filepaths
 import subprocess
 
@@ -23,7 +22,7 @@ class BatchSystem:
         self.regex = re.compile(regex)
         self.depend_arg = depend_arg
         self.depend_delim = depend_delim
-        self.args.update({'depend' : self.ParseDepend})
+        self.args.update({'depend' : self.parse_depend})
 
     def parse_depend(self, item):
         """Deal with slightly more complex syntax for declaring dependencies"""
@@ -56,14 +55,27 @@ class BatchSystem:
 
 
 # setup the batch running class
-batch = BatchSystem()
+batch = BatchSystem('bsub',
+                   'Job <(?P<ID>\d+)> is submitted to (?P<desc>\w*) queue '
+                   '<(?P<queue>[\w\.-]+)>.',
+                   '-w "done({})"', ') && done(',
+                   {'duration' : '-W {}'.format,
+                    'email'    : '-u {}'.format,
+                    'err_file' : '-e {}'.format,
+                    'job_name' : '-J {}'.format,
+                    'log_file' : '-o {}'.format,
+                    'order'    : '-R "order[{}]"'.format,
+                    'procs'    : '-n {}'.format,
+                    'priority' : '-p {}'.format,
+                    'queue'    : '-q {}'.format,
+                    'ram'      : '-R "rusage[mem={}]"'.format})
 batch_values = {'email'    : 'daniel.fisher@kcl.ac.uk'}
 
 # iterate over all ATSR files in directory
 for root, dirs, files in os.walk(filepaths.path_to_data):
     for f in files:
 
-        path_to_data = root + f
+        path_to_data = os.path.join(root, f)
         print path_to_data
         continue
 
