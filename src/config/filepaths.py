@@ -5,8 +5,7 @@ Holds the filepaths for the project
 import src.config.constants as constants
 
 # path to ggf code
-ggf_root_path = ''
-ggf_dir = ggf_root_path + ''
+ggf_dir = '/home/users/dnfisher/projects/kcl-globalgasflaring/src/ggf/'
 
 # Paths to ATSR data on CEMS
 if constants.sensor == 'ats':
@@ -18,7 +17,7 @@ elif constants.sensor == 'at1':
 
 
 # Paths to processing output folder on CEMS
-output_root_path = ''
+output_root_path = '/home/users/dnfisher/projects/kcl-globalgasflaring/data/processed/'
 path_to_output = output_root_path + constants.sensor + '/'
 
 

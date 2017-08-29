@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-
-'''
-All the functions that are used to process the global gas flaring
-data from ATSR are contained in here.
-'''
+#!/home/users/dnfisher/soft/virtual_envs/ggf/bin/python2
 
 import os
 import sys
@@ -140,7 +135,7 @@ def flare_data(product, mask):
     radiances = radiance_from_reflectance(reflectances, product)
 
     # next get FRP
-    frp = compute_frp(radiances, product)
+    frp = compute_frp(radiances)
 
     # insert data into dataframe
     df = pd.DataFrame()
@@ -148,7 +143,11 @@ def flare_data(product, mask):
     names = ['lines', 'samples', 'lats', 'lons', 'frp', 'radiances', 'reflectances', 'sun_elev', 'view_elev', ]
     for k,v in zip(names, datasets):
         df[k] = v
-    df['fname'] = product.id_string
+    
+    fname = atsr_data.id_string.split('.')[0]
+    if proc_const.sensor.upper() not in fname:
+        fname = fname.replace(fname[0:3], proc_const.sensor.upper())
+    df['fname'] = fname
     df['se_dist'] = sun_earth_distance(product)
     df['frp_coeff'] = proc_const.frp_coeff
 
@@ -174,7 +173,10 @@ def main():
     df = flare_data(atsr_data, flare_mask)
 
     # write out
-    csv_path = os.path.join(path_to_output, atsr_data.id_string.split('.')[0] + '_flares.csv')
+    output_fname = atsr_data.id_string.split('.')[0] + '_flares.csv'
+    if proc_const.sensor.upper() not in output_fname:
+        output_fname = output_fname.replace(output_fname[0:3], proc_const.sensor.upper())
+    csv_path = os.path.join(path_to_output, output_fname)
     df.to_csv(csv_path)
 
 if __name__ == "__main__":

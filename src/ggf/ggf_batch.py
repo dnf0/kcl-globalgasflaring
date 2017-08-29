@@ -69,49 +69,46 @@ batch = BatchSystem('bsub',
                     'priority' : '-p {}'.format,
                     'queue'    : '-q {}'.format,
                     'ram'      : '-R "rusage[mem={}]"'.format})
-batch_values = {'email'    : 'daniel.fisher@kcl.ac.uk'}
+batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 # iterate over all ATSR files in directory
 years = os.listdir(filepaths.path_to_data)
 for yr in years:
     if len(yr) > 4:
         continue
+    if yr not in ['2002', '2003']:
+        continue
 
-    path = os.join(filepaths.path_to_data, yr)
+    path = os.path.join(filepaths.path_to_data, yr)
     for root, dirs, files in os.walk(path):
         for f in files:
 
+	    if f.split('.')[-1] not in ['N1', 'E2', 'E1']:
+                continue
+            
             path_to_data = os.path.join(root, f)
-            print path_to_data
-            continue
 
             # build path to output
-            out_dir = filepaths.path_to_output + ''
-            print out_dir
-            continue
+            ymd = f[14:22]
+            out_dir = os.path.join(filepaths.path_to_output, ymd[0:4], ymd[4:6], ymd[6:8])
             if not os.path.exists(out_dir):
                 os.makedirs(out_dir)
 
             # for each ATSR file generate a bash script that calls ggf
             (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
                                                  out_dir, True)
-            print script_file
-            continue
             g = os.fdopen(gd, "w")
+            g.write('export PYTHONPATH=$PYTHONPATH:/home/users/dnfisher/projects/kcl-globalgasflaring/\n')
             g.write(filepaths.ggf_dir + 'ggf_processor.py ' +
                     path_to_data + ' ' +
                     out_dir + " \n")
             g.write("rm -f " + script_file + "\n")
             g.close()
-            os.chmod(script_file, 0o700)
-            continue
+            os.chmod(script_file, 0o755)
 
             # generate bsub call using print_batch
-            cmd = batch.PrintBatch(batch_values, exe=script_file)
-            print cmd
-            continue
+            cmd = batch.print_batch(batch_values, exe=script_file)
 
             # use subprocess to call the print batch command
             out = subprocess.check_output(cmd.split(' '))
-            jid = batch.ParseOut(out, 'ID')
-            print jid
+            jid = batch.parse_out(out, 'ID')
