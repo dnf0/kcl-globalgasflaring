@@ -144,7 +144,7 @@ def flare_data(product, mask):
     for k,v in zip(names, datasets):
         df[k] = v
     
-    fname = atsr_data.id_string.split('.')[0]
+    fname = product.id_string.split('.')[0]
     if proc_const.sensor.upper() not in fname:
         fname = fname.replace(fname[0:3], proc_const.sensor.upper())
     df['fname'] = fname
