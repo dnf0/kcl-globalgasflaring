@@ -26,10 +26,10 @@ atsr_pixel_size = 1000000  # metres
 
 
 if sensor == 'ats':
-    planck_approx = 99999  # TODO define this
+    planck_approx = 8.29908189231e-09
 elif sensor == 'at2':
-    planck_approx = 99999  # TODO define this
+    planck_approx = 8.2215268253e-09
 elif sensor == 'at1':
-    planck_approx = 99999  # TODO define this
+    planck_approx = 8.23565040885e-09
 
 frp_coeff = const.sigma / planck_approx
