@@ -3,14 +3,14 @@ This file contains some constants used in the processing
 '''
 import scipy.constants as const
 
-sensor = 'at1'  # 'at2', 'at1'
+sensor = 'ats'  # 'at2', 'at1'
 
 if sensor == 'ats':
-    solar_irradiance = 254.752  # W m-2 sr-1 um-1  see email from Dave Smith
+    solar_irradiance = 254.752  # W m-2 sr-1 um-1 
 elif sensor == 'at2':
-    solar_irradiance = 249.604  # W m-2 sr-1 um-1  this needs updating
+    solar_irradiance = 249.604  # W m-2 sr-1 um-1  
 elif sensor == 'at1':
-    solar_irradiance = 250.728  # W m-2 sr-1 um-1  this needs updating
+    solar_irradiance = 250.728  # W m-2 sr-1 um-1  
 
 day_night_angle = -5  # 0 less than this angle is considered night
 
