@@ -76,13 +76,10 @@ years = os.listdir(filepaths.path_to_data)
 for yr in years:
     if len(yr) > 4:
         continue
-    if yr not in ['2002', '2003']:
-        continue
 
     path = os.path.join(filepaths.path_to_data, yr)
     for root, dirs, files in os.walk(path):
         for f in files:
-
 	    if f.split('.')[-1] not in ['N1', 'E2', 'E1']:
                 continue
             
