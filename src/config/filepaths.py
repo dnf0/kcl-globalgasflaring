@@ -21,7 +21,8 @@ elif constants.sensor == 'at1':
     path_to_data = '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p'
 
 # Paths to processing output folder on CEMS
-path_to_cems_output = cems_root + 'data/processed/' + constants.sensor + '/'
+#path_to_cems_output = cems_root + 'data/processed/' + constants.sensor + '/'
+path_to_cems_output = '/home/users/dnfisher/nceo_aerosolfire/data/temp/' + constants.sensor 
 
 ###########  LOCAL PATHS ###########
 
