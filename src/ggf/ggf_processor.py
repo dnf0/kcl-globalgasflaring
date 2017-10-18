@@ -172,6 +172,10 @@ def main():
     # get nighttime flare radiances and frp and write out with meta data
     df = flare_data(atsr_data, flare_mask)
 
+    # check if the dataframe has useful data (some noise issue with reflectances)
+    if df['reflectances'].max() <= 0:
+        return
+
     # write out
     output_fname = atsr_data.id_string.split('.')[0] + '_flares.csv'
     if proc_const.sensor.upper() not in output_fname:
