@@ -4,8 +4,13 @@ Holds the filepaths for the project
 
 import src.config.constants as constants
 
+
+###########  CEMS PATHS ###########
+
+cems_root = '/home/users/dnfisher/projects/kcl-globalgasflaring/'
+
 # path to ggf code
-ggf_dir = '/home/users/dnfisher/projects/kcl-globalgasflaring/src/ggf/'
+ggf_dir = cems_root + 'src/ggf/'
 
 # Paths to ATSR data on CEMS
 if constants.sensor == 'ats':
@@ -15,20 +20,24 @@ elif constants.sensor == 'at2':
 elif constants.sensor == 'at1':
     path_to_data = '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p'
 
-
 # Paths to processing output folder on CEMS
-output_root_path = '/home/users/dnfisher/projects/kcl-globalgasflaring/data/processed/'
-path_to_output = output_root_path + constants.sensor + '/'
+path_to_cems_output = cems_root + 'data/processed/' + constants.sensor + '/'
 
+###########  LOCAL PATHS ###########
+
+local_root = '/Users/danielfisher/Projects/kcl-globalgasflaring/'
+
+# paths for calculating in-band solar irradiance
+path_to_solar_data = local_root + 'data/external/solar_irradiance/SOLAR_IN.txt'
+path_to_srfs = local_root + 'data/external/spectral_response_funtions'
 
 # data analysis paths
 
 
 # Testing paths on mac
-root = '/Users/danielfisher/Projects/kcl-globalgasflaring/data/'
-path_to_aatsr_test_data = root + 'raw/atsr/'
+path_to_aatsr_test_data = local_root + 'raw/atsr/'
 path_to_atsr2_test_data = ''
 path_to_atsr1_test_data = ''
-path_to_landcover_test = root + 'raw/landwater/land_water_mask_reduced_mode_900m.nc'
-path_to_output_test = root + 'processed/ats/'
+path_to_landcover_test = local_root + 'raw/landwater/land_water_mask_reduced_mode_900m.nc'
+path_to_output_test = local_root + 'processed/ats/'
 
