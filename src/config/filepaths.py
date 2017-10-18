@@ -36,6 +36,9 @@ path_to_srfs = local_root + 'data/external/spectral_response_funtions'
 
 
 # Testing paths on mac
+path_to_test_csv = '/Volumes/dfisher/data'
+path_to_test_csv_out = '/Volumes/dfisher/data/yearly_csv'
+
 path_to_aatsr_test_data = local_root + 'raw/atsr/'
 path_to_atsr2_test_data = ''
 path_to_atsr1_test_data = ''
