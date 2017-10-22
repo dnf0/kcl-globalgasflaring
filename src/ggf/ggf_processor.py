@@ -176,6 +176,9 @@ def main():
     if df['reflectances'].max() <= 0:
         return
 
+    # drop any rows with reflectances less than zero
+    df = df[df['reflectances'] > 0]
+
     # write out
     output_fname = atsr_data.id_string.split('.')[0] + '_flares.csv'
     if proc_const.sensor.upper() not in output_fname:
