@@ -177,7 +177,11 @@ def main():
         return
 
     # drop any rows with reflectances less than zero
-    df = df[df['reflectances'] > 0]
+    df = df[df['reflectances'] > 0.08]
+
+    # get rid of DF with unrealistic number of flares
+    if df.shape[0] > 10000:
+        return
 
     # write out
     output_fname = atsr_data.id_string.split('.')[0] + '_flares.csv'
