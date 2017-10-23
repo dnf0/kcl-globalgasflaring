@@ -8,9 +8,10 @@ import src.config.filepaths as fp
 
 def main():
 
-    for sensor in ['ats']:
+    for sensor in ['ats', 'at1', 'at2']:
         years = os.listdir(os.path.join(fp.path_to_test_csv, sensor))
         for year in years:
+            print sensor, year
             csv_files_for_year = glob.glob(os.path.join(fp.path_to_test_csv,
                                                         sensor,
                                                         year,
@@ -23,7 +24,7 @@ def main():
                     logger.warning('Could not load csv file with error: ' + str(e))
 
             df_for_year = pd.concat(df_list, ignore_index=True)
-            df_for_year.to_csv(os.path.join(fp.path_to_test_csv_out, year + '.csv'))
+            df_for_year.to_csv(os.path.join(fp.path_to_test_csv_out, sensor + '_' + year + '.csv'))
 
 
 if __name__ == '__main__':
