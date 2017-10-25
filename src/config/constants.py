@@ -12,18 +12,10 @@ elif sensor == 'at2':
 elif sensor == 'at1':
     solar_irradiance = 250.728  # W m-2 sr-1 um-1  
 
-day_night_angle = -5  # 0 less than this angle is considered night
+day_night_angle = -5  # less than this angle is considered night
 
-# thresholds for masking out clouds over sea
-vis_thresh = 10  # percent
-tir_thresh = 290  # kelvin
-
-# number of standard deviations which constitutes a glas flare
-n_std = 4
-
-# frp calculation parameters
-atsr_pixel_size = 1000000  # metres
-
+# flare detection limit
+swir_thresh = 0.1  # from Casadio et al. 2012 paper
 
 if sensor == 'ats':
     planck_approx = 8.29908189231e-09

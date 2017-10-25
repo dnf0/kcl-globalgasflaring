@@ -120,7 +120,7 @@ def get_semi_minor_axis(alpha, theta):
     return (radius_earth / 2) * ifov * np.sin(theta - alpha) / np.sin(alpha)
 
 
-def ats_nadir_pixel_sizes(forward=False):
+def compute(forward=False):
     alpha, theta = angles_mannstien(forward)
 
     semi_major = get_semi_major_axis(alpha)
@@ -130,8 +130,8 @@ def ats_nadir_pixel_sizes(forward=False):
 
 
 def main():
-    ats_nadir_pixel_sizes()
-
+    sizes = compute()
+    print sizes[[1,20,45,366, 511]]
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

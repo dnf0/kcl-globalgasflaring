@@ -11,7 +11,7 @@ from netCDF4 import Dataset
 import pandas as pd
 
 import src.config.constants as proc_const
-import src.config.filepaths as filepaths
+import src.models.atsr_pixel_size as atsr_pixel_size
 
 
 def sun_earth_distance(ats_product):
@@ -110,15 +110,16 @@ def cloud_mask(ats_product):
 
 def detect_flares(ats_product, mask):
     swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
-    masked_swir = np.ma.masked_array(swir, ~mask)
-    return (swir > (masked_swir.mean() + proc_const.n_std * masked_swir.std())) & mask
+    return (swir > proc_const.swir_thresh) & mask
 
-def mean_background_reflectance(flare_mask, day_sea_mask):
-    pass
 
-def compute_frp(pixel_radiances):
+def compute_pixel_size(samples):
+    pix_sizes = atsr_pixel_size.compute() * 1000000  # convert from km^2 to m^2
+    return pix_sizes[samples]
 
-    return proc_const.atsr_pixel_size * proc_const.frp_coeff * pixel_radiances / 1000000  # in MW
+
+def compute_frp(pixel_radiances, pixel_size):
+    return proc_const.atsr_pixel_size * proc_const.frp_coeff * pixel_radiances / pixel_size  # in MW
 
 
 def flare_data(product, mask):
@@ -134,13 +135,18 @@ def flare_data(product, mask):
     # next radiances from reflectances
     radiances = radiance_from_reflectance(reflectances, product)
 
+    # get the pixel size
+    pixel_size = compute_pixel_size(samples)
+
     # next get FRP
-    frp = compute_frp(radiances)
+    frp = compute_frp(radiances, pixel_size)
 
     # insert data into dataframe
     df = pd.DataFrame()
-    datasets = [lines, samples, lats, lons, frp, radiances, reflectances, solar_elev_angle, view_elev_angle]
-    names = ['lines', 'samples', 'lats', 'lons', 'frp', 'radiances', 'reflectances', 'sun_elev', 'view_elev', ]
+    datasets = [lines, samples, lats, lons, frp, radiances,
+                reflectances, solar_elev_angle, view_elev_angle, pixel_size]
+    names = ['lines', 'samples', 'lats', 'lons', 'frp', 'radiances',
+             'reflectances', 'sun_elev', 'view_elev', 'pixel_size']
     for k,v in zip(names, datasets):
         df[k] = v
     
@@ -171,17 +177,6 @@ def main():
 
     # get nighttime flare radiances and frp and write out with meta data
     df = flare_data(atsr_data, flare_mask)
-
-    # check if the dataframe has useful data (some noise issue with reflectances)
-    if df['reflectances'].max() <= 0:
-        return
-
-    # drop any rows with reflectances less than zero
-    df = df[df['reflectances'] > 0.08]
-
-    # get rid of DF with unrealistic number of flares
-    if df.shape[0] > 10000:
-        return
 
     # write out
     output_fname = atsr_data.id_string.split('.')[0] + '_flares.csv'
