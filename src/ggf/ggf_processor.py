@@ -118,8 +118,8 @@ def compute_pixel_size(samples):
     return pix_sizes[samples]
 
 
-def compute_frp(pixel_radiances, pixel_size):
-    return proc_const.atsr_pixel_size * proc_const.frp_coeff * pixel_radiances / pixel_size  # in MW
+def compute_frp(pixel_radiances, pixel_sizes):
+    return pixel_sizes * proc_const.frp_coeff * pixel_radiances / 1000000  # in MW
 
 
 def flare_data(product, mask):
