@@ -32,9 +32,6 @@ def main():
 
                 df_for_month = pd.concat(month_flares, ignore_index=True)
 
-                # drop all observations when scan angle is too low TODO implement this
-                df_for_month = df_for_month[df_for_month['df_view_elev'] > 60]
-
                 # cluster for the month
                 coords = df_for_month.as_matrix(columns=['lats', 'lons'])
                 kms_per_radian = 6371.0088
