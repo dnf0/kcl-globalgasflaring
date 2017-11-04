@@ -3,7 +3,7 @@ This file contains some constants used in the processing
 '''
 import scipy.constants as const
 
-sensor = 'at1'  # 'at2', 'at1'
+sensor = 'ats'  # 'at2', 'at1'
 
 if sensor == 'ats':
     solar_irradiance = 254.752  # W m-2 sr-1 um-1 

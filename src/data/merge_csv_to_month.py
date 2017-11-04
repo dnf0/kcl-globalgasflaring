@@ -11,7 +11,7 @@ import src.config.filepaths as fp
 
 def main():
 
-    for sensor in ['ats', 'at1', 'at2']:
+    for sensor in ['at1', 'at2']:
         year_dir = os.path.join(fp.path_to_test_csv, sensor)
         years = os.listdir(year_dir)
         for year in years:
@@ -44,7 +44,7 @@ def main():
 
                 # compute the mean FRP TODO extent this to other values
                 df_for_month = df_for_month.groupby('clusters').agg({'frp': np.mean, 'lats': np.mean, 'lons': np.mean})
-
+	
                 # dump to csv
                 path_to_out = os.path.join(fp.path_to_test_csv_out, sensor, year)
                 if not os.path.exists(path_to_out):

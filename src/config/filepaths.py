@@ -36,8 +36,8 @@ path_to_srfs = local_root + 'data/external/spectral_response_funtions'
 
 
 # Testing paths on mac
-path_to_test_csv = '/Users/dnf/Projects/kcl-globalgasflaring/data/processed'
-path_to_test_csv_out = '/Users/dnf/Projects/kcl-globalgasflaring/data/merged_years'
+path_to_test_csv = '/home/users/dnfisher/nceo_aerosolfire/data/temp/'
+path_to_test_csv_out = '/home/users/dnfisher/nceo_aerosolfire/data/temp/merged'
 
 path_to_aatsr_test_data = local_root + 'raw/atsr/'
 path_to_atsr2_test_data = ''
