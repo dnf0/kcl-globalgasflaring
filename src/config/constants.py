@@ -16,7 +16,7 @@ day_night_angle = 101  # solar zenith angles must be > 101 deg VIIRS night-time 
 
 # flare detection limit.  We do not use the upper threshold of 3% as this removes a number of
 # significant flares pixels.  E.g. over Iraq.  TODO make a visualisation to show this!
-lower_thresh = 0.1  # from Casadio et al. 2012 paper
+swir_thresh = 0.1  # from Casadio et al. 2012 paper
 
 if sensor == 'ats':
     planck_approx = 8.29908189231e-09
