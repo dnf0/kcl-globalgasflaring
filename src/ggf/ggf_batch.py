@@ -76,6 +76,8 @@ years = os.listdir(filepaths.path_to_data)
 for yr in years:
     if len(yr) > 4:
         continue
+    if ('at2' in filepaths.path_to_data) & (yr > 2003):
+        continue
 
     path = os.path.join(filepaths.path_to_data, yr)
     for root, dirs, files in os.walk(path):
