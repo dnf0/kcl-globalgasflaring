@@ -34,7 +34,9 @@ def read_land_water_mask(path_to_land_water_mask):
 
 
 def make_night_mask(ats_product):
-    return ats_product.get_band('sun_elev_nadir').read_as_array() < proc_const.day_night_angle
+    solar_elev_angle = np.deg2rad(ats_product.get_band('sun_elev_nadir').read_as_array())
+    solar_zenith_angle = np.rad2deg(np.arccos(np.sin(solar_elev_angle)))
+    return solar_zenith_angle >= proc_const.day_night_angle
 
 
 def find_day_geo_subset(day_mask, product):
@@ -110,7 +112,8 @@ def cloud_mask(ats_product):
 
 def detect_flares(ats_product, mask):
     swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
-    return (swir > proc_const.swir_thresh) & mask
+    nan_mask = np.isnan(swir)  # get rid of SWIR nans also
+    return (swir > proc_const.swir_thresh) & mask & ~nan_mask
 
 
 def compute_pixel_size(samples):
