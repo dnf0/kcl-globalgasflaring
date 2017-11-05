@@ -35,7 +35,7 @@ def main():
                 # cluster for the month
                 coords = df_for_month.as_matrix(columns=['lats', 'lons'])
                 kms_per_radian = 6371.0088
-                epsilon = 1 / kms_per_radian
+                epsilon = 2 / kms_per_radian
                 db = DBSCAN(eps=epsilon, min_samples=1, algorithm='ball_tree', metric='haversine').fit(
                     np.radians(coords))
 
