@@ -9,7 +9,14 @@ from sklearn.cluster import DBSCAN
 import src.config.filepaths as fp
 
 
+def myround(x, dec=20, base=.000005):
+    return np.round(base * np.round(x/base), dec)
+
+
 def main():
+
+    # aggregation resolution
+    resolution = 15. / 3600  # in arcseconds. 3600 arc seconds in a degree, and want nearest 15 arcseconds (~0.5km)
 
     for sensor in ['ats', 'at1', 'at2']:
         year_dir = os.path.join(fp.path_to_test_csv, sensor)
@@ -32,15 +39,16 @@ def main():
 
                 df_for_month = pd.concat(month_flares, ignore_index=True)
 
-                # cluster for the month
-                coords = df_for_month.as_matrix(columns=['lats', 'lons'])
-                kms_per_radian = 6371.0088
-                epsilon = 2 / kms_per_radian
-                db = DBSCAN(eps=epsilon, min_samples=1, algorithm='ball_tree', metric='haversine').fit(
-                    np.radians(coords))
+                # cluster for the month by first round to the desired resolution
+                # and then getting the set of unique locations.  Much faster than DB scan
+                df_for_month['lons'] = myround(df_for_month['lons'].values, base=resolution)
+                df_for_month['lats'] = myround(df_for_month['lats'].values, base=resolution)
+                lat_lon_tuples = zip(df_for_month.lats, df_for_month.lons)
+                unique_locations, indicies, unique_counts = np.unique(lat_lon_tuples, axis=0, return_inverse=True,
+                                                                      return_counts=True)
 
-                # assign the clusters
-                df_for_month['clusters'] = db.labels_
+                df_for_month['clusters'] = indicies
+                df_for_month['cluster_counts'] = unique_counts[indicies]
 
                 # compute the mean FRP TODO extent this to other values
                 df_for_month = df_for_month.groupby('clusters').agg({'frp': np.mean, 'lats': np.mean, 'lons': np.mean})
