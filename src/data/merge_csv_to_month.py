@@ -39,8 +39,8 @@ def main():
 
                 df_for_month = pd.concat(month_flares, ignore_index=True)
 
-                # cluster for the month by first round to the desired resolution
-                # and then getting the set of unique locations.  Much faster than DB scan
+                # cluster for the month by first rounding to the desired resolution
+                # and then getting the set of unique locations.  Much faster than DB scan.
                 df_for_month['lons'] = myround(df_for_month['lons'].values, base=resolution)
                 df_for_month['lats'] = myround(df_for_month['lats'].values, base=resolution)
                 lat_lon_tuples = zip(df_for_month.lats, df_for_month.lons)
@@ -48,10 +48,14 @@ def main():
                                                                       return_counts=True)
 
                 df_for_month['clusters'] = indicies
-                df_for_month['cluster_counts'] = unique_counts[indicies]
+                # df_for_month['cluster_counts'] = unique_counts[indicies]
+                df_for_month['cluster_counter'] = np.ones(df_for_month.shape[0])
+                df_for_month['frp_sd'] = df_for_month['frp']
 
                 # compute the mean FRP TODO extent this to other values
-                df_for_month = df_for_month.groupby('clusters').agg({'frp': np.mean, 'lats': np.mean, 'lons': np.mean})
+                df_for_month = df_for_month.groupby('clusters').agg({'frp': np.mean, 'frp_sd': np.std,
+                                                                     'lats': np.mean, 'lons': np.mean,
+                                                                     'cluster_counter': np.sum})
 
                 # dump to csv
                 path_to_out = os.path.join(fp.path_to_test_csv_out, sensor, year)
