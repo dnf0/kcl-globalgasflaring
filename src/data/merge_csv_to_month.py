@@ -16,7 +16,8 @@ def myround(x, dec=20, base=.000005):
 def main():
 
     # aggregation resolution
-    resolution = 15. / 3600  # in arcseconds. 3600 arc seconds in a degree, and want nearest 15 arcseconds (~0.5km)
+    # resolution = 15. / 3600  # in arcseconds. 3600 arc seconds in a degree, and want nearest 15 arcseconds (~0.5km)
+    resolution = 60. / 3600  # arseconds ~2km
 
     for sensor in ['ats', 'at1', 'at2']:
         year_dir = os.path.join(fp.path_to_test_csv, sensor)
