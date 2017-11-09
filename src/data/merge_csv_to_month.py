@@ -4,7 +4,6 @@ import logging
 
 import pandas as pd
 import numpy as np
-from sklearn.cluster import DBSCAN
 
 import src.config.filepaths as fp
 
@@ -50,13 +49,13 @@ def main():
 
                 df_for_month['clusters'] = indicies
                 # df_for_month['cluster_counts'] = unique_counts[indicies]
-                df_for_month['cluster_counter'] = np.ones(df_for_month.shape[0])
+                df_for_month['pixel_count'] = np.ones(df_for_month.shape[0])
                 df_for_month['frp_sd'] = df_for_month['frp']
 
                 # compute the mean FRP TODO extent this to other values
                 df_for_month = df_for_month.groupby('clusters').agg({'frp': np.mean, 'frp_sd': np.std,
                                                                      'lats': np.mean, 'lons': np.mean,
-                                                                     'cluster_counter': np.sum})
+                                                                     'pixel_count': np.sum})
 
                 # dump to csv
                 path_to_out = os.path.join(fp.path_to_test_csv_out, sensor, year)
