@@ -44,18 +44,17 @@ def main():
                 df_for_month['lons'] = myround(df_for_month['lons'].values, base=resolution)
                 df_for_month['lats'] = myround(df_for_month['lats'].values, base=resolution)
                 lat_lon_tuples = zip(df_for_month.lats, df_for_month.lons)
-                unique_locations, indicies, unique_counts = np.unique(lat_lon_tuples, axis=0, return_inverse=True,
-                                                                      return_counts=True)
+                unique_locations, cluster_ids, unique_counts = np.unique(lat_lon_tuples, axis=0, return_inverse=True,
+                                                                         return_counts=True)
 
-                df_for_month['clusters'] = indicies
-                # df_for_month['cluster_counts'] = unique_counts[indicies]
-                df_for_month['pixel_count'] = np.ones(df_for_month.shape[0])
+                df_for_month['cluster_ids'] = cluster_ids
+                df_for_month['times_seen'] = np.ones(df_for_month.shape[0])
                 df_for_month['frp_sd'] = df_for_month['frp']
 
                 # compute the mean FRP TODO extent this to other values
-                df_for_month = df_for_month.groupby('clusters').agg({'frp': np.mean, 'frp_sd': np.std,
+                df_for_month = df_for_month.groupby('cluster_ids').agg({'frp': np.mean, 'frp_sd': np.std,
                                                                      'lats': np.mean, 'lons': np.mean,
-                                                                     'pixel_count': np.sum})
+                                                                     'times_seen': np.sum})
 
                 # dump to csv
                 path_to_out = os.path.join(fp.path_to_test_csv_out, sensor, year)
