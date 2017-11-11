@@ -26,8 +26,8 @@ path_to_cems_output = '/home/users/dnfisher/nceo_aerosolfire/data/temp/' + const
 
 ###########  LOCAL PATHS ###########
 
-#local_root = '/Users/danielfisher/Projects/kcl-globalgasflaring/'
-local_root = '/Users/dnf/Projects/kcl-globalgasflaring/'
+local_root = '/Users/danielfisher/Projects/kcl-globalgasflaring/'
+#local_root = '/Users/dnf/Projects/kcl-globalgasflaring/'
 
 # paths for calculating in-band solar irradiance
 path_to_solar_data = local_root + 'data/external/solar_irradiance/SOLAR_IN.txt'
