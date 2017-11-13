@@ -30,9 +30,8 @@ def main():
                         df = pd.read_csv(f)
                     except Exception, e:
                         logger.warning('Could not load csv file with error: ' + str(e))
-
-                    orbit = [o.split('_')[-1] for o in df.fname.values()]
-                    orbit_line_sample.append(zip(orbit, df.lines.values, df.sample.values))
+                    orbit = [o.split('_')[-1] for o in df.fname.values]
+                    orbit_line_sample += zip(orbit, df.lines.values, df.samples.values)
 
             # after each year reduce to only unique
             orbit_line_sample = list(set(orbit_line_sample))

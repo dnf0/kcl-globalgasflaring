@@ -15,7 +15,7 @@ import src.config.filepaths as fp
 
 def main():
     # define sensor
-    sensor = 'at1'
+    sensor = 'ats'
 
     # get all csv files for sensor
     root = os.path.join(fp.path_to_test_csv_out, sensor)
