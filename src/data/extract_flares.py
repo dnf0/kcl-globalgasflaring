@@ -47,7 +47,7 @@ def main():
     grouped.reset_index(inplace=True)
     if not os.path.exists(root):
         os.makedirs(root)
-    grouped.to_csv(os.path.join(root, 'all_flares.csv'))
+    grouped.to_csv(os.path.join(root, 'all_flares.csv'), date_format='%Y-%m-%d %H:%M:%S')
 
 
 if __name__ == '__main__':
