@@ -1,5 +1,34 @@
 #!/home/users/dnfisher/soft/virtual_envs/ggf/bin/python2
 
+"""
+code description:
+
+For a given ATSR orbit we determine if any of the gas flares in our detected
+gas flare file have a potential observation.  This is done as:
+
+1. Get the start time of the ATSR file
+2. Restrict only those conditions where the flare might have been observed.  That is
+it being a night-time scene and either a) a flaring location (i.e. ref > 0.1) or b) a
+cloud free location (i.e. free of optically thick cloud).  This gives us all possibly
+flare observation opportunities.
+3. Extract the lats and lons for these potential flaring sites in the ATSR orbit.
+4. Resample the ATSR lats and Lons to 1 arc minute resolution (same as monhtly aggregation)
+
+5. Form a KDtree using these ATSR lats and lons
+6. From the gas flare location DF. Get only those flares that have been seen
+burning before and after the ATSR overpass. This means that they were operating
+at the time of the ATSR overpass.
+7. Determine whether these flaring locations are contained within the ATSR orbit
+through comparison against the KDTree.
+8. The KDtree returns distances, any point that is less
+
+. We store the flare ids, the lats and the lons.  The lats and lons are used to make
+sure that the flares that we see are actually reasonable in terms of thier locations.
+I.e. as a sanity check.
+
+
+"""
+
 import os
 import sys
 import logging
@@ -32,22 +61,31 @@ def make_cloud_mask(ats_product):
     return cloud_mask <= 1  # masking needs to be checked
 
 
-def get_swir_ref(ats_product):
-    return ats_product.get_band('reflec_nadir_1600').read_as_array()
+def get_swir_mask(ats_product):
+    swir_ref = ats_product.get_band('reflec_nadir_1600').read_as_array()
+    return swir_ref > proc_const.swir_thresh
 
 
 def myround(x, dec=20, base=60. / 3600):
     return np.round(base * np.round(x/base), dec)
 
 
-def get_geo_data(ats_product):
-    lats = myround(ats_product.get_band('latitude').read_as_array())
-    lons = myround(ats_product.get_band('longitude').read_as_array())
-    return lats, lons
+def get_geo_data(ats_product, mask):
 
+    # first mask lats and lons
+    lats = ats_product.get_band('latitude').read_as_array()[mask]
+    lons = ats_product.get_band('longitude').read_as_array()[mask]
 
-def find_closest_pixel():
-    pass
+    # then round them
+    rounded_lats = myround(lats)
+    rounded_lons = myround(lons)
+
+    # then get the unique lat and lon combinations
+    unique_coords = set(zip(rounded_lats, rounded_lons))
+
+    # return them unzipped
+    rounded_lats, rounded_lons = zip(*unique_coords)
+    return rounded_lats, rounded_lons
 
 
 def main():
@@ -62,17 +100,18 @@ def main():
     path_to_output = None
     atsr_data = read_atsr(path_to_data)
 
-    # set up ats data
+    # set up masks that define potential flaring sites
     night_mask = make_night_mask(atsr_data)
     cloud_free_mask = make_cloud_mask(atsr_data)
-    swir_ref = get_swir_ref(atsr_data)
-    rounded_lats, rounded_lons = get_geo_data(atsr_data)
+    swir_mask = get_swir_mask(atsr_data)
 
-    valid_round_lats = rounded_lats[night_mask & cloud_free_mask ]
-    valid_round_lons = rounded_lons[night_mask & cloud_free_mask ]
+    # get the rounded lats and lons of the potential flaring sites
+    potential_flares = cloud_free_mask | swir_mask  # either cloud free or high swir
+    flare_mask = night_mask & potential_flares  # and also at night
+    rounded_lats, rounded_lons = get_geo_data(atsr_data, flare_mask)
 
     # set up the cKDTree for querying flare locations
-    combined_lat_lon = np.dstack([valid_round_lats.ravel(), valid_round_lons.ravel()])[0]
+    combined_lat_lon = np.dstack([rounded_lats, rounded_lons])[0]
     orbit_kdtree = spatial.cKDTree(combined_lat_lon)
 
     # get atsr orbit time
@@ -84,14 +123,11 @@ def main():
     # load in the flare dataframe
     root = fp.path_to_test_csv_out
     flare_df = pd.read_csv(os.path.join(root, 'all_flares.csv'))
-
-    #flare_df.reset_index(inplace=True)  # get the flare ids
-
     flare_df['dt_start'] = pd.to_datetime(flare_df['dt_start'])
     flare_df['dt_stop'] = pd.to_datetime(flare_df['dt_stop'])
 
     # now subset down the dataframe by time to only those flares
-    # that have been seen burning during this orbit
+    # that have been seen burning before AND after this orbit
     flare_df = flare_df[(flare_df.dt_start <= orbit_time) &
                         (flare_df.dt_stop >= orbit_time)]
     if flare_df.empty:
@@ -100,12 +136,20 @@ def main():
     # set up the flare lats and lons for assessment in kdtree
     flare_lat_lon = np.array(zip(flare_df.lats.values, flare_df.lons.values))
 
-    # get the indexes inside the orbit
+    # compare the flare locations to the potential locations in the orbit
     distances, indexes = orbit_kdtree.query(flare_lat_lon)
-    valid_distances = distances < resolution
-    flare_ids = flare_df.index[valid_distances]
 
-    output_df = pd.DataFrame({'flare_ids': flare_ids})
+    # find the flaring locations in the orbit by distance measure
+    valid_distances = distances <= resolution
+    flare_ids = flare_df.index[valid_distances]
+    matched_lats = combined_lat_lon[indexes[valid_distances], 0]
+    matched_lons = combined_lat_lon[indexes[valid_distances], 1]
+
+    # set up output df
+    output_df = pd.DataFrame({'flare_ids': flare_ids,
+                              'matched_lats': matched_lats,
+                              'matched_lons': matched_lons
+                              })
 
     # write out the recorded flare id's for this orbit
     output_fname = atsr_data.id_string.split('.')[0] + '_sampling.csv'
