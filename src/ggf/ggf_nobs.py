@@ -9,7 +9,7 @@ gas flare file have a potential observation.  This is done as:
 1. Get the start time of the ATSR file
 2. Restrict only those conditions where the flare might have been observed.  That is
 it being a night-time scene and either a) a flaring location (i.e. ref > 0.1) or b) a
-cloud free location (i.e. free of optically thick cloud).  This gives us all possibly
+cloud free location (i.e. free from any cloud).  This gives us all possibly
 flare observation opportunities.
 3. Extract the lats and lons for these potential flaring sites in the ATSR orbit.
 4. Resample the ATSR lats and Lons to 1 arc minute resolution (same as monhtly aggregation)
@@ -20,13 +20,11 @@ burning before and after the ATSR overpass. This means that they were operating
 at the time of the ATSR overpass.
 7. Determine whether these flaring locations are contained within the ATSR orbit
 through comparison against the KDTree.
-8. The KDtree returns distances, any point that is less
-
-. We store the flare ids, the lats and the lons.  The lats and lons are used to make
-sure that the flares that we see are actually reasonable in terms of thier locations.
-I.e. as a sanity check.
-
-
+8. The KDtree returns distances, any flare that is located in the atsr grid at a
+distance less the resampling resolution is considered to be observed in this orbit
+9. For these flares write out the flare ID, along with the ATSR lat and lon that
+was matched to the flare.  The lats and lons are used to make sure that the flares
+that we see are actually reasonable in terms of thier locations. I.e. as a sanity check.
 """
 
 import os
@@ -58,7 +56,8 @@ def make_night_mask(ats_product):
 
 def make_cloud_mask(ats_product):
     cloud_mask = ats_product.get_band('cloud_flags_nadir').read_as_array()
-    return cloud_mask <= 1  # masking needs to be checked
+    # over land or water and cloud free (i.e. bit 0 is set (cloud free land)  or unset(cloud free water))
+    return cloud_mask <= 1
 
 
 def get_swir_mask(ats_product):
@@ -94,10 +93,8 @@ def main():
     resolution = 60 / 3600.  # Degrees. same as with monthly aggregation
 
     # read in the atsr prodcut
-    # path_to_data = sys.argv[1]
-    # path_to_output = sys.argv[2]
-    path_to_data = '/Users/danielfisher/Projects/kcl-globalgasflaring/data/raw/atsr/ATS_TOA_1PUUPA20090608_002920_000065272079_00388_38017_1539.N1'
-    path_to_output = None
+    path_to_data = sys.argv[1]
+    path_to_output = sys.argv[2]
     atsr_data = read_atsr(path_to_data)
 
     # set up masks that define potential flaring sites
@@ -121,8 +118,7 @@ def main():
     orbit_time = datetime(year, month, day)
 
     # load in the flare dataframe
-    root = fp.path_to_test_csv_out
-    flare_df = pd.read_csv(os.path.join(root, 'all_flares.csv'))
+    flare_df = pd.read_csv(os.path.join(fp.path_to_flare_df, 'all_flares.csv'))
     flare_df['dt_start'] = pd.to_datetime(flare_df['dt_start'])
     flare_df['dt_stop'] = pd.to_datetime(flare_df['dt_stop'])
 

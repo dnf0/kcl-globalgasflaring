@@ -21,7 +21,7 @@ elif constants.sensor == 'at1':
     path_to_data = '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p'
 
 # path to flare df on cems
-path_to_flare_df = ''
+path_to_flare_df = '/home/users/dnfisher/ggf_data/'
 
 # Paths to processing output folder on CEMS
 #path_to_cems_output = cems_root + 'data/processed/' + constants.sensor + '/'
