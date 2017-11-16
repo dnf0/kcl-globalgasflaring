@@ -40,13 +40,8 @@ path_to_srfs = local_root + 'data/external/spectral_response_funtions'
 
 
 # Testing paths on mac
-<<<<<<< HEAD
-path_to_test_csv = '/home/users/dnfisher/nceo_aerosolfire/data/temp/'
-path_to_test_csv_out = '/home/users/dnfisher/nceo_aerosolfire/data/temp/merged'
-=======
 path_to_test_csv = local_root + '/data/processed'
 path_to_test_csv_out = local_root + 'data/processed/merged_months'
->>>>>>> e11c194dd52e862617454acebd915a894544db2b
 
 path_to_aatsr_test_data = local_root + 'raw/atsr/'
 path_to_atsr2_test_data = ''
