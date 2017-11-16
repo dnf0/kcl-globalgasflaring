@@ -14,15 +14,11 @@ def myround(x, dec=20, base=.000005):
 
 def main():
 
-<<<<<<< HEAD
-    for sensor in ['at1', 'at2']:
-=======
     # aggregation resolution
     # resolution = 15. / 3600  # in arcseconds. 3600 arc seconds in a degree, and want nearest 15 arcseconds (~0.5km)
     resolution = 60. / 3600  # arseconds ~2km
 
     for sensor in ['ats', 'at1', 'at2']:
->>>>>>> e11c194dd52e862617454acebd915a894544db2b
         year_dir = os.path.join(fp.path_to_test_csv, sensor)
         years = os.listdir(year_dir)
         for year in years:
@@ -54,15 +50,10 @@ def main():
                 df_for_month['times_seen_in_month'] = np.ones(df_for_month.shape[0])
 
                 # compute the mean FRP TODO extent this to other values
-<<<<<<< HEAD
-                df_for_month = df_for_month.groupby('clusters').agg({'frp': np.mean, 'lats': np.mean, 'lons': np.mean})
-	
-=======
                 df_for_month = df_for_month.groupby('cluster_ids').agg({'frp': np.mean,
                                                                      'lats': np.mean, 'lons': np.mean,
                                                                      'times_seen_in_month': np.sum})
 
->>>>>>> e11c194dd52e862617454acebd915a894544db2b
                 # dump to csv
                 path_to_out = os.path.join(fp.path_to_test_csv_out, sensor, year)
                 if not os.path.exists(path_to_out):
