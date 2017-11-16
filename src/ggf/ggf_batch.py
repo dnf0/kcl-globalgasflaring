@@ -99,7 +99,7 @@ for yr in years:
                                                  out_dir, True)
             g = os.fdopen(gd, "w")
             g.write('export PYTHONPATH=$PYTHONPATH:/home/users/dnfisher/projects/kcl-globalgasflaring/\n')
-            g.write(filepaths.ggf_dir + 'ggf_processor.py ' +
+            g.write(filepaths.ggf_dir + 'ggf_nobs.py ' +
                     path_to_data + ' ' +
                     out_dir + " \n")
             g.write("rm -f " + script_file + "\n")
