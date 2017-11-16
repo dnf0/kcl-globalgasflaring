@@ -29,7 +29,7 @@ def main():
                                                             sensor,
                                                             year,
                                                             month,
-                                                            "*", "*.csv"))
+                                                            "*", "*_flares.csv"))
                 month_flares = []
                 for f in csv_files_for_month:
                     try:
