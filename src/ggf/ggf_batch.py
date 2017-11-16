@@ -76,7 +76,8 @@ years = os.listdir(filepaths.path_to_data)
 for yr in years:
     if len(yr) > 4:
         continue
-    if ('at2' in filepaths.path_to_data) & (yr > 2003):
+    if ('at2' in filepaths.path_to_data) & (int(yr) > 2003):
+        print 'continuing...', yr
         continue
 
     path = os.path.join(filepaths.path_to_data, yr)

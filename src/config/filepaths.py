@@ -20,6 +20,9 @@ elif constants.sensor == 'at2':
 elif constants.sensor == 'at1':
     path_to_data = '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p'
 
+# path to flare df on cems
+path_to_flare_df = '/home/users/dnfisher/ggf_data/'
+
 # Paths to processing output folder on CEMS
 #path_to_cems_output = cems_root + 'data/processed/' + constants.sensor + '/'
 path_to_cems_output = '/home/users/dnfisher/nceo_aerosolfire/data/temp/' + constants.sensor 
@@ -27,6 +30,7 @@ path_to_cems_output = '/home/users/dnfisher/nceo_aerosolfire/data/temp/' + const
 ###########  LOCAL PATHS ###########
 
 local_root = '/Users/danielfisher/Projects/kcl-globalgasflaring/'
+#local_root = '/Users/dnf/Projects/kcl-globalgasflaring/'
 
 # paths for calculating in-band solar irradiance
 path_to_solar_data = local_root + 'data/external/solar_irradiance/SOLAR_IN.txt'
@@ -36,8 +40,13 @@ path_to_srfs = local_root + 'data/external/spectral_response_funtions'
 
 
 # Testing paths on mac
+<<<<<<< HEAD
 path_to_test_csv = '/home/users/dnfisher/nceo_aerosolfire/data/temp/'
 path_to_test_csv_out = '/home/users/dnfisher/nceo_aerosolfire/data/temp/merged'
+=======
+path_to_test_csv = local_root + '/data/processed'
+path_to_test_csv_out = local_root + 'data/processed/merged_months'
+>>>>>>> e11c194dd52e862617454acebd915a894544db2b
 
 path_to_aatsr_test_data = local_root + 'raw/atsr/'
 path_to_atsr2_test_data = ''
