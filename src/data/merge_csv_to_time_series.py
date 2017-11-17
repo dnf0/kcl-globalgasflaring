@@ -30,6 +30,96 @@ import pandas as pd
 import src.config.filepaths as fp
 
 
+def get_year_month(f):
+    split_f = f.split('/')
+    year = split_f[-2]
+    month = split_f[-1][0:2]
+    return year, month
+
+
+def construct_annual_df(df_files_for_annum):
+    annual_df_list = []
+    for i, f in enumerate(df_files_for_annum):
+        annual_df_list.append(pd.read_csv(f))
+
+    # concatenate the monthly dataframes
+    annual_df = pd.concat(annual_df_list, ignore_index=True)
+    return annual_df
+
+
+def extend_annual_df(annual_df):
+    annual_df['times_seen_in_annum'] = np.ones(annual_df.shape[0])
+    annual_df['frp_std'] = annual_df['frp']
+    annual_df['mean_monthly_times_seen'] = annual_df['times_seen_in_month']
+    annual_df['std_monthly_times_seen'] = annual_df['times_seen_in_month']
+
+
+def group_annual_df(annual_df):
+    return annual_df.groupby(['lats', 'lons']).agg({'frp': np.median,
+                                                    'frp_std': np.std,
+                                                    'lats': np.mean,
+                                                    'lons': np.mean,
+                                                    'times_seen_in_annum': np.sum,
+                                                    'mean_monthly_times_seen': np.mean,
+                                                    'std_monthly_times_seen': np.std,
+                                                    })
+
+
+def detect_persistent_hotspots(grouped_annual_df):
+    return grouped_annual_df[grouped_annual_df['times_seen_in_annum'] >= 4]
+
+
+def generate_coords(df):
+    return zip(df.lats.values, df.lons.values)
+
+
+def generate_12_annum_hotspot_df(list_of_12_hotspot_dfs, annual_hotspot_df):
+    # we need to do a moving detector over the current month, and we need to look from 12 months
+    # before to 12 months after to get all possible flares that might be burning during the current month.
+    # So lets store 12 sets annums.
+    list_of_12_hotspot_dfs.append(annual_hotspot_df)
+    if len(list_of_12_hotspot_dfs) == 12:
+        list_of_12_hotspot_dfs.pop(0)
+    _12_hotspot_dfs = pd.concat(list_of_12_hotspot_dfs, ignore_index=True)
+
+    # now subset the month to only valid flaring locations do this by merging on lats and lons
+    # but first we need to create a combined column of lats and lons in the set of 12 annums
+    _12_hotspot_dfs['coords'] = generate_coords(_12_hotspot_dfs)
+
+    # we only want to keep coordinates from the regrouped annual dataframe
+    _12_hotspot_dfs = _12_hotspot_dfs['coords']
+
+    # reduce down to unique coords
+    _12_hotspot_dfs.drop_duplicates(inplace=True)
+    return _12_hotspot_dfs
+
+
+def add_year_month_to_df(df, year, month):
+    df['year'] = year
+    df['month'] = month
+
+
+def process_missing_months(f, _12_annum_hotspot_location_df):
+
+    # get output
+    month_flare_out_path = f.replace('.csv', '_flaring_subset.csv')
+
+    # read in df and setup coords varialbe
+    current_month_df = pd.read_csv(f)
+    current_month_df['coords'] = generate_coords(current_month_df)
+
+    # get hotspots for month
+    month_hotspot_df = current_month_df.merge(_12_annum_hotspot_location_df, on=['coords'])
+
+    # and year month data
+    year, month = get_year_month(f)
+    month_hotspot_df['year'] = year
+    month_hotspot_df['month'] = month
+
+    # save df
+    month_hotspot_df.to_csv(month_flare_out_path)
+
+
 def main():
     # define sensor
     sensor = 'ats'
@@ -44,100 +134,57 @@ def main():
     # assign 'time' id to csv files
     n_files = np.arange(len(csv_filepaths))
 
-    # make annual df list to hold set of 12 annual dataframes
-    list_of_grouped_annual_dfs = []
+    # make annual df list to hold set of 12 annual dataframes of hotspot locations
+    list_of_12_hotspot_dfs = []
 
     # iterate over csv files year blocks
     for start_file_index in n_files[:-12]:
 
+        # setup the output paths:
+        month_flare_out_path = df_file_for_current_month.replace('.csv', '_flaring_subset.csv')
+        annual_flare_out_path = df_file_for_current_month.replace('.csv', '_flaring_subset_annual.csv')
+
         # get the df files for this block
-        annual_df_files = csv_filepaths[start_file_index:start_file_index + 12]
+        df_file_for_current_month = csv_filepaths[start_file_index]
+        df_files_for_annum = csv_filepaths[start_file_index:start_file_index + 12]
+
+        # setup current month df
+        current_month_df = pd.read_csv(df_file_for_current_month)
+        current_month_df['coords'] = generate_coords(current_month_df)
 
         # read the twelve months from the current month, retain the current month dataframe
-        annual_df_list = []
-        for i, f in enumerate(annual_df_files):
-
-            if i == 0:
-
-                split_f = f.split('/')
-                year = split_f[-2]
-                month = split_f[-1][0:2]
-
-                current_month_df = pd.read_csv(f)
-                month_flare_out_path = f.replace('.csv', '_flaring_subset.csv')
-                annual_flare_out_path = f.replace('.csv', '_flaring_subset_annual.csv')
-
-            annual_df_list.append(pd.read_csv(f))
-
-        # concatenate the monthly dataframes
-        annual_df = pd.concat(annual_df_list, ignore_index=True)
+        annual_df = construct_annual_df(df_files_for_annum)
 
         # add in useful groupby metrics
-        annual_df['times_seen_in_annum'] = np.ones(annual_df.shape[0])
-        annual_df['frp_std'] = annual_df['frp']
-        annual_df['mean_monthly_times_seen'] = annual_df['times_seen_in_month']
-        annual_df['std_monthly_times_seen'] = annual_df['times_seen_in_month']
+        extend_annual_df(annual_df)
 
         # now group the annual dataframe by lats and lons
-        grouped_annual_df = annual_df.groupby(['lats', 'lons']).agg({'frp': np.median,
-                                                                     'frp_std': np.std,
-                                                                     'lats': np.mean,
-                                                                     'lons': np.mean,
-                                                                     'times_seen_in_annum': np.sum,
-                                                                     'mean_monthly_times_seen': np.mean,
-                                                                     'std_monthly_times_seen': np.std,
-                                                                     })
+        grouped_annual_df = group_annual_df(annual_df)
 
-        # now retain only those locations with flaring activity (i.e. count >= 4)
-        grouped_annual_df = grouped_annual_df[grouped_annual_df['times_seen_in_annum'] >= 4]
+        # get the annual hotspots
+        annual_hotspot_df = detect_persistent_hotspots(grouped_annual_df)
 
-        # we need to do a moving detector over the current month, and we need to look from 12 months
-        # before to 12 months after to get all possible flares that might be burning during the current month.
-        # So lets store 12 sets annums.
-        list_of_grouped_annual_dfs.append(grouped_annual_df)
-        if len(list_of_grouped_annual_dfs) == 12:
-            list_of_grouped_annual_dfs.pop(0)
-        grouped_annual_dfs = pd.concat(list_of_grouped_annual_dfs, ignore_index=True)
+        # append current annum to the 12 annum hotspot location dataframe
+        _12_annum_hotspot_location_df = generate_12_annum_hotspot_df(list_of_12_hotspot_dfs, annual_hotspot_df)
 
-        # now group again by lat and lon to reduce to the unique flaring locations in the 12 annums
-        # and reset index to get the lats/lons back out.
-        regrouped_annual_dfs = grouped_annual_dfs.groupby(['lats', 'lons'], as_index=False).agg({'frp': np.median})
-
-        # now subset the month to only valid flaring locations do this by merging on lats and lons
-        # but first we need to create a combined column of lats and lons in the set of 12 annums
-        regrouped_annual_dfs['coords'] = zip(regrouped_annual_dfs.lats.values, regrouped_annual_dfs.lons.values)
-        current_month_df['coords'] = zip(current_month_df.lats.values, current_month_df.lons.values)
-
-        # we only want to keep coordinates from the regrouped annual dataframe
-        regrouped_annual_dfs = regrouped_annual_dfs['coords']
-
-        # now do the merge
-        current_month_df = current_month_df.merge(regrouped_annual_dfs, on=['coords'])
+        # now do the merge so that we get all flares detected over all overlapping 12 month periods
+        # for the current month
+        month_hotspot_df = current_month_df.merge(_12_annum_hotspot_location_df, on=['coords'])
 
         # add in the year and the month to the dataframes to save doing it elsewhere
-        grouped_annual_df['year'] = year
-        grouped_annual_df['month'] = month
-        current_month_df['year'] = year
-        current_month_df['month'] = month
+        year, month = get_year_month(df_file_for_current_month)
+        add_year_month_to_df(annual_hotspot_df, year, month)
+        add_year_month_to_df(month_hotspot_df, year, month)
 
         # now save the monthly and annual dataframes
-        grouped_annual_df.to_csv(annual_flare_out_path)
-        current_month_df.to_csv(month_flare_out_path)
+        annual_hotspot_df.to_csv(annual_flare_out_path)
+        month_hotspot_df.to_csv(month_flare_out_path)
 
     # the months from n_files[:-12] have not been processed, do them now using the last annual dataframe
-    for f in csv_filepaths[-12:]:
+    for df_file_for_current_month in csv_filepaths[-12:]:
+        process_missing_months(df_file_for_current_month,
+                               _12_annum_hotspot_location_df)
 
-        split_f = f.split('/')
-        year = split_f[-2]
-        month = split_f[-1][0:2]
-
-        month_flare_out_path = f.replace('.csv', '_flaring_subset.csv')
-        current_month_df = pd.read_csv(f)
-        current_month_df['coords'] = zip(current_month_df.lats.values, current_month_df.lons.values)
-        current_month_df = current_month_df.merge(regrouped_annual_dfs, on=['coords'])
-        current_month_df['year'] = year
-        current_month_df['month'] = month
-        current_month_df.to_csv(month_flare_out_path)
 
 
 if __name__ == "__main__":
