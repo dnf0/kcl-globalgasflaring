@@ -99,7 +99,7 @@ def add_year_month_to_df(df, year, month):
     df['month'] = month
 
 
-def process_missing_months(f, _12_annum_hotspot_location_df):
+def process_missing_months(f, _12_annum_hotspot_location_series):
 
     # get output
     month_flare_out_path = f.replace('.csv', '_flaring_subset.csv')
@@ -109,7 +109,7 @@ def process_missing_months(f, _12_annum_hotspot_location_df):
     current_month_df['coords'] = generate_coords(current_month_df)
 
     # get hotspots for month
-    month_hotspot_df = current_month_df.merge(_12_annum_hotspot_location_df, on=['coords'])
+    month_hotspot_df = current_month_df.merge(_12_annum_hotspot_location_series.to_frame(), on=['coords'])
 
     # and year month data
     year, month = get_year_month(f)
@@ -117,12 +117,12 @@ def process_missing_months(f, _12_annum_hotspot_location_df):
     month_hotspot_df['month'] = month
 
     # save df
-    month_hotspot_df.to_csv(month_flare_out_path)
+    month_hotspot_df.to_csv(month_flare_out_path, index=False)
 
 
 def main():
     # define sensor
-    sensor = 'ats'
+    sensor = 'at1'
 
     # get all csv files for sensor
     root = os.path.join(fp.path_to_test_csv_out, sensor)
@@ -140,13 +140,13 @@ def main():
     # iterate over csv files year blocks
     for start_file_index in n_files[:-12]:
 
-        # setup the output paths:
-        month_flare_out_path = df_file_for_current_month.replace('.csv', '_flaring_subset.csv')
-        annual_flare_out_path = df_file_for_current_month.replace('.csv', '_flaring_subset_annual.csv')
-
         # get the df files for this block
         df_file_for_current_month = csv_filepaths[start_file_index]
         df_files_for_annum = csv_filepaths[start_file_index:start_file_index + 12]
+
+        # setup the output paths:
+        month_flare_out_path = df_file_for_current_month.replace('.csv', '_flaring_subset.csv')
+        annual_flare_out_path = df_file_for_current_month.replace('.csv', '_flaring_subset_annual.csv')
 
         # setup current month df
         current_month_df = pd.read_csv(df_file_for_current_month)
@@ -164,12 +164,12 @@ def main():
         # get the annual hotspots
         annual_hotspot_df = detect_persistent_hotspots(grouped_annual_df)
 
-        # append current annum to the 12 annum hotspot location dataframe
-        _12_annum_hotspot_location_df = generate_12_annum_hotspot_df(list_of_12_hotspot_dfs, annual_hotspot_df)
+        # append current annum to the 12 annum hotspot location series
+        _12_annum_hotspot_location_series = generate_12_annum_hotspot_df(list_of_12_hotspot_dfs, annual_hotspot_df)
 
         # now do the merge so that we get all flares detected over all overlapping 12 month periods
         # for the current month
-        month_hotspot_df = current_month_df.merge(_12_annum_hotspot_location_df, on=['coords'])
+        month_hotspot_df = current_month_df.merge(_12_annum_hotspot_location_series.to_frame(), on=['coords'])
 
         # add in the year and the month to the dataframes to save doing it elsewhere
         year, month = get_year_month(df_file_for_current_month)
@@ -177,13 +177,13 @@ def main():
         add_year_month_to_df(month_hotspot_df, year, month)
 
         # now save the monthly and annual dataframes
-        annual_hotspot_df.to_csv(annual_flare_out_path)
-        month_hotspot_df.to_csv(month_flare_out_path)
+        annual_hotspot_df.to_csv(annual_flare_out_path, index=False)
+        month_hotspot_df.to_csv(month_flare_out_path, index=False)
 
     # the months from n_files[:-12] have not been processed, do them now using the last annual dataframe
     for df_file_for_current_month in csv_filepaths[-12:]:
         process_missing_months(df_file_for_current_month,
-                               _12_annum_hotspot_location_df)
+                               _12_annum_hotspot_location_series)
 
 
 

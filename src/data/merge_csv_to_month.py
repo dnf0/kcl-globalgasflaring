@@ -52,24 +52,18 @@ def generate_month_df(csv_files_for_month, resolution):
 
             month_flares.append(orbit_df)
         except Exception, e:
-            logger.warning('Could not load csv file with error: ' + str(e))
+            logger.warning('Could not load csv ' + f + ' file with error: ' + str(e))
 
     return pd.concat(month_flares, ignore_index=True)
 
 
 def extend_month_df(month_df):
     month_df['times_seen_in_month'] = np.ones(month_df.shape[0])
-    month_df['lats_std'] = month_df['lats']
-    month_df['lons_std'] = month_df['lons']
     month_df['frp_std'] = month_df['frp']
 
 
 def group_month(month_df):
-    return month_df.groupby(['lats', 'lons']).agg({'frp': np.median, 'frp_std': np.std,
-                                                                          'lats_std': np.std, 'lons_std': np.std,
-                                                                          'times_seen_in_month': np.sum})
-
-
+    return month_df.groupby(['lats', 'lons']).agg({'frp': np.median, 'frp_std': np.std, 'times_seen_in_month': np.sum})
 
 
 def main():
@@ -94,7 +88,7 @@ def main():
                 path_to_out = os.path.join(fp.path_to_test_csv_out, sensor, year)
                 if not os.path.exists(path_to_out):
                     os.makedirs(path_to_out)
-                month_df_grouped.to_csv(os.path.join(path_to_out, month + '.csv'))
+                month_df_grouped.to_csv(os.path.join(path_to_out, month + '.csv'), index=False)
 
 
 if __name__ == '__main__':
