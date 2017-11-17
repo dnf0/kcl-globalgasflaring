@@ -31,14 +31,50 @@ import numpy as np
 import src.config.filepaths as fp
 
 
+def select_csv_files_for_month(sensor, year, month):
+    return glob.glob(os.path.join(fp.path_to_test_csv, sensor, year, month, "*", "*_flares.csv"))
+
+
 def myround(x, dec=20, base=.000005):
     return np.round(base * np.round(x/base), dec)
+
+
+def generate_month_df(csv_files_for_month, resolution):
+    month_flares = []
+    for f in csv_files_for_month:
+        try:
+
+            orbit_df = pd.read_csv(f)
+            orbit_df['lons'] = myround(orbit_df['lons'].values, base=resolution)
+            orbit_df['lats'] = myround(orbit_df['lats'].values, base=resolution)
+            orbit_df = orbit_df.groupby(['lons', 'lats']).agg({'frp': np.mean})  # here group each flare
+            orbit_df.reset_index(inplace=True)
+
+            month_flares.append(orbit_df)
+        except Exception, e:
+            logger.warning('Could not load csv file with error: ' + str(e))
+
+    return pd.concat(month_flares, ignore_index=True)
+
+
+def extend_month_df(month_df):
+    month_df['times_seen_in_month'] = np.ones(month_df.shape[0])
+    month_df['lats_std'] = month_df['lats']
+    month_df['lons_std'] = month_df['lons']
+    month_df['frp_std'] = month_df['frp']
+
+
+def group_month(month_df):
+    return month_df.groupby(['lats', 'lons']).agg({'frp': np.median, 'frp_std': np.std,
+                                                                          'lats_std': np.std, 'lons_std': np.std,
+                                                                          'times_seen_in_month': np.sum})
+
+
 
 
 def main():
 
     # aggregation resolution
-    # resolution = 15. / 3600  # in arcseconds. 3600 arc seconds in a degree, and want nearest 15 arcseconds (~0.5km)
     resolution = 60. / 3600  # arseconds ~2km
 
     for sensor in ['ats', 'at1', 'at2']:
@@ -48,37 +84,10 @@ def main():
             month_dir = os.path.join(year_dir, year)
             months = os.listdir(month_dir)
             for month in months:
-                csv_files_for_month = glob.glob(os.path.join(fp.path_to_test_csv,
-                                                            sensor,
-                                                            year,
-                                                            month,
-                                                            "*", "*_flares.csv"))
-                month_flares = []
-                for f in csv_files_for_month:
-                    try:
-
-                        orbit_df = pd.read_csv(f)
-                        orbit_df['lons'] = myround(orbit_df['lons'].values, base=resolution)
-                        orbit_df['lats'] = myround(orbit_df['lats'].values, base=resolution)
-                        orbit_df = orbit_df.groupby(['lons', 'lats']).agg({'frp': np.mean})
-                        orbit_df.reset_index(inplace=True)
-
-                        month_flares.append(orbit_df)
-                    except Exception, e:
-                        logger.warning('Could not load csv file with error: ' + str(e))
-
-                month_df = pd.concat(month_flares, ignore_index=True)
-
-                # add in ones for counting number of flare obs in months
-                month_df['times_seen_in_month'] = np.ones(month_df.shape[0])
-
-                # compute the mean FRP
-                month_df['lats_std'] = month_df['lats']
-                month_df['lons_std'] = month_df['lons']
-                month_df['frp_std'] = month_df['frp']
-                month_df_grouped = month_df.groupby(['lats', 'lons']).agg({'frp': np.median, 'frp_std': np.std,
-                                                                          'lats_std': np.std, 'lons_std': np.std,
-                                                                          'times_seen_in_month': np.sum})
+                csv_files_for_month = select_csv_files_for_month(sensor, year, month)
+                month_df = generate_month_df(csv_files_for_month, resolution)
+                extend_month_df(month_df)
+                month_df_grouped = group_month(month_df)
                 month_df_grouped.reset_index(inplace=True)
 
                 # dump to csv

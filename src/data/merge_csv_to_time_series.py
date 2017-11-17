@@ -58,6 +58,11 @@ def main():
         for i, f in enumerate(annual_df_files):
 
             if i == 0:
+
+                split_f = f.split('/')
+                year = split_f[-2]
+                month = split_f[-1][0:2]
+
                 current_month_df = pd.read_csv(f)
                 month_flare_out_path = f.replace('.csv', '_flaring_subset.csv')
                 annual_flare_out_path = f.replace('.csv', '_flaring_subset_annual.csv')
@@ -69,8 +74,6 @@ def main():
 
         # add in useful groupby metrics
         annual_df['times_seen_in_annum'] = np.ones(annual_df.shape[0])
-        annual_df['lat_std'] = annual_df['lats']
-        annual_df['lon_std'] = annual_df['lons']
         annual_df['frp_std'] = annual_df['frp']
         annual_df['mean_monthly_times_seen'] = annual_df['times_seen_in_month']
         annual_df['std_monthly_times_seen'] = annual_df['times_seen_in_month']
@@ -80,8 +83,6 @@ def main():
                                                                      'frp_std': np.std,
                                                                      'lats': np.mean,
                                                                      'lons': np.mean,
-                                                                     'lats_std': np.std,
-                                                                     'lons_std': np.std,
                                                                      'times_seen_in_annum': np.sum,
                                                                      'mean_monthly_times_seen': np.mean,
                                                                      'std_monthly_times_seen': np.std,
@@ -105,9 +106,19 @@ def main():
         # now subset the month to only valid flaring locations do this by merging on lats and lons
         # but first we need to create a combined column of lats and lons in the set of 12 annums
         regrouped_annual_dfs['coords'] = zip(regrouped_annual_dfs.lats.values, regrouped_annual_dfs.lons.values)
-
         current_month_df['coords'] = zip(current_month_df.lats.values, current_month_df.lons.values)
+
+        # we only want to keep coordinates from the regrouped annual dataframe
+        regrouped_annual_dfs = regrouped_annual_dfs['coords']
+
+        # now do the merge
         current_month_df = current_month_df.merge(regrouped_annual_dfs, on=['coords'])
+
+        # add in the year and the month to the dataframes to save doing it elsewhere
+        grouped_annual_df['year'] = year
+        grouped_annual_df['month'] = month
+        current_month_df['year'] = year
+        current_month_df['month'] = month
 
         # now save the monthly and annual dataframes
         grouped_annual_df.to_csv(annual_flare_out_path)
@@ -115,10 +126,17 @@ def main():
 
     # the months from n_files[:-12] have not been processed, do them now using the last annual dataframe
     for f in csv_filepaths[-12:]:
+
+        split_f = f.split('/')
+        year = split_f[-2]
+        month = split_f[-1][0:2]
+
         month_flare_out_path = f.replace('.csv', '_flaring_subset.csv')
         current_month_df = pd.read_csv(f)
         current_month_df['coords'] = zip(current_month_df.lats.values, current_month_df.lons.values)
         current_month_df = current_month_df.merge(regrouped_annual_dfs, on=['coords'])
+        current_month_df['year'] = year
+        current_month_df['month'] = month
         current_month_df.to_csv(month_flare_out_path)
 
 
