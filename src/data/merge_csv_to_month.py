@@ -1,3 +1,26 @@
+"""
+Merge gas flare detections to monthly samples.
+
+The first step in the algorithm is to reduce the resolution of the data:
+
+1. Iterate over all detection files,
+2. Adjust the lats, lons to the specified resolution
+3. Reduce the flares based on the adjusted lats and lons, taking the mean.
+4. Append the reduced flares to the dataframe
+
+This dataframe will give all the monthly observations.  We need to take the mean for the
+orbit, as this will give a proper representation of the flare over the cluster.
+
+
+The second step in the algorithm is to aggregate the reduced resolution data to monthly
+2. Append a counter to the dataframe
+3. Reduce by lats and lons, taking the median frp, and the count, also record lats and lons.
+ Taking the median over the month is better as we can assume that the flare burns consistently
+ and that the majority of changes are caused by variation in cloud cover.  Taking the median
+ will give the cloud free result assuming there is optically thin cloud < 60% of the time.
+
+"""
+
 import os
 import glob
 import logging
@@ -33,32 +56,38 @@ def main():
                 month_flares = []
                 for f in csv_files_for_month:
                     try:
-                        month_flares.append(pd.read_csv(f))
+
+                        orbit_df = pd.read_csv(f)
+                        orbit_df['lons'] = myround(orbit_df['lons'].values, base=resolution)
+                        orbit_df['lats'] = myround(orbit_df['lats'].values, base=resolution)
+                        orbit_df = orbit_df.groupby(['lons', 'lats']).agg({'frp': np.mean,
+                                                                        'lats': np.mean, 'lons': np.mean})
+                        orbit_df.reset_index(inplace=True)
+
+                        month_flares.append(orbit_df)
                     except Exception, e:
                         logger.warning('Could not load csv file with error: ' + str(e))
 
-                df_for_month = pd.concat(month_flares, ignore_index=True)
+                month_df = pd.concat(month_flares, ignore_index=True)
 
-                # cluster for the month by first rounding to the desired resolution
-                # and then getting the set of unique locations.  Much faster than DB scan.
-                df_for_month['lons'] = myround(df_for_month['lons'].values, base=resolution)
-                df_for_month['lats'] = myround(df_for_month['lats'].values, base=resolution)
-                lat_lon_tuples = zip(df_for_month.lats, df_for_month.lons)
-                _, cluster_ids = np.unique(lat_lon_tuples, axis=0, return_inverse=True)
+                # add in ones for counting number of flare obs in months
+                month_df['times_seen_in_month'] = np.ones(month_df.shape[0])
 
-                df_for_month['cluster_ids'] = cluster_ids
-                df_for_month['times_seen_in_month'] = np.ones(df_for_month.shape[0])
-
-                # compute the mean FRP TODO extent this to other values
-                df_for_month = df_for_month.groupby('cluster_ids').agg({'frp': np.mean,
-                                                                     'lats': np.mean, 'lons': np.mean,
-                                                                     'times_seen_in_month': np.sum})
+                # compute the mean FRP
+                month_df['lats_std'] = month_df['lats']
+                month_df['lons_std'] = month_df['lons']
+                month_df['frp_std'] = month_df['frp']
+                month_df = month_df.groupby(['lats', 'lons']).agg({'frp': np.median, 'frp_std': np.std,
+                                                                   'lats': np.mean, 'lons': np.mean,
+                                                                   'lats_std': np.std, 'lons_std': np.std,
+                                                                   'times_seen_in_month': np.sum})
+                month_df.reset_index(inplace=True)
 
                 # dump to csv
                 path_to_out = os.path.join(fp.path_to_test_csv_out, sensor, year)
                 if not os.path.exists(path_to_out):
                     os.makedirs(path_to_out)
-                df_for_month.to_csv(os.path.join(path_to_out, month + '.csv'))
+                month_df.to_csv(os.path.join(path_to_out, month + '.csv'))
 
 
 if __name__ == '__main__':
