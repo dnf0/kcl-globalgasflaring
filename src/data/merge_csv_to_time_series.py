@@ -62,8 +62,8 @@ def main():
 
         # add in useful groupby metrics
         annual_df['times_seen_in_annum'] = np.ones(annual_df.shape[0])
-        annual_df['lat_std'] = annual_df['lat']
-        annual_df['lon_std'] = annual_df['lon']
+        annual_df['lat_std'] = annual_df['lats']
+        annual_df['lon_std'] = annual_df['lons']
         annual_df['frp_std'] = annual_df['frp']
         annual_df['mean_monthly_times_seen'] = annual_df['times_seen_in_month']
         annual_df['std_monthly_times_seen'] = annual_df['times_seen_in_month']

@@ -60,8 +60,7 @@ def main():
                         orbit_df = pd.read_csv(f)
                         orbit_df['lons'] = myround(orbit_df['lons'].values, base=resolution)
                         orbit_df['lats'] = myround(orbit_df['lats'].values, base=resolution)
-                        orbit_df = orbit_df.groupby(['lons', 'lats']).agg({'frp': np.mean,
-                                                                        'lats': np.mean, 'lons': np.mean})
+                        orbit_df = orbit_df.groupby(['lons', 'lats']).agg({'frp': np.mean})
                         orbit_df.reset_index(inplace=True)
 
                         month_flares.append(orbit_df)
@@ -78,7 +77,6 @@ def main():
                 month_df['lons_std'] = month_df['lons']
                 month_df['frp_std'] = month_df['frp']
                 month_df_grouped = month_df.groupby(['lats', 'lons']).agg({'frp': np.median, 'frp_std': np.std,
-                                                                          'lats': np.mean, 'lons': np.mean,
                                                                           'lats_std': np.std, 'lons_std': np.std,
                                                                           'times_seen_in_month': np.sum})
                 month_df_grouped.reset_index(inplace=True)

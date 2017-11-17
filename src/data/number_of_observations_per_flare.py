@@ -21,7 +21,10 @@ def main():
         years = os.listdir(year_dir)
         for year in years:
             month_dir = os.path.join(year_dir, year)
-            months = os.listdir(month_dir)
+            try:
+                months = os.listdir(month_dir)
+            except:
+                continue
             for month in months:
                 csv_files_for_month = glob.glob(os.path.join(fp.path_to_test_csv,
                                                             sensor,
