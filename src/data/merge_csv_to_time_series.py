@@ -32,7 +32,7 @@ import src.config.filepaths as fp
 
 def main():
     # define sensor
-    sensor = 'ats'
+    sensor = 'at1'
 
     # get all csv files for sensor
     root = os.path.join(fp.path_to_test_csv_out, sensor)
