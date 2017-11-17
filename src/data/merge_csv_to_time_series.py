@@ -87,7 +87,10 @@ def main():
         grouped_annual_df.to_csv(annual_flare_out_path)
 
         # now subset the month to only valid flaring locations do this by merging on lats and lons
-        current_month_df.merge(grouped_annual_df, on=['lats', 'lons'])
+        # but first we need to create a combined column of lats and lons
+        grouped_annual_df['coords'] = zip(grouped_annual_df.lats.values, grouped_annual_df.lons.values)
+        current_month_df['coords'] = zip(current_month_df.lats.values, current_month_df.lons.values)
+        current_month_df.merge(grouped_annual_df, on=['coords'])
 
         # now save the monthly dataframe
         current_month_df.to_csv(month_flare_out_path)
@@ -96,7 +99,8 @@ def main():
     for f in csv_filepaths[-12:]:
         month_flare_out_path = f.replace('.csv', '_flaring_subset.csv')
         current_month_df = pd.read_csv(f)
-        current_month_df.merge(grouped_annual_df, on=['lats', 'lons'])
+        current_month_df['coords'] = zip(current_month_df.lats.values, current_month_df.lons.values)
+        current_month_df.merge(grouped_annual_df, on=['coords'])
         current_month_df.to_csv(month_flare_out_path)
 
 
