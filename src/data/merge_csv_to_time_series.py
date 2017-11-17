@@ -44,6 +44,9 @@ def main():
     # assign 'time' id to csv files
     n_files = np.arange(len(csv_filepaths))
 
+    # make annual df list to hold set of 12 annual dataframes
+    list_of_grouped_annual_dfs = []
+
     # iterate over csv files year blocks
     for start_file_index in n_files[:-12]:
 
@@ -87,13 +90,27 @@ def main():
         # now retain only those locations with flaring activity (i.e. count >= 4)
         grouped_annual_df = grouped_annual_df[grouped_annual_df['times_seen_in_annum'] >= 4]
 
-        # now subset the month to only valid flaring locations do this by merging on lats and lons
-        # but first we need to create a combined column of lats and lons
-        grouped_annual_df['coords'] = zip(grouped_annual_df.lats.values, grouped_annual_df.lons.values)
-        current_month_df['coords'] = zip(current_month_df.lats.values, current_month_df.lons.values)
-        current_month_df = current_month_df.merge(grouped_annual_df, on=['coords'])
+        # we need to do a moving detector over the current month, and we need to look from 12 months
+        # before to 12 months after to get all possible flares that might be burning during the current month.
+        # So lets store 12 sets annums.
+        list_of_grouped_annual_dfs.append(grouped_annual_df)
+        if len(list_of_grouped_annual_dfs) == 12:
+            list_of_grouped_annual_dfs.pop(0)
+        grouped_annual_dfs = pd.concat(list_of_grouped_annual_dfs, ignore_index=True)
 
-        # now save the monthly dataframe
+        # now group again by lat and lon to reduce to the unique flaring locations in the 12 annums
+        # and reset index to get the lats/lons back out.
+        regrouped_annual_dfs = grouped_annual_dfs.groupby(['lats', 'lons'])
+        regrouped_annual_dfs.reset_index(inplace=True)
+
+        # now subset the month to only valid flaring locations do this by merging on lats and lons
+        # but first we need to create a combined column of lats and lons in the set of 12 annums
+        regrouped_annual_dfs['coords'] = zip(regrouped_annual_dfs.lats.values, regrouped_annual_dfs.lons.values)
+
+        current_month_df['coords'] = zip(current_month_df.lats.values, current_month_df.lons.values)
+        current_month_df = current_month_df.merge(regrouped_annual_dfs, on=['coords'])
+
+        # now save the monthly and annual dataframes
         grouped_annual_df.to_csv(annual_flare_out_path)
         current_month_df.to_csv(month_flare_out_path)
 
