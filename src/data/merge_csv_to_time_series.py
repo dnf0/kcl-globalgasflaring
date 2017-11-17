@@ -32,7 +32,7 @@ import src.config.filepaths as fp
 
 def main():
     # define sensor
-    sensor = 'at1'
+    sensor = 'ats'
 
     # get all csv files for sensor
     root = os.path.join(fp.path_to_test_csv_out, sensor)
@@ -100,8 +100,7 @@ def main():
 
         # now group again by lat and lon to reduce to the unique flaring locations in the 12 annums
         # and reset index to get the lats/lons back out.
-        regrouped_annual_dfs = grouped_annual_dfs.groupby(['lats', 'lons'])
-        regrouped_annual_dfs.reset_index(inplace=True)
+        regrouped_annual_dfs = grouped_annual_dfs.groupby(['lats', 'lons'], as_index=False).agg({'frp': np.median})
 
         # now subset the month to only valid flaring locations do this by merging on lats and lons
         # but first we need to create a combined column of lats and lons in the set of 12 annums
@@ -119,7 +118,7 @@ def main():
         month_flare_out_path = f.replace('.csv', '_flaring_subset.csv')
         current_month_df = pd.read_csv(f)
         current_month_df['coords'] = zip(current_month_df.lats.values, current_month_df.lons.values)
-        current_month_df = current_month_df.merge(grouped_annual_df, on=['coords'])
+        current_month_df = current_month_df.merge(regrouped_annual_dfs, on=['coords'])
         current_month_df.to_csv(month_flare_out_path)
 
 
