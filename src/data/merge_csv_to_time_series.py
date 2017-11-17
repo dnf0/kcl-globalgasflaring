@@ -22,6 +22,7 @@ Algorithm is as follows:
 import logging
 import glob
 import os
+import re
 
 import numpy as np
 import pandas as pd
@@ -36,6 +37,12 @@ def main():
     # get all csv files for sensor
     root = os.path.join(fp.path_to_test_csv_out, sensor)
     csv_filepaths = glob.glob(root + '/*/*.csv')
+
+    # filter the csv filepaths to just get the raw month files (as sometimes we might have other outputs in here)
+    csv_filepaths = [f for f in csv_filepaths if re.search(r'[0-9]+.csv', f)]
+
+    print csv_filepaths
+    return
 
     # assign 'time' id to csv files
     n_files = np.arange(len(csv_filepaths))

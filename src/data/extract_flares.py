@@ -24,6 +24,7 @@ def main():
         df.set_index(['datetime'], inplace=True)
         df.drop(['year', 'month', 'day'], 1, inplace=True)
 
+    # WE DO NOT WANT TO RESTRICT BY YEAR.
     at1_monthly_timeseries = at1_monthly_timeseries[(at1_monthly_timeseries.index >= datetime(1991, 8, 1)) &
                                                     (at1_monthly_timeseries.index < datetime(1996, 6, 1))]
     at2_monthly_timeseries = at2_monthly_timeseries[(at2_monthly_timeseries.index >= datetime(1996, 6, 1)) &
