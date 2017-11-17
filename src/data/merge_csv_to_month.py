@@ -77,17 +77,17 @@ def main():
                 month_df['lats_std'] = month_df['lats']
                 month_df['lons_std'] = month_df['lons']
                 month_df['frp_std'] = month_df['frp']
-                month_df = month_df.groupby(['lats', 'lons']).agg({'frp': np.median, 'frp_std': np.std,
-                                                                   'lats': np.mean, 'lons': np.mean,
-                                                                   'lats_std': np.std, 'lons_std': np.std,
-                                                                   'times_seen_in_month': np.sum})
-                month_df.reset_index(inplace=True)
+                month_df_grouped = month_df.groupby(['lats', 'lons']).agg({'frp': np.median, 'frp_std': np.std,
+                                                                          'lats': np.mean, 'lons': np.mean,
+                                                                          'lats_std': np.std, 'lons_std': np.std,
+                                                                          'times_seen_in_month': np.sum})
+                month_df_grouped.reset_index(inplace=True)
 
                 # dump to csv
                 path_to_out = os.path.join(fp.path_to_test_csv_out, sensor, year)
                 if not os.path.exists(path_to_out):
                     os.makedirs(path_to_out)
-                month_df.to_csv(os.path.join(path_to_out, month + '.csv'))
+                month_df_grouped.to_csv(os.path.join(path_to_out, month + '.csv'))
 
 
 if __name__ == '__main__':
