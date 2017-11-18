@@ -31,19 +31,20 @@ def main():
         df_list.append(df)
 
 
-    annual_df_merged = pd.concat(df_list,
+    merged_df = pd.concat(df_list,
                                  ignore_index=False)
-    annual_df_merged.reset_index(inplace=True)
+    merged_df.reset_index(inplace=True)
 
-    annual_df_merged['dt_start'] = annual_df_merged.datetime
-    annual_df_merged['dt_stop'] = annual_df_merged.datetime
-    annual_df_merged['frp_mean'] = annual_df_merged.frp
-    annual_df_merged['frp_std'] = annual_df_merged.frp
+    merged_df['dt_start'] = merged_df.datetime
+    merged_df['dt_stop'] = merged_df.datetime
+    merged_df['frp_median'] = merged_df.frp
+    merged_df['frp_std'] = merged_df.frp
+    merged_df.rename(columns={'times_seen_in_month': 'times_seen'}, inplace=True)
 
-    grouped = annual_df_merged.groupby(['lats', 'lons']).agg({'times_seen_in_month': np.sum,
+    grouped = merged_df.groupby(['lats', 'lons']).agg({'times_seen': np.sum,
                                                               'dt_start': np.min,
                                                               'dt_stop': np.max,
-                                                              'frp_mean': np.mean,
+                                                              'frp_median': np.median,
                                                               'frp_std': np.std})
     grouped.reset_index(inplace=True)
     if not os.path.exists(os.path.join(fp.path_to_test_csv_out, 'all_sensors')):

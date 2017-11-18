@@ -152,7 +152,7 @@ def main():
     if proc_const.sensor.upper() not in output_fname:
         output_fname = output_fname.replace(output_fname[0:3], proc_const.sensor.upper())
     csv_path = os.path.join(path_to_output, output_fname)
-    output_df.to_csv(csv_path)
+    output_df.to_csv(csv_path, index=False)
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
