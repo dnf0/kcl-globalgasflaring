@@ -125,11 +125,17 @@ def main():
     sensor = 'at1'
 
     # get all csv files for sensor
-    root = os.path.join(fp.path_to_test_csv_out, sensor)
-    csv_filepaths = glob.glob(root + '/*/*.csv')
+    root = os.path.join(fp.path_to_test_csv_out)
+    csv_filepaths = glob.glob(root + '/*/*/*.csv')
 
     # filter the csv filepaths to just get the raw month files (as sometimes we might have other outputs in here)
     csv_filepaths = [f for f in csv_filepaths if re.search(r'[0-9]+.csv', f)]
+    csv_filepaths = [f for f in csv_filepaths if not re.search(r'at2/2002/[0][5-9].csv', f)]
+    csv_filepaths = [f for f in csv_filepaths if not re.search(r'at2/2002/[1][0-2].csv', f)]
+    csv_filepaths = [f for f in csv_filepaths if not re.search(r'at2/2003/[0-9]+.csv', f)]
+    csv_filepaths = [f for f in csv_filepaths if not re.search(r'at1/199[6-7]/[0-9]+.csv', f)]
+    csv_filepaths = [f for f in csv_filepaths if not re.search(r'at1/1995/[0][6-9].csv', f)]
+    csv_filepaths = [f for f in csv_filepaths if not re.search(r'at1/1995/[1][0-2].csv', f)]
 
     # assign 'time' id to csv files
     n_files = np.arange(len(csv_filepaths))

@@ -37,10 +37,10 @@ def main():
 
     annual_df_merged['dt_start'] = annual_df_merged.datetime
     annual_df_merged['dt_stop'] = annual_df_merged.datetime
-    annual_df_merged['frp_mean'] = annual_df_merged.frp_x
-    annual_df_merged['frp_std'] = annual_df_merged.frp_x
+    annual_df_merged['frp_mean'] = annual_df_merged.frp
+    annual_df_merged['frp_std'] = annual_df_merged.frp
 
-    grouped = annual_df_merged.groupby(['lats_x', 'lons_x']).agg({'times_seen_in_month': np.sum,
+    grouped = annual_df_merged.groupby(['lats', 'lons']).agg({'times_seen_in_month': np.sum,
                                                               'dt_start': np.min,
                                                               'dt_stop': np.max,
                                                               'frp_mean': np.mean,
@@ -48,7 +48,9 @@ def main():
     grouped.reset_index(inplace=True)
     if not os.path.exists(os.path.join(fp.path_to_test_csv_out, 'all_sensors')):
         os.makedirs(os.path.join(fp.path_to_test_csv_out, 'all_sensors'))
-    grouped.to_csv(os.path.join(fp.path_to_test_csv_out, 'all_sensors', 'all_flares.csv'), date_format='%Y-%m-%d %H:%M:%S')
+    grouped.to_csv(os.path.join(fp.path_to_test_csv_out, 'all_sensors', 'all_flares.csv'),
+                   date_format='%Y-%m-%d %H:%M:%S',
+                   index=False)
 
 
 if __name__ == '__main__':
