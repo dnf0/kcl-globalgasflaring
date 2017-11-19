@@ -39,6 +39,10 @@ def myround(x, dec=20, base=.000005):
     return np.round(base * np.round(x/base), dec)
 
 
+def generate_coords(df):
+    return zip(df.lats.values, df.lons.values)
+
+
 def generate_month_df(csv_files_for_month, resolution):
     month_flares = []
     for f in csv_files_for_month:
@@ -58,12 +62,13 @@ def generate_month_df(csv_files_for_month, resolution):
 
 
 def extend_month_df(month_df):
+    month_df['coords'] = generate_coords(month_df)
     month_df['times_seen_in_month'] = np.ones(month_df.shape[0])
-    month_df['frp_std'] = month_df['frp']
 
 
 def group_month(month_df):
-    return month_df.groupby(['lats', 'lons']).agg({'frp': np.median, 'frp_std': np.std, 'times_seen_in_month': np.sum})
+    return month_df.groupby(['coords']).apply(
+        lambda tdf: pd.Series(dict([[vv, tdf[vv].unique().tolist()] for vv in tdf if vv in ['frp']])))
 
 
 def main():
