@@ -37,15 +37,15 @@ def main():
 
     merged_df['dt_start'] = merged_df.datetime
     merged_df['dt_stop'] = merged_df.datetime
-    merged_df['frp_median'] = merged_df.frp
+    merged_df['frp_mean'] = merged_df.frp
     merged_df['frp_std'] = merged_df.frp
     merged_df.rename(columns={'times_seen_in_month': 'times_seen'}, inplace=True)
 
     grouped = merged_df.groupby(['lats', 'lons']).agg({'times_seen': np.sum,
-                                                              'dt_start': np.min,
-                                                              'dt_stop': np.max,
-                                                              'frp_median': np.median,
-                                                              'frp_std': np.std})
+                                                       'dt_start': np.min,
+                                                       'dt_stop': np.max,
+                                                       'frp_mean': np.mean,
+                                                       'frp_std': np.std})
     grouped.reset_index(inplace=True)
     if not os.path.exists(os.path.join(fp.path_to_test_csv_out, 'all_sensors')):
         os.makedirs(os.path.join(fp.path_to_test_csv_out, 'all_sensors'))

@@ -39,6 +39,10 @@ def myround(x, dec=20, base=.000005):
     return np.round(base * np.round(x/base), dec)
 
 
+def generate_coords(df):
+    return zip(df.lats.values, df.lons.values)
+
+
 def generate_month_df(csv_files_for_month, resolution):
     month_flares = []
     for f in csv_files_for_month:
@@ -47,23 +51,26 @@ def generate_month_df(csv_files_for_month, resolution):
             orbit_df = pd.read_csv(f)
             orbit_df['lons'] = myround(orbit_df['lons'].values, base=resolution)
             orbit_df['lats'] = myround(orbit_df['lats'].values, base=resolution)
-            orbit_df = orbit_df.groupby(['lons', 'lats']).agg({'frp': np.mean})  # here group each flare
+            orbit_df = orbit_df.groupby(['lons', 'lats']).agg({'frp': np.mean, 'reflectances': np.mean, 'pixel_size': np.mean, 'sun_elev': np.mean})  # here group each flare
             orbit_df.reset_index(inplace=True)
-
             month_flares.append(orbit_df)
         except Exception, e:
             logger.warning('Could not load csv ' + f + ' file with error: ' + str(e))
+            print orbit_df.head()
 
     return pd.concat(month_flares, ignore_index=True)
 
 
 def extend_month_df(month_df):
+    month_df['coords'] = generate_coords(month_df)
     month_df['times_seen_in_month'] = np.ones(month_df.shape[0])
-    month_df['frp_std'] = month_df['frp']
 
 
 def group_month(month_df):
-    return month_df.groupby(['lats', 'lons']).agg({'frp': np.median, 'frp_std': np.std, 'times_seen_in_month': np.sum})
+    grouped =  month_df.groupby(['lats', 'lons'], as_index=False).agg({'times_seen_in_month': np.sum,
+                                                                       'pixel_size': np.mean,
+                                                                       'frp': lambda x: np.array(x)})
+    return grouped
 
 
 def main():
@@ -82,8 +89,7 @@ def main():
                 month_df = generate_month_df(csv_files_for_month, resolution)
                 extend_month_df(month_df)
                 month_df_grouped = group_month(month_df)
-                month_df_grouped.reset_index(inplace=True)
-
+                
                 # dump to csv
                 path_to_out = os.path.join(fp.path_to_test_csv_out, sensor, year)
                 if not os.path.exists(path_to_out):
