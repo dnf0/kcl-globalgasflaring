@@ -136,7 +136,7 @@ def main():
     distances, indexes = orbit_kdtree.query(flare_lat_lon)
 
     # find the flaring locations in the orbit by distance measure
-    valid_distances = distances <= resolution
+    valid_distances = distances <= (resolution / 2.)
     flare_ids = flare_df.index[valid_distances]
     matched_lats = combined_lat_lon[indexes[valid_distances], 0]
     matched_lons = combined_lat_lon[indexes[valid_distances], 1]
