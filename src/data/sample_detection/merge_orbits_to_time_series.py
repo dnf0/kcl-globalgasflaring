@@ -2,16 +2,11 @@ import os
 import glob
 import logging
 import re
-
-import pandas as pd
-import numpy as np
-
 from collections import defaultdict
 
+import pandas as pd
+
 import src.config.filepaths as fp
-
-
-
 
 def main():
 
