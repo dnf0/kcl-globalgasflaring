@@ -40,7 +40,7 @@ def get_year_month(f):
 def construct_annual_df(df_files_for_annum):
     annual_df_list = []
     for i, f in enumerate(df_files_for_annum):
-        annual_df_list.append(pd.read_csv(f))
+        annual_df_list.append(pd.read_csv(f, usecols=['lats', 'lons']))
 
     # concatenate the monthly dataframes
     annual_df = pd.concat(annual_df_list, ignore_index=True)
@@ -49,20 +49,10 @@ def construct_annual_df(df_files_for_annum):
 
 def extend_annual_df(annual_df):
     annual_df['times_seen_in_annum'] = np.ones(annual_df.shape[0])
-    annual_df['frp_std'] = annual_df['frp']
-    annual_df['mean_monthly_times_seen'] = annual_df['times_seen_in_month']
-    annual_df['std_monthly_times_seen'] = annual_df['times_seen_in_month']
 
 
 def group_annual_df(annual_df):
-    return annual_df.groupby(['lats', 'lons']).agg({'frp': np.median,
-                                                    'frp_std': np.std,
-                                                    'lats': np.mean,
-                                                    'lons': np.mean,
-                                                    'times_seen_in_annum': np.sum,
-                                                    'mean_monthly_times_seen': np.mean,
-                                                    'std_monthly_times_seen': np.std,
-                                                    })
+    return annual_df.groupby(['lats', 'lons'], as_index=False).agg({'times_seen_in_annum': np.sum})
 
 
 def detect_persistent_hotspots(grouped_annual_df):
