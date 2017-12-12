@@ -83,7 +83,7 @@ for yr in years:
     path = os.path.join(filepaths.path_to_data, yr)
     for root, dirs, files in os.walk(path):
         for f in files:
-	    if f.split('.')[-1] not in ['N1', 'E2', 'E1']:
+            if f.split('.')[-1] not in ['N1', 'E2', 'E1']:
                 continue
             
             path_to_data = os.path.join(root, f)
@@ -115,4 +115,3 @@ for yr in years:
                 jid = batch.parse_out(out, 'ID')
             except Exception, e:
                 print 'Subprocess failed with error:', str(e) 
-                
