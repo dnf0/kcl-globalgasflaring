@@ -110,5 +110,9 @@ for yr in years:
             cmd = batch.print_batch(batch_values, exe=script_file)
 
             # use subprocess to call the print batch command
-            out = subprocess.check_output(cmd.split(' '))
-            jid = batch.parse_out(out, 'ID')
+            try:
+                out = subprocess.check_output(cmd.split(' '))
+                jid = batch.parse_out(out, 'ID')
+            except Exception, e:
+                print 'Subprocess failed with error:', str(e) 
+                
