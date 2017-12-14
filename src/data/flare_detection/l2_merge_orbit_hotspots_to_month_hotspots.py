@@ -1,5 +1,5 @@
 """
-Merge gas flare detections to monthly samples.
+Merge gas flare detections to monthly samples .
 
 The first step in the algorithm is to reduce the resolution of the data:
 
@@ -32,7 +32,7 @@ import src.config.filepaths as fp
 
 
 def select_csv_files_for_month(sensor, year, month):
-    return glob.glob(os.path.join(fp.path_to_test_csv, sensor, year, month, "*", "*_flares.csv"))
+    return glob.glob(os.path.join(fp.path_to_cems_output_l2, sensor, year, month, "*", "*_flares.csv"))
 
 
 def myround(x, dec=20, base=.000005):
@@ -79,7 +79,7 @@ def main():
     resolution = 60. / 3600  # arseconds ~2km
 
     for sensor in ['ats', 'at1', 'at2']:
-        year_dir = os.path.join(fp.path_to_test_csv, sensor)
+        year_dir = os.path.join(fp.path_to_cems_output_l2, sensor)
         years = os.listdir(year_dir)
         for year in years:
             month_dir = os.path.join(year_dir, year)
@@ -91,7 +91,7 @@ def main():
                 month_df_grouped = group_month(month_df)
                 
                 # dump to csv
-                path_to_out = os.path.join(fp.path_to_test_csv_out, sensor, year)
+                path_to_out = os.path.join(fp.path_to_cems_output_l3, sensor, year)
                 if not os.path.exists(path_to_out):
                     os.makedirs(path_to_out)
                 month_df_grouped.to_csv(os.path.join(path_to_out, month + '.csv'), index=False)

@@ -10,7 +10,7 @@ import src.config.filepaths as fp
 
 def main():
 
-    csv_filepaths = glob.glob(fp.path_to_test_csv + '*/*/*/*/*_sampling.csv')
+    csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*/*_sampling.csv')
 
     # filter the csv filepaths to process
     csv_filepaths = [f for f in csv_filepaths if not re.search(r'at2/2002/[0][5-9]/', f)]
@@ -41,8 +41,10 @@ def main():
                            "flare_sample_lons": lons})
 
     # dump to csv
-    path_to_out = os.path.join(fp.path_to_test_csv_out)
-    out_df.to_csv(os.path.join(path_to_out, 'sampling.csv'))
+    if not os.path.exists(os.path.join(fp.path_to_cems_output_l3, 'all_sensors')):
+        os.makedirs(os.path.join(fp.path_to_cems_output_l3, 'all_sensors'))
+
+    out_df.to_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_sampling.csv'))
 
 
 if __name__ == '__main__':

@@ -37,7 +37,7 @@ def frp_sd(s):
 def main():
 
     df_list = []
-    csv_files = glob.glob(os.path.join(fp.path_to_test_csv_out, "*", '*', "*_flaring_subset.csv"))
+    csv_files = glob.glob(os.path.join(fp.path_to_cems_output_l3, "*", '*', "*_flaring_subset.csv"))
 
     for f in csv_files:
         df = pd.read_csv(f)
@@ -64,9 +64,9 @@ def main():
                                                                        'frp': frp_median,
                                                                        'frp_sd': frp_sd})
 
-    if not os.path.exists(os.path.join(fp.path_to_test_csv_out, 'all_sensors')):
-        os.makedirs(os.path.join(fp.path_to_test_csv_out, 'all_sensors'))
-    grouped.to_csv(os.path.join(fp.path_to_test_csv_out, 'all_sensors', 'all_flares.csv'),
+    if not os.path.exists(os.path.join(fp.path_to_cems_output_l3, 'all_sensors')):
+        os.makedirs(os.path.join(fp.path_to_cems_output_l3, 'all_sensors'))
+    grouped.to_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flares.csv'),
                    date_format='%Y-%m-%d %H:%M:%S',
                    index=False)
 

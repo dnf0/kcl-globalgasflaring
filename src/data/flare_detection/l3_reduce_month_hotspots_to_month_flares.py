@@ -113,7 +113,7 @@ def process_missing_months(f, _12_annum_hotspot_location_series):
 def main():
 
     # get all csv files for sensor
-    root = os.path.join(fp.path_to_test_csv_out)
+    root = os.path.join(fp.path_to_cems_output_l3)
     csv_filepaths = glob.glob(root + '/*/*/*.csv')
 
     # filter the csv filepaths to process

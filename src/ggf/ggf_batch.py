@@ -3,6 +3,7 @@ import os
 import tempfile
 
 import src.config.filepaths as filepaths
+import src.config.constants as proc_const
 import subprocess
 
 class BatchSystem:
@@ -80,7 +81,7 @@ for yr in years:
         print 'continuing...', yr
         continue
 
-    path = os.path.join(filepaths.path_to_data, yr)
+    path = os.path.join(filepaths.path_to_data, proc_const.senor, yr)
     for root, dirs, files in os.walk(path):
         for f in files:
             if f.split('.')[-1] not in ['N1', 'E2', 'E1']:
@@ -90,7 +91,8 @@ for yr in years:
 
             # build path to output
             ymd = f[14:22]
-            out_dir = os.path.join(filepaths.path_to_cems_output, ymd[0:4], ymd[4:6], ymd[6:8])
+            out_dir = os.path.join(filepaths.path_to_cems_output_l2, proc_const.sensor,
+                                   ymd[0:4], ymd[4:6], ymd[6:8])
             if not os.path.exists(out_dir):
                 os.makedirs(out_dir)
 
