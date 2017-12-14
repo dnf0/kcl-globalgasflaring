@@ -12,7 +12,7 @@ factor = radius_orbit / radius_earth
 
 
 def create_grid():
-    x_size = 512
+    x_size = 51
     return (np.arange(x_size, dtype=np.float64) - (float(x_size - 1)) / 2) / radius_earth
 
 

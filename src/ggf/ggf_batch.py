@@ -90,7 +90,7 @@ for yr in years:
 
             # build path to output
             ymd = f[14:22]
-            out_dir = os.path.join(filepaths.path_to_cems_output, ymd[0:4], ymd[4:6], ymd[6:8])
+            out_dir = os.path.join(filepaths.path_to_cems_output_l2, ymd[0:4], ymd[4:6], ymd[6:8])
             if not os.path.exists(out_dir):
                 os.makedirs(out_dir)
 
@@ -115,4 +115,3 @@ for yr in years:
                 jid = batch.parse_out(out, 'ID')
             except Exception, e:
                 print 'Subprocess failed with error:', str(e) 
-                
