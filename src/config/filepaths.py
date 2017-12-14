@@ -20,9 +20,6 @@ elif constants.sensor == 'at2':
 elif constants.sensor == 'at1':
     path_to_data = '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p'
 
-# path to flare df on cems
-path_to_flare_df = '/home/users/dnfisher/ggf_data/'
-
 # Paths to processing output folder on CEMS
 path_to_cems_output_l2 = '/home/users/dnfisher/nceo_aerosolfire/data/temp/processed/l2/'
 path_to_cems_output_l3 = '/home/users/dnfisher/nceo_aerosolfire/data/temp/processed/l3/'

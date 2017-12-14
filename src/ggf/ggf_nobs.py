@@ -118,7 +118,7 @@ def main():
     orbit_time = datetime(year, month, day)
 
     # load in the flare dataframe
-    flare_df = pd.read_csv(os.path.join(fp.path_to_flare_df, 'all_flares.csv'))
+    flare_df = pd.read_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flares.csv'))
     flare_df['dt_start'] = pd.to_datetime(flare_df['dt_start'])
     flare_df['dt_stop'] = pd.to_datetime(flare_df['dt_stop'])
     flare_df['id'] = flare_df.index
