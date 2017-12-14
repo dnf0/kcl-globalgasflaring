@@ -24,8 +24,8 @@ elif constants.sensor == 'at1':
 path_to_flare_df = '/home/users/dnfisher/ggf_data/'
 
 # Paths to processing output folder on CEMS
-path_to_cems_output_l2 = '/home/users/dnfisher/nceo_aerosolfire/data/temp/processed/l2/' + constants.sensor
-path_to_cems_output_l3 = '/home/users/dnfisher/nceo_aerosolfire/data/temp/processed/l3/' + constants.sensor
+path_to_cems_output_l2 = '/home/users/dnfisher/nceo_aerosolfire/data/temp/processed/l2/'
+path_to_cems_output_l3 = '/home/users/dnfisher/nceo_aerosolfire/data/temp/processed/l3/'
 
 ###########  LOCAL PATHS (Data Analysis) ###########
 
