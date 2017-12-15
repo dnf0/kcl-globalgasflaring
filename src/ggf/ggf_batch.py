@@ -82,7 +82,8 @@ for path_to_data in filepaths.paths_to_data:
             print 'continuing...', yr
             continue
 
-        path = os.path.join(path_to_data, proc_const.sensor, yr)
+        path = os.path.join(path_to_data,  yr)
+        print path
         for root, dirs, files in os.walk(path):
             for f in files:
                 if f.split('.')[-1] not in ['N1', 'E2', 'E1']:
@@ -91,8 +92,11 @@ for path_to_data in filepaths.paths_to_data:
                 data_path = os.path.join(root, f)
 
                 # build path to output
+                if 'N1' in f: sensor = 'ats'
+                if 'E2' in f: sensor = 'at2'
+                if 'E1' in f: sensor = 'at1'
                 ymd = f[14:22]
-                out_dir = os.path.join(filepaths.path_to_cems_output_l2, proc_const.sensor,
+                out_dir = os.path.join(filepaths.path_to_cems_output_l2, sensor,
                                        ymd[0:4], ymd[4:6], ymd[6:8])
                 if not os.path.exists(out_dir):
                     os.makedirs(out_dir)
