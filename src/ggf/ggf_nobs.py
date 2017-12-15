@@ -97,6 +97,13 @@ def main():
     path_to_output = sys.argv[2]
     atsr_data = read_atsr(path_to_data)
 
+    if 'N1' in path_to_data:
+        sensor = 'ats'
+    if 'E2' in path_to_data:
+        sensor = 'at2'
+    if 'E1' in path_to_data:
+        sensor = 'at1'
+
     # set up masks that define potential flaring sites
     night_mask = make_night_mask(atsr_data)
     cloud_free_mask = make_cloud_mask(atsr_data)
@@ -153,8 +160,8 @@ def main():
 
     # write out the recorded flare id's for this orbit
     output_fname = atsr_data.id_string.split('.')[0] + '_sampling.csv'
-    if proc_const.sensor.upper() not in output_fname:
-        output_fname = output_fname.replace(output_fname[0:3], proc_const.sensor.upper())
+    if sensor.upper() not in output_fname:
+        output_fname = output_fname.replace(output_fname[0:3], sensor.upper())
     csv_path = os.path.join(path_to_output, output_fname)
     output_df.to_csv(csv_path, index=False)
 

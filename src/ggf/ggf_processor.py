@@ -19,10 +19,10 @@ def sun_earth_distance(ats_product):
     return 1 + 0.01672 * np.sin(2 * np.pi * (doy - 93.5) / 365.0)
 
 
-def radiance_from_reflectance(pixels, ats_product):
+def radiance_from_reflectance(pixels, ats_product, sensor):
 
     # convert from reflectance to radiance see Smith and Cox 2013
-    return pixels / 100.0 * proc_const.solar_irradiance * sun_earth_distance(ats_product) ** 2 / np.pi
+    return pixels / 100.0 * proc_const.solar_irradiance[sensor] * sun_earth_distance(ats_product) ** 2 / np.pi
 
 
 def read_atsr(path_to_ats_data):
@@ -121,11 +121,11 @@ def compute_pixel_size(samples):
     return pix_sizes[samples]
 
 
-def compute_frp(pixel_radiances, pixel_sizes):
-    return pixel_sizes * proc_const.frp_coeff * pixel_radiances / 1000000  # in MW
+def compute_frp(pixel_radiances, pixel_sizes, sensor):
+    return pixel_sizes * proc_const.frp_coeff[sensor] * pixel_radiances / 1000000  # in MW
 
 
-def flare_data(product, mask):
+def flare_data(product, mask, sensor):
 
     # first get data from sensor
     lines, samples = np.where(mask)
@@ -136,13 +136,13 @@ def flare_data(product, mask):
     view_elev_angle = product.get_band('view_elev_nadir').read_as_array()[mask]
 
     # next radiances from reflectances
-    radiances = radiance_from_reflectance(reflectances, product)
+    radiances = radiance_from_reflectance(reflectances, product, sensor)
 
     # get the pixel size
     pixel_size = compute_pixel_size(samples)
 
     # next get FRP
-    frp = compute_frp(radiances, pixel_size)
+    frp = compute_frp(radiances, pixel_size, sensor)
 
     # insert data into dataframe
     df = pd.DataFrame()
@@ -154,11 +154,11 @@ def flare_data(product, mask):
         df[k] = v
     
     fname = product.id_string.split('.')[0]
-    if proc_const.sensor.upper() not in fname:
-        fname = fname.replace(fname[0:3], proc_const.sensor.upper())
+    if sensor.upper() not in fname:
+        fname = fname.replace(fname[0:3], sensor.upper())
     df['fname'] = fname
     df['se_dist'] = sun_earth_distance(product)
-    df['frp_coeff'] = proc_const.frp_coeff
+    df['frp_coeff'] = proc_const.frp_coeff[sensor]
 
     # return df
     return df
@@ -171,6 +171,13 @@ def main():
     path_to_output = sys.argv[2]
     atsr_data = read_atsr(path_to_data)
 
+    if 'N1' in path_to_data:
+        sensor = 'ats'
+    if 'E2' in path_to_data:
+        sensor = 'at2'
+    if 'E1' in path_to_data:
+        sensor = 'at1'
+
     # get day/night mask first, we can use this to get only the part of the water mask
     # that we are interested in.  This should massively speed processing.
     night_mask = make_night_mask(atsr_data)
@@ -179,12 +186,12 @@ def main():
     flare_mask = detect_flares(atsr_data, night_mask)
 
     # get nighttime flare radiances and frp and write out with meta data
-    df = flare_data(atsr_data, flare_mask)
+    df = flare_data(atsr_data, flare_mask, sensor)
 
     # write out
     output_fname = atsr_data.id_string.split('.')[0] + '_flares.csv'
-    if proc_const.sensor.upper() not in output_fname:
-        output_fname = output_fname.replace(output_fname[0:3], proc_const.sensor.upper())
+    if sensor.upper() not in output_fname:
+        output_fname = output_fname.replace(output_fname[0:3], sensor.upper())
     csv_path = os.path.join(path_to_output, output_fname)
     df.to_csv(csv_path, index=False)
 

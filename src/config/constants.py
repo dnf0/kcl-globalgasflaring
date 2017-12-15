@@ -3,14 +3,9 @@ This file contains some constants used in the processing
 '''
 import scipy.constants as const
 
-sensor = 'at1'  # 'at2', 'at1'
-
-if sensor == 'ats':
-    solar_irradiance = 254.752  # W m-2 sr-1 um-1 
-elif sensor == 'at2':
-    solar_irradiance = 249.604  # W m-2 sr-1 um-1  
-elif sensor == 'at1':
-    solar_irradiance = 250.728  # W m-2 sr-1 um-1  
+solar_irradiance = {'ats': 254.752,
+                    'at2': 249.604,
+                    'at1': 250.728}
 
 day_night_angle = 101  # solar zenith angles must be > 101 deg VIIRS night-time lights Elvidge et al., 2017
 
@@ -18,11 +13,6 @@ day_night_angle = 101  # solar zenith angles must be > 101 deg VIIRS night-time 
 # significant flares pixels.  E.g. over Iraq.  TODO make a visualisation to show this!
 swir_thresh = 0.1  # from Casadio et al. 2012 paper
 
-if sensor == 'ats':
-    planck_approx = 8.29908189231e-09
-elif sensor == 'at2':
-    planck_approx = 8.2215268253e-09
-elif sensor == 'at1':
-    planck_approx = 8.23565040885e-09
-
-frp_coeff = const.sigma / planck_approx
+frp_coeff = {'ats': const.sigma / 8.29908189231e-09,
+             'at2': const.sigma / 8.2215268253e-09,
+             'at1': const.sigma / 8.23565040885e-09}
