@@ -81,7 +81,7 @@ for yr in years:
         print 'continuing...', yr
         continue
 
-    path = os.path.join(filepaths.path_to_data, proc_const.senor, yr)
+    path = os.path.join(filepaths.path_to_data, proc_const.sensor, yr)
     for root, dirs, files in os.walk(path):
         for f in files:
             if f.split('.')[-1] not in ['N1', 'E2', 'E1']:

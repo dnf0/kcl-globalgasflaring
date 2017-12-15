@@ -10,8 +10,8 @@ import src.config.filepaths as fp
 
 def main():
 
-    csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*/*_sampling.csv')
-
+    csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_sampling.csv')
+    
     # filter the csv filepaths to process
     csv_filepaths = [f for f in csv_filepaths if not re.search(r'at2/2002/[0][5-9]/', f)]
     csv_filepaths = [f for f in csv_filepaths if not re.search(r'at2/2002/[1][0-2]/', f)]
@@ -25,9 +25,17 @@ def main():
     lons = defaultdict(float)
 
     # now lets get count the samples
+    max_id = 0
     for f in csv_filepaths:
+        if 'ats' not in f: continue
         try:
             sample_df = pd.read_csv(f)
+            s_max = sample_df.flare_ids.max()
+            if s_max > max_id:
+                print s_max
+                max_id = s_max
+                print f
+                print 
             for index, row in sample_df.iterrows():
                 sample_counter[row.flare_ids] += 1
                 lats[row.flare_ids] = row.matched_lats

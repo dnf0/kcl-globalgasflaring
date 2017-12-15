@@ -13,12 +13,9 @@ cems_root = '/home/users/dnfisher/projects/kcl-globalgasflaring/'
 ggf_dir = cems_root + 'src/ggf/'
 
 # Paths to ATSR data on CEMS
-if constants.sensor == 'ats':
-    path_to_data = '/neodc/aatsr_multimission/aatsr-v3/data/ats_toa_1p'
-elif constants.sensor == 'at2':
-    path_to_data = '/neodc/aatsr_multimission/atsr2-v3/data/at2_toa_1p'
-elif constants.sensor == 'at1':
-    path_to_data = '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p'
+paths_to_data = ['/neodc/aatsr_multimission/aatsr-v3/data/ats_toa_1p',
+                 '/neodc/aatsr_multimission/atsr2-v3/data/at2_toa_1p',
+                 '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p']
 
 # Paths to processing output folder on CEMS
 output_root = '/home/users/dnfisher/nceo_aerosolfire/data/temp/'

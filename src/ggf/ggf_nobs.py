@@ -121,7 +121,8 @@ def main():
     flare_df = pd.read_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flares.csv'))
     flare_df['dt_start'] = pd.to_datetime(flare_df['dt_start'])
     flare_df['dt_stop'] = pd.to_datetime(flare_df['dt_stop'])
-    flare_df['id'] = flare_df.index
+    flare_df['ids'] = flare_df.index
+    logger.info('Max flare index: ' + str(flare_df.index.max()))
 
     # now subset down the dataframe by time to only those flares
     # that have been seen burning before AND after this orbit
@@ -138,7 +139,7 @@ def main():
 
     # find the flaring locations in the orbit by distance measure
     valid_distances = distances <= resolution
-    flare_ids = flare_df.id[valid_distances].values
+    flare_ids = flare_df.ids[valid_distances].values
     matched_lats = combined_lat_lon[indexes[valid_distances], 0]
     matched_lons = combined_lat_lon[indexes[valid_distances], 1]
 
