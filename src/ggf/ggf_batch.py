@@ -73,47 +73,48 @@ batch = BatchSystem('bsub',
 batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 # iterate over all ATSR files in directory
-years = os.listdir(filepaths.path_to_data)
-for yr in years:
-    if len(yr) > 4:
-        continue
-    if ('at2' in filepaths.path_to_data) & (int(yr) > 2003):
-        print 'continuing...', yr
-        continue
+for path_to_data in filepaths.paths_to_data:
+    years = os.listdir(path_to_data)
+    for yr in years:
+        if len(yr) > 4:
+            continue
+        if ('at2' in path_to_data) & (int(yr) > 2003):
+            print 'continuing...', yr
+            continue
 
-    path = os.path.join(filepaths.path_to_data, proc_const.sensor, yr)
-    for root, dirs, files in os.walk(path):
-        for f in files:
-            if f.split('.')[-1] not in ['N1', 'E2', 'E1']:
-                continue
-            
-            path_to_data = os.path.join(root, f)
+        path = os.path.join(path_to_data, proc_const.sensor, yr)
+        for root, dirs, files in os.walk(path):
+            for f in files:
+                if f.split('.')[-1] not in ['N1', 'E2', 'E1']:
+                    continue
 
-            # build path to output
-            ymd = f[14:22]
-            out_dir = os.path.join(filepaths.path_to_cems_output_l2, proc_const.sensor,
-                                   ymd[0:4], ymd[4:6], ymd[6:8])
-            if not os.path.exists(out_dir):
-                os.makedirs(out_dir)
+                data_path = os.path.join(root, f)
 
-            # for each ATSR file generate a bash script that calls ggf
-            (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
-                                                 out_dir, True)
-            g = os.fdopen(gd, "w")
-            g.write('export PYTHONPATH=$PYTHONPATH:/home/users/dnfisher/projects/kcl-globalgasflaring/\n')
-            g.write(filepaths.ggf_dir + 'ggf_nobs.py ' +
-                    path_to_data + ' ' +
-                    out_dir + " \n")
-            g.write("rm -f " + script_file + "\n")
-            g.close()
-            os.chmod(script_file, 0o755)
+                # build path to output
+                ymd = f[14:22]
+                out_dir = os.path.join(filepaths.path_to_cems_output_l2, proc_const.sensor,
+                                       ymd[0:4], ymd[4:6], ymd[6:8])
+                if not os.path.exists(out_dir):
+                    os.makedirs(out_dir)
 
-            # generate bsub call using print_batch
-            cmd = batch.print_batch(batch_values, exe=script_file)
+                # for each ATSR file generate a bash script that calls ggf
+                (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
+                                                     out_dir, True)
+                g = os.fdopen(gd, "w")
+                g.write('export PYTHONPATH=$PYTHONPATH:/home/users/dnfisher/projects/kcl-globalgasflaring/\n')
+                g.write(filepaths.ggf_dir + 'ggf_nobs.py ' +
+                        data_path + ' ' +
+                        out_dir + " \n")
+                g.write("rm -f " + script_file + "\n")
+                g.close()
+                os.chmod(script_file, 0o755)
 
-            # use subprocess to call the print batch command
-            try:
-                out = subprocess.check_output(cmd.split(' '))
-                jid = batch.parse_out(out, 'ID')
-            except Exception, e:
-                print 'Subprocess failed with error:', str(e) 
+                # generate bsub call using print_batch
+                cmd = batch.print_batch(batch_values, exe=script_file)
+
+                # use subprocess to call the print batch command
+                try:
+                    out = subprocess.check_output(cmd.split(' '))
+                    jid = batch.parse_out(out, 'ID')
+                except Exception, e:
+                    print 'Subprocess failed with error:', str(e)

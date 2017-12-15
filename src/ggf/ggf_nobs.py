@@ -136,6 +136,8 @@ def main():
 
     # compare the flare locations to the potential locations in the orbit
     distances, indexes = orbit_kdtree.query(flare_lat_lon)
+    logger.info('N distances: ' + str(distances.shape))
+    logger.info('N flares inbounds: ' + str(flare_df.shape))
 
     # find the flaring locations in the orbit by distance measure
     valid_distances = distances <= resolution
