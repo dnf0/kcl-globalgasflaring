@@ -27,7 +27,6 @@ def main():
     # now lets get count the samples
     max_id = 0
     for f in csv_filepaths:
-        if 'ats' not in f: continue
         try:
             sample_df = pd.read_csv(f)
             s_max = sample_df.flare_ids.max()

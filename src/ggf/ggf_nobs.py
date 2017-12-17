@@ -147,7 +147,7 @@ def main():
     logger.info('N flares inbounds: ' + str(flare_df.shape))
 
     # find the flaring locations in the orbit by distance measure
-    valid_distances = distances <= resolution
+    valid_distances = distances <= resolution / 4.
     flare_ids = flare_df.ids[valid_distances].values
     matched_lats = combined_lat_lon[indexes[valid_distances], 0]
     matched_lons = combined_lat_lon[indexes[valid_distances], 1]

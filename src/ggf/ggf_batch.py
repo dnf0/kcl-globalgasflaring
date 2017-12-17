@@ -81,7 +81,7 @@ for path_to_data in filepaths.paths_to_data:
         if ('at2' in path_to_data) & (int(yr) > 2003):
             print 'continuing...', yr
             continue
-
+       
         path = os.path.join(path_to_data,  yr)
         print path
         for root, dirs, files in os.walk(path):
