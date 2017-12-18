@@ -35,6 +35,7 @@ from datetime import datetime
 import epr
 import numpy as np
 import scipy.spatial as spatial
+import scipy.stats as stats
 import pandas as pd
 
 import matplotlib.pyplot as plt
@@ -69,9 +70,22 @@ def myround(x, dec=20, base=60. / 3600):
     return np.round(base * np.round(x/base), dec)
 
 
-def get_geo_data(ats_product, mask):
+def get_type(a):
+    if np.in1d(1, a)[0]:
+        return 1
+    else:
+        return 2
 
-    # first mask lats and lons
+
+def setup_data(ats_product, mask, cloud_free_mask, swir_mask):
+
+    # type mask
+    types = np.zeros(cloud_free_mask.shape)
+    types[cloud_free_mask] = 2
+    types[swir_mask] = 1
+    types = types[mask]
+
+    # mask lats and lons
     lats = ats_product.get_band('latitude').read_as_array()[mask]
     lons = ats_product.get_band('longitude').read_as_array()[mask]
 
@@ -79,12 +93,28 @@ def get_geo_data(ats_product, mask):
     rounded_lats = myround(lats)
     rounded_lons = myround(lons)
 
-    # then get the unique lat and lon combinations
-    unique_coords = set(zip(rounded_lats, rounded_lons))
+    # set up dataframe to group the data
+    df = pd.DataFrame({'lats': rounded_lats,
+                       'lons': rounded_lons,
+                       'types': types})
 
-    # return them unzipped
-    rounded_lats, rounded_lons = zip(*unique_coords)
-    return rounded_lats, rounded_lons
+    # here we can calculate if it is a cloud free or flaring observation using pandas
+    grouped = df.groupby(['lats', 'lons'], as_index=False).agg({'types': get_type})
+
+    # # join together the round coordinates
+    # combined_coords = zip(rounded_lats, rounded_lons)
+    #
+    # # then get the unique lat and lon combinations
+    # unique_coords = set(combined_coords)
+    #
+    # # return them unzipped
+    # rounded_lats, rounded_lons = zip(*unique_coords)
+
+    rounded_lats = grouped['lats'].values
+    rounded_lons = grouped['lons'].values
+    mode_types = grouped['types'].values
+
+    return rounded_lats, rounded_lons, mode_types
 
 
 def main():
@@ -112,7 +142,7 @@ def main():
     # get the rounded lats and lons of the potential flaring sites
     potential_flares = cloud_free_mask | swir_mask  # either cloud free or high swir
     flare_mask = night_mask & potential_flares  # and also at night
-    rounded_lats, rounded_lons = get_geo_data(atsr_data, flare_mask)
+    rounded_lats, rounded_lons, mask_type_mode = setup_data(atsr_data, flare_mask, cloud_free_mask, swir_mask)
 
     # set up the cKDTree for querying flare locations
     combined_lat_lon = np.dstack([rounded_lats, rounded_lons])[0]
@@ -129,7 +159,6 @@ def main():
     flare_df['dt_start'] = pd.to_datetime(flare_df['dt_start'])
     flare_df['dt_stop'] = pd.to_datetime(flare_df['dt_stop'])
     flare_df['ids'] = flare_df.index
-    logger.info('Max flare index: ' + str(flare_df.index.max()))
 
     # now subset down the dataframe by time to only those flares
     # that have been seen burning before AND after this orbit
@@ -143,19 +172,19 @@ def main():
 
     # compare the flare locations to the potential locations in the orbit
     distances, indexes = orbit_kdtree.query(flare_lat_lon)
-    logger.info('N distances: ' + str(distances.shape))
-    logger.info('N flares inbounds: ' + str(flare_df.shape))
 
     # find the flaring locations in the orbit by distance measure
-    valid_distances = distances <= resolution / 4.
+    valid_distances = distances <= resolution / 2.  # TODO think we can drop the /2 and just do <
     flare_ids = flare_df.ids[valid_distances].values
     matched_lats = combined_lat_lon[indexes[valid_distances], 0]
     matched_lons = combined_lat_lon[indexes[valid_distances], 1]
+    matched_mask_type = mask_type_mode[indexes[valid_distances]]
 
     # set up output df
     output_df = pd.DataFrame({'flare_ids': flare_ids,
                               'matched_lats': matched_lats,
-                              'matched_lons': matched_lons
+                              'matched_lons': matched_lons,
+                              'obs_types': matched_mask_type
                               })
 
     # write out the recorded flare id's for this orbit

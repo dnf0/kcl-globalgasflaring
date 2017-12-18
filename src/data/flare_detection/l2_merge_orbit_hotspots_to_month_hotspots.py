@@ -36,7 +36,7 @@ def select_csv_files_for_month(sensor, year, month):
 
 
 def myround(x, dec=20, base=.000005):
-    return np.round(base * np.round(x/base), dec)
+    return np.round(base * np.round(x / base), dec)
 
 
 def generate_coords(df):
@@ -51,8 +51,9 @@ def generate_month_df(csv_files_for_month, resolution):
             orbit_df = pd.read_csv(f)
             orbit_df['lons'] = myround(orbit_df['lons'].values, base=resolution)
             orbit_df['lats'] = myround(orbit_df['lats'].values, base=resolution)
-            orbit_df = orbit_df.groupby(['lons', 'lats']).agg({'frp': np.mean, 'reflectances': np.mean, 'pixel_size': np.mean, 'sun_elev': np.mean})  # here group each flare
-            orbit_df.reset_index(inplace=True)
+            orbit_df = orbit_df.groupby(['lons', 'lats'], as_index=False).agg({'frp': np.mean, 'reflectances': np.mean,
+                                                                               'pixel_size': np.mean,
+                                                                               'sun_elev': np.mean})
             month_flares.append(orbit_df)
         except Exception, e:
             logger.warning('Could not load csv ' + f + ' file with error: ' + str(e))
@@ -67,14 +68,13 @@ def extend_month_df(month_df):
 
 
 def group_month(month_df):
-    grouped =  month_df.groupby(['lats', 'lons'], as_index=False).agg({'times_seen_in_month': np.sum,
-                                                                       'pixel_size': np.mean,
-                                                                       'frp': lambda x: np.array(x)})
+    grouped = month_df.groupby(['lats', 'lons'], as_index=False).agg({'times_seen_in_month': np.sum,
+                                                                      'pixel_size': np.mean,
+                                                                      'frp': lambda x: np.array(x)})
     return grouped
 
 
 def main():
-
     # aggregation resolution
     resolution = 60. / 3600  # arseconds ~2km
 
@@ -91,7 +91,7 @@ def main():
                 print month_df.head()
                 print ''
                 month_df_grouped = group_month(month_df)
-                
+
                 # dump to csv
                 path_to_out = os.path.join(fp.path_to_cems_output_l3, sensor, year)
                 if not os.path.exists(path_to_out):
