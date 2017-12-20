@@ -51,10 +51,10 @@ def generate_monthly_dataframes(root):
     months = np.arange(1,13,1)
     for yr in years:
         for m in months:
-            csv_files = glob.glob(os.path.join(root, '*', str(yr), str(m) + '.csv'))
-
+            csv_files = glob.glob(os.path.join(root, '*', str(yr), str(m).zfill(2) + '.csv'))
+	    print csv_files
             if len(csv_files) == 1:
-                df = setup_df(csv_files, yr, m)
+                df = setup_df(csv_files[0], yr, m)
             elif len(csv_files) == 2:
                 df_a = setup_df(csv_files[0], yr, m)
                 df_b = setup_df(csv_files[1], yr, m)
@@ -63,13 +63,6 @@ def generate_monthly_dataframes(root):
                 continue
             monthly_dataframes.append(df)
     return monthly_dataframes
-
-
-def get_year_month(f):
-    split_f = f.split('/')
-    year = split_f[-2]
-    month = split_f[-1][0:2]
-    return year, month
 
 
 def construct_annual_df(df_list):
@@ -112,8 +105,8 @@ def save(month_df, annual_df, root):
 
     for sensor in ['ats', 'at2', 'at1']:
         month_df = month_df[month_df.sensor == sensor]
-        if not month_df.empty():
-            out_path = os.path.join(root, sensor, str(month_df.year[0]), str(month_df.month[0]))
+        if not month_df.empty:
+            out_path = os.path.join(root, sensor, str(month_df.year[0]), str(month_df.month[0]).zfill(2))
             month_out_path = out_path + '_flaring_subset.csv'
             annual_out_path = out_path + '_flaring_subset_annual.csv'
 
@@ -125,8 +118,8 @@ def save_month(month_df, root):
 
     for sensor in ['ats', 'at2', 'at1']:
         month_df = month_df[month_df.sensor == sensor]
-        if not month_df.empty():
-            out_path = os.path.join(root, sensor, str(month_df.year[0]), str(month_df.month[0]))
+        if not month_df.empty:
+            out_path = os.path.join(root, sensor, str(month_df.year[0]), str(month_df.month[0]).zfill(2))
             month_out_path = out_path + '_flaring_subset.csv'
             month_df.to_csv(month_out_path, index=False)
 

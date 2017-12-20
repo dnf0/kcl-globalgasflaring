@@ -63,7 +63,6 @@ def main():
                                                                        'dt_stop': np.max,
                                                                        'frp': frp_median,
                                                                        'frp_sd': frp_sd})
-
     if not os.path.exists(os.path.join(fp.path_to_cems_output_l3, 'all_sensors')):
         os.makedirs(os.path.join(fp.path_to_cems_output_l3, 'all_sensors'))
     grouped.to_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flares.csv'),
