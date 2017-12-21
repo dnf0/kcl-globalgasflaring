@@ -16,9 +16,7 @@ def frp_median(s):
                 l = np.matrix(v.strip("[ ]")).tolist()  # TODO super hacky, need to find a better way
                 array_list += l[0]
             except Exception, e:
-                print (e)
-                print v
-                print
+                array_list.append(v)                
                 continue
         return np.median(array_list)
 
@@ -70,9 +68,9 @@ def main():
     grouped_df['coords'] = generate_coords(grouped_df)
     unique_coords = grouped_df.coords.unique()
     coords_df = pd.DataFrame({'coords': unique_coords,
-                              'id': np.arange(unique_coords.size)})
-    grouped_df['flare_id'] = grouped_df.merge(coords_df, on=['coords'])
-    grouped_df.drop(['coords'], inplace=True)
+                              'flare_id': np.arange(unique_coords.size)})
+    grouped_df = grouped_df.merge(coords_df, how='left', on='coords')
+    grouped_df.drop(['coords'], axis=1, inplace=True)
 
     if not os.path.exists(os.path.join(fp.path_to_cems_output_l3, 'all_sensors')):
         os.makedirs(os.path.join(fp.path_to_cems_output_l3, 'all_sensors'))
