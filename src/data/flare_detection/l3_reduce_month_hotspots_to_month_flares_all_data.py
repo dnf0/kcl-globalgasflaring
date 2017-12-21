@@ -148,6 +148,9 @@ def main():
         month_df = pd.read_csv(month_df_fname)
         annual_df = construct_annual_df(monthly_df_fnames[i:i+12])
 
+        # add in coords
+        month_df['coords'] = generate_coords(month_df)
+
         # group the annual dataframe by lats and lons
         grouped_annual_df = group_annual_df(annual_df)
 
@@ -167,6 +170,7 @@ def main():
     # the months from n_files[:-12] have not been processed, do them now using the last annual dataframe
     for month_df_fname in monthly_df_fnames[-12:]:
         month_df = pd.read_csv(month_df_fname)
+        month_df['coords'] = generate_coords(month_df)
         month_hotspot_df = month_df.merge(_12_annum_hotspot_location_series.to_frame(), on=['coords'])
         save_month(month_hotspot_df, root)
 
