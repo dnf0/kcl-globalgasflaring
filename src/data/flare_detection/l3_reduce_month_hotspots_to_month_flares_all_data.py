@@ -35,8 +35,8 @@ def setup_df(path, yr, m):
     sensor = get_sensor(path)
     df = pd.read_csv(path)
     df['sensor'] = sensor
-    df['year'] = yr
-    df['month'] = m
+    df['year'] = int(yr)
+    df['month'] = int(m)
     return df
 
 
@@ -111,21 +111,20 @@ def save(month_df, annual_df, root):
     for sensor in ['ats', 'at2', 'at1']:
         out_df = month_df[month_df.sensor == sensor]
         if not out_df.empty:
-            out_path = os.path.join(root, sensor, str(month_df.year[0]), str(month_df.month[0]).zfill(2))
-            month_out_path = out_path + '_flaring_subset.csv'
-            annual_out_path = out_path + '_flaring_subset_annual.csv'
+            out_path = os.path.join(root, sensor, str(month_df.year[0]))
+            month_out_path = os.path.join(out_path, str(month_df.month[0]).zfill(2) +  '_flaring_subset.csv')
+            annual_out_path = os.path.join(out_path, str(month_df.month[0]).zfill(2) +  '_flaring_subset_annual.csv')
 
             out_df.to_csv(month_out_path, index=False)
             annual_df.to_csv(annual_out_path, index=False)
-
 
 def save_month(month_df, root):
 
     for sensor in ['ats', 'at2', 'at1']:
         out_df = month_df[month_df.sensor == sensor]
         if not out_df.empty:
-            out_path = os.path.join(root, sensor, str(month_df.year[0]), str(month_df.month[0]).zfill(2))
-            month_out_path = out_path + '_flaring_subset.csv'
+            out_path = os.path.join(root, sensor, str(month_df.year[0]))
+            month_out_path = os.path.join(out_path, str(month_df.month[0]).zfill(2) + '_flaring_subset.csv')
             out_df.to_csv(month_out_path, index=False)
 
 
@@ -136,14 +135,13 @@ def main():
 
     # extract all the monthly dataframes and keep track of the
     # sensor that observed the month
-    monthly_df_fnames = generate_monthly_dataframes(root)
-    #monthly_df_fnames = [os.path.join(fp.path_to_cems_output_intermediate, f) for f in os.listdir(fp.path_to_cems_output_intermediate)]
+    #monthly_df_fnames = generate_monthly_dataframes(root)
+    monthly_df_fnames = [os.path.join(fp.path_to_cems_output_intermediate, f) for f in os.listdir(fp.path_to_cems_output_intermediate)]
 
     # using the monthly dataframes perform the flare detection
     list_of_12_hotspot_dfs = []
     for i, month_df_fname in enumerate(monthly_df_fnames[:-12]):
 	
-        print 'current month df:', month_df_fname
         # read in the required dataframes
         month_df = pd.read_csv(month_df_fname)
         annual_df = construct_annual_df(monthly_df_fnames[i:i+12])
