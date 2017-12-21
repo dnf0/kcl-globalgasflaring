@@ -31,15 +31,10 @@ def get_sensor(path):
         return 'at1'
 
 
-def generate_coords(df):
-    return zip(df.lats.values, df.lons.values)
-
-
 def setup_df(path, yr, m):
     sensor = get_sensor(path)
     print 'in setup_df, sensor is:', sensor
     df = pd.read_csv(path)
-    df['coords'] = generate_coords(df)
     df['sensor'] = sensor
     df['year'] = yr
     df['month'] = m
@@ -53,7 +48,6 @@ def generate_monthly_dataframes(root):
     for yr in years:
         for m in months:
             csv_files = glob.glob(os.path.join(root, '*', str(yr), str(m).zfill(2) + '.csv'))
-	    print csv_files
             if len(csv_files) == 1:
                 df = setup_df(csv_files[0], yr, m)
             elif len(csv_files) == 2:
@@ -65,12 +59,21 @@ def generate_monthly_dataframes(root):
             out_path = os.path.join(fp.path_to_cems_output_intermediate, str(yr) + str(m).zfill(2) + '.csv')
             df.to_csv(out_path, index=False)
             monthly_df_fnames.append(out_path)
-    return monthly_dataframes
+    return monthly_df_fnames
 
 
-def construct_annual_df(df_list):
-    annual_df = pd.concat(df_list, ignore_index=True)
-    annual_df = annual_df[['lats', 'lons']]
+
+def generate_coords(df):
+    return zip(df.lats.values, df.lons.values)
+
+
+def construct_annual_df(df_files_for_annum):
+    annual_df_list = []
+    for f in df_files_for_annum:
+        annual_df_list.append(pd.read_csv(f, usecols=['lats', 'lons']))
+
+    # concatenate the monthly dataframes
+    annual_df = pd.concat(annual_df_list, ignore_index=True)
     annual_df['times_seen_in_annum'] = np.ones(annual_df.shape[0])
     return annual_df
 
@@ -135,14 +138,15 @@ def main():
 
     # extract all the monthly dataframes and keep track of the
     # sensor that observed the month
-    monthly_dataframes = generate_monthly_dataframes(root)
-    return
+    monthly_df_fnames = generate_monthly_dataframes(root)
+
     # using the monthly dataframes perform the flare detection
     list_of_12_hotspot_dfs = []
-    for i, month_df in enumerate(monthly_dataframes[:-12]):
+    for i, month_df_fname in enumerate(monthly_df_fnames[:-12]):
 
-        # read the twelve months from the current month, retain the current month dataframe
-        annual_df = construct_annual_df(monthly_dataframes[i:i+12])
+        # read in the required dataframes
+        month_df = pd.read_csv(month_df_fname)
+        annual_df = construct_annual_df(monthly_df_fnames[i:i+12])
 
         # group the annual dataframe by lats and lons
         grouped_annual_df = group_annual_df(annual_df)
@@ -161,10 +165,9 @@ def main():
         save(month_hotspot_df, annual_hotspot_df, root)
 
     # the months from n_files[:-12] have not been processed, do them now using the last annual dataframe
-    for month_df in monthly_dataframes[-12:]:
-        # get hotspots for month
+    for month_df_fname in monthly_df_fnames[-12:]:
+        month_df = pd.read_csv(month_df_fname)
         month_hotspot_df = month_df.merge(_12_annum_hotspot_location_series.to_frame(), on=['coords'])
-        # save df
         save_month(month_hotspot_df, root)
 
 
