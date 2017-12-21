@@ -58,11 +58,11 @@ def main():
     merged_df.rename(columns={'times_seen_in_month': 'times_seen'}, inplace=True)
     merged_df['frp_sd'] = merged_df.frp
 
-    grouped = merged_df.groupby(['lats', 'lons'], as_index=False).agg({'times_seen': np.sum,
-                                                                       'dt_start': np.min,
-                                                                       'dt_stop': np.max,
-                                                                       'frp': frp_median,
-                                                                       'frp_sd': frp_sd})
+    grouped = merged_df.groupby(['lats', 'lons', 'sensor'], as_index=False).agg({'times_seen': np.sum,
+                                                                                 'dt_start': np.min,
+                                                                                 'dt_stop': np.max,
+                                                                                 'frp': frp_median,
+                                                                                 'frp_sd': frp_sd})
     if not os.path.exists(os.path.join(fp.path_to_cems_output_l3, 'all_sensors')):
         os.makedirs(os.path.join(fp.path_to_cems_output_l3, 'all_sensors'))
     grouped.to_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flares.csv'),
