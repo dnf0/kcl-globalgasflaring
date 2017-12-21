@@ -61,7 +61,6 @@ def generate_monthly_dataframes(root):
     return monthly_df_fnames
 
 
-
 def generate_coords(df):
     return zip(df.lats.values, df.lons.values)
 
@@ -118,6 +117,7 @@ def save(month_df, annual_df, root):
             out_df.to_csv(month_out_path, index=False)
             annual_df.to_csv(annual_out_path, index=False)
 
+
 def save_month(month_df, root):
 
     for sensor in ['ats', 'at2', 'at1']:
@@ -135,13 +135,14 @@ def main():
 
     # extract all the monthly dataframes and keep track of the
     # sensor that observed the month
-    #monthly_df_fnames = generate_monthly_dataframes(root)
-    monthly_df_fnames = [os.path.join(fp.path_to_cems_output_intermediate, f) for f in os.listdir(fp.path_to_cems_output_intermediate)]
+    monthly_df_fnames = generate_monthly_dataframes(root)
+    #monthly_df_fnames = [os.path.join(fp.path_to_cems_output_intermediate, f)
+    # for f in os.listdir(fp.path_to_cems_output_intermediate)]
 
     # using the monthly dataframes perform the flare detection
     list_of_12_hotspot_dfs = []
     for i, month_df_fname in enumerate(monthly_df_fnames[:-12]):
-	
+
         # read in the required dataframes
         month_df = pd.read_csv(month_df_fname)
         annual_df = construct_annual_df(monthly_df_fnames[i:i+12])

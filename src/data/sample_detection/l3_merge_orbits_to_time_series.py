@@ -11,14 +11,6 @@ import src.config.filepaths as fp
 def main():
 
     csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_sampling.csv')
-    
-    # filter the csv filepaths to process
-    csv_filepaths = [f for f in csv_filepaths if not re.search(r'at2/2002/[0][5-9]/', f)]
-    csv_filepaths = [f for f in csv_filepaths if not re.search(r'at2/2002/[1][0-2]/', f)]
-    csv_filepaths = [f for f in csv_filepaths if not re.search(r'at2/2003/*/', f)]
-    csv_filepaths = [f for f in csv_filepaths if not re.search(r'at1/199[6-7]/*/', f)]
-    csv_filepaths = [f for f in csv_filepaths if not re.search(r'at1/1995/[0][6-9]/', f)]
-    csv_filepaths = [f for f in csv_filepaths if not re.search(r'at1/1995/[1][0-2]/', f)]
 
     sample_counter = defaultdict(int)
     cloud_free_counts = defaultdict(int)

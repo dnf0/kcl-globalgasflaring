@@ -82,8 +82,6 @@ def main():
                 csv_files_for_month = select_csv_files_for_month(sensor, year, month)
                 month_df = generate_month_df(csv_files_for_month, resolution)
                 extend_month_df(month_df)
-                print month_df.head()
-                print ''
                 month_df_grouped = group_month(month_df)
 
                 # dump to csv

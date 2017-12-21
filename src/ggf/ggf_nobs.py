@@ -156,9 +156,13 @@ def main():
 
     # load in the flare dataframe
     flare_df = pd.read_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flares.csv'))
+
+    # groupby flare id and get the start and stop time
+    flare_df = flare_df.groupby(['flare_id'], as_index=False).agg({'lats': np.mean, 'lons': np.mean,
+                                                                   'dt_start': np.min, 'dt_stop': np.max})
+
     flare_df['dt_start'] = pd.to_datetime(flare_df['dt_start'])
     flare_df['dt_stop'] = pd.to_datetime(flare_df['dt_stop'])
-    flare_df['ids'] = flare_df.index
 
     # now subset down the dataframe by time to only those flares
     # that have been seen burning before AND after this orbit
@@ -175,13 +179,13 @@ def main():
 
     # find the flaring locations in the orbit by distance measure
     valid_distances = distances <= resolution / 2.  # TODO think we can drop the /2 and just do <
-    flare_ids = flare_df.ids[valid_distances].values
+    flare_id = flare_df.flare_id[valid_distances].values
     matched_lats = combined_lat_lon[indexes[valid_distances], 0]
     matched_lons = combined_lat_lon[indexes[valid_distances], 1]
     matched_mask_type = mask_type_mode[indexes[valid_distances]]
 
     # set up output df
-    output_df = pd.DataFrame({'flare_ids': flare_ids,
+    output_df = pd.DataFrame({'flare_id': flare_id,
                               'matched_lats': matched_lats,
                               'matched_lons': matched_lons,
                               'obs_types': matched_mask_type
