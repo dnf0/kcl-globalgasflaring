@@ -37,6 +37,7 @@ def generate_coords(df):
 
 def setup_df(path, yr, m):
     sensor = get_sensor(path)
+    print 'in setup_df, sensor is:', sensor
     df = pd.read_csv(path)
     df['coords'] = generate_coords(df)
     df['sensor'] = sensor
@@ -46,7 +47,7 @@ def setup_df(path, yr, m):
 
 
 def generate_monthly_dataframes(root):
-    monthly_dataframes = []
+    monthly_df_fnames = []
     years = np.arange(1991,2013,1)
     months = np.arange(1,13,1)
     for yr in years:
@@ -61,7 +62,9 @@ def generate_monthly_dataframes(root):
                 df = df_a.append(df_b, ignore_index=True)
             else:
                 continue
-            monthly_dataframes.append(df)
+            out_path = os.path.join(fp.path_to_cems_output_intermediate, str(yr) + str(m).zfill(2) + '.csv')
+            df.to_csv(out_path, index=False)
+            monthly_df_fnames.append(out_path)
     return monthly_dataframes
 
 
@@ -106,6 +109,7 @@ def save(month_df, annual_df, root):
     for sensor in ['ats', 'at2', 'at1']:
         month_df = month_df[month_df.sensor == sensor]
         if not month_df.empty:
+            print 'in save, and df not empoy, saving for sensor:', sensor
             out_path = os.path.join(root, sensor, str(month_df.year[0]), str(month_df.month[0]).zfill(2))
             month_out_path = out_path + '_flaring_subset.csv'
             annual_out_path = out_path + '_flaring_subset_annual.csv'
@@ -132,7 +136,7 @@ def main():
     # extract all the monthly dataframes and keep track of the
     # sensor that observed the month
     monthly_dataframes = generate_monthly_dataframes(root)
-
+    return
     # using the monthly dataframes perform the flare detection
     list_of_12_hotspot_dfs = []
     for i, month_df in enumerate(monthly_dataframes[:-12]):

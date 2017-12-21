@@ -21,6 +21,7 @@ paths_to_data = ['/neodc/aatsr_multimission/aatsr-v3/data/ats_toa_1p',
 output_root = '/home/users/dnfisher/nceo_aerosolfire/data/temp/'
 #output_root = '/Users/dnf/Projects/kcl-globalgasflaring/data/'
 #output_root = '/Users/danielfisher/Projects/kcl-globalgasflaring/data/'
+path_to_cems_output_intermediate = output_root + 'processed/l3/intermediate/'
 path_to_cems_output_l2 = output_root + 'processed/l2/'
 path_to_cems_output_l3 = output_root + 'processed/l3/'
 
