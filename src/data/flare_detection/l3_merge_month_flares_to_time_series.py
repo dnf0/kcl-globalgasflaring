@@ -34,6 +34,10 @@ def frp_sd(s):
         return 99999
 
 
+def generate_coords(df):
+    return zip(df.lats.values, df.lons.values)
+
+
 def main():
 
     df_list = []
@@ -49,23 +53,30 @@ def main():
         df_list.append(df)
 
 
-    merged_df = pd.concat(df_list,
+    all_data_df = pd.concat(df_list,
                                  ignore_index=False)
-    merged_df.reset_index(inplace=True)
+    all_data_df.reset_index(inplace=True)
 
-    merged_df['dt_start'] = merged_df.datetime
-    merged_df['dt_stop'] = merged_df.datetime
-    merged_df.rename(columns={'times_seen_in_month': 'times_seen'}, inplace=True)
-    merged_df['frp_sd'] = merged_df.frp
+    all_data_df['dt_start'] = all_data_df.datetime
+    all_data_df['dt_stop'] = all_data_df.datetime
+    all_data_df.rename(columns={'times_seen_in_month': 'times_seen'}, inplace=True)
+    all_data_df['frp_sd'] = all_data_df.frp
 
-    grouped = merged_df.groupby(['lats', 'lons', 'sensor'], as_index=False).agg({'times_seen': np.sum,
-                                                                                 'dt_start': np.min,
-                                                                                 'dt_stop': np.max,
-                                                                                 'frp': frp_median,
-                                                                                 'frp_sd': frp_sd})
+    grouped_df = all_data_df.groupby(['lats', 'lons', 'sensor'], as_index=False).agg({'times_seen': np.sum,
+                                                                                    'dt_start': np.min,
+                                                                                    'dt_stop': np.max,
+                                                                                    'frp': frp_median,
+                                                                                    'frp_sd': frp_sd})
+    grouped_df['coords'] = generate_coords(grouped_df)
+    unique_coords = grouped_df.coords.unique()
+    coords_df = pd.DataFrame({'coords': unique_coords,
+                              'id': np.arange(unique_coords.size)})
+    grouped_df['flare_id'] = grouped_df.merge(coords_df, on=['coords'])
+    grouped_df.drop(['coords'], inplace=True)
+
     if not os.path.exists(os.path.join(fp.path_to_cems_output_l3, 'all_sensors')):
         os.makedirs(os.path.join(fp.path_to_cems_output_l3, 'all_sensors'))
-    grouped.to_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flares.csv'),
+    grouped_df.to_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flares.csv'),
                    date_format='%Y-%m-%d %H:%M:%S',
                    index=False)
 
