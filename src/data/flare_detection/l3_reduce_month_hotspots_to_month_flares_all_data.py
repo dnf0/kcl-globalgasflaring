@@ -33,7 +33,11 @@ def get_sensor(path):
 
 def setup_df(path, yr, m):
     sensor = get_sensor(path)
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, dtype={'lats': float,
+                                  'lons': float,
+                                  'times_seen_in_month': float,
+                                  'pixel_size': float,
+                                  'frp': object})
     df['sensor'] = sensor
     df['year'] = int(yr)
     df['month'] = int(m)
@@ -71,13 +75,13 @@ def construct_annual_df(df_files_for_annum):
     annual_df_list = []
     for f in df_files_for_annum:
 
-        df = pd.read_csv(f, usecols=['lats', 'lons', 'sensor'])
+        df = pd.read_csv(f, usecols=['lats', 'lons', 'sensor'], dtype={'lats': float, 'lons': float, 'sensor': object})
         # here we drop any duplicated flare observations to make sure that we
         # only have one hotspot for any location per month.
         if len(df.sensor.unique()) == 2:
             df['coords'] = generate_coords(df)
             df = df[~df.coords.duplicated(keep='first')]
-            df.drop(['coords'], inplace=True)
+            df.drop(['coords'], axis=1, inplace=True)
             annual_df_list.append(df)
         else:
             annual_df_list.append(df)
@@ -123,8 +127,8 @@ def save(month_df, annual_df, root):
         out_df = month_df[month_df.sensor == sensor]
         if not out_df.empty:
             out_path = os.path.join(root, sensor, str(month_df.year[0]))
-            month_out_path = os.path.join(out_path, str(month_df.month[0]).zfill(2) +  '_flaring_subset.csv')
-            annual_out_path = os.path.join(out_path, str(month_df.month[0]).zfill(2) +  '_flaring_subset_annual.csv')
+            month_out_path = os.path.join(out_path, str(month_df.month[0]).zfill(2) + '_flaring_subset.csv')
+            annual_out_path = os.path.join(out_path, str(month_df.month[0]).zfill(2) + '_flaring_subset_annual.csv')
 
             out_df.to_csv(month_out_path, index=False)
             annual_df.to_csv(annual_out_path, index=False)
@@ -156,7 +160,9 @@ def main():
     for i, month_df_fname in enumerate(monthly_df_fnames[:-12]):
 
         # read in the required dataframes
-        month_df = pd.read_csv(month_df_fname)
+        month_df = pd.read_csv(month_df_fname, dtype={'lats': float, 'lons': float, 'times_seen_in_month': float,
+                                                      'pixel_size': float, 'frp': object, 'sensor': object,
+                                                      'year': int, 'month': int})
         annual_df = construct_annual_df(monthly_df_fnames[i:i+12])
 
         # add in coords
@@ -180,7 +186,9 @@ def main():
 
     # the months from n_files[:-12] have not been processed, do them now using the last annual dataframe
     for month_df_fname in monthly_df_fnames[-12:]:
-        month_df = pd.read_csv(month_df_fname)
+        month_df = pd.read_csv(month_df_fname, dtype={'lats': float, 'lons': float, 'times_seen_in_month': float,
+                                                      'pixel_size': float, 'frp': object, 'sensor': object,
+                                                      'year': int, 'month': int})
         month_df['coords'] = generate_coords(month_df)
         month_hotspot_df = month_df.merge(_12_annum_hotspot_location_series.to_frame(), on=['coords'])
         save_month(month_hotspot_df, root)
