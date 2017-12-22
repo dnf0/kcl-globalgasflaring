@@ -50,6 +50,8 @@ def generate_monthly_dataframes(root):
             if len(csv_files) == 1:
                 df = setup_df(csv_files[0], yr, m)
             elif len(csv_files) == 2:
+                # in combined dataframe we will be getting more observations, this is dealth with
+                # is construct annual df by dropping duplicated locations.
                 df_a = setup_df(csv_files[0], yr, m)
                 df_b = setup_df(csv_files[1], yr, m)
                 df = df_a.append(df_b, ignore_index=True)
@@ -68,7 +70,17 @@ def generate_coords(df):
 def construct_annual_df(df_files_for_annum):
     annual_df_list = []
     for f in df_files_for_annum:
-        annual_df_list.append(pd.read_csv(f, usecols=['lats', 'lons']))
+
+        df = pd.read_csv(f, usecols=['lats', 'lons', 'sensor'])
+        # here we drop any duplicated flare observations to make sure that we
+        # only have one hotspot for any location per month.
+        if len(df.sensor.unique()) == 2:
+            df['coords'] = generate_coords(df)
+            df = df[~df.coords.duplicated(keep='first')]
+            df.drop(['coords'], inplace=True)
+            annual_df_list.append(df)
+        else:
+            annual_df_list.append(df)
 
     # concatenate the monthly dataframes
     annual_df = pd.concat(annual_df_list, ignore_index=True)
