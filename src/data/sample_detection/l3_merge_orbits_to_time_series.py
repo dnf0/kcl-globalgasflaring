@@ -24,13 +24,13 @@ def main():
             sample_df = pd.read_csv(f)
 
             for index, row in sample_df.iterrows():
-                sample_counter[row.flare_ids] += 1
-                lats[row.flare_ids] = row.matched_lats
-                lons[row.flare_ids] = row.matched_lons
+                sample_counter[row.flare_id] += 1
+                lats[row.flare_id] = row.matched_lats
+                lons[row.flare_id] = row.matched_lons
                 if row.obs_types == 2:
-                    cloud_free_counts[row.flare_ids] += 1
+                    cloud_free_counts[row.flare_id] += 1
                 if row.obs_types == 1:
-                    flare_counts[row.flare_ids] += 1
+                    flare_counts[row.flare_id] += 1
 
         except Exception, e:
             logger.warning('Could not load csv file with error: ' + str(e))
