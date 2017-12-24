@@ -8,7 +8,7 @@ import numpy as np
 import src.config.filepaths as fp
 
 
-def frp_median(s):
+def obj_median(s):
 
         array_list = []
         for v in s.values:
@@ -21,7 +21,7 @@ def frp_median(s):
         return np.median(array_list)
 
 
-def frp_sd(s):
+def obj_sd(s):
     try:
         array_list = []
         for v in s.values:
@@ -59,12 +59,19 @@ def main():
     all_data_df['dt_stop'] = all_data_df.datetime
     all_data_df.rename(columns={'times_seen_in_month': 'times_seen'}, inplace=True)
     all_data_df['frp_sd'] = all_data_df.frp
+    all_data_df['reflectances_sd'] = all_data_df.reflectances
+    all_data_df['radiances_sd'] = all_data_df.radiances
 
     grouped_df = all_data_df.groupby(['lats', 'lons', 'sensor'], as_index=False).agg({'times_seen': np.sum,
                                                                                     'dt_start': np.min,
                                                                                     'dt_stop': np.max,
-                                                                                    'frp': frp_median,
-                                                                                    'frp_sd': frp_sd})
+                                                                                    'frp': obj_median,
+                                                                                    'frp_sd': obj_sd,
+                                                                                    'reflectances': obj_median,
+                                                                                    'reflectances_sd': obj_sd,
+                                                                                    'radiances': obj_median,
+                                                                                    'radiances_sd': obj_sd,
+                                                                                    })
     grouped_df['coords'] = generate_coords(grouped_df)
     unique_coords = grouped_df.coords.unique()
     coords_df = pd.DataFrame({'coords': unique_coords,

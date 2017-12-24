@@ -37,7 +37,10 @@ def setup_df(path, yr, m):
                                   'lons': float,
                                   'times_seen_in_month': float,
                                   'pixel_size': float,
-                                  'frp': object})
+                                  'frp': object,
+                                  'radiances': object,
+                                  'reflectances': object,
+                                  })
     df['sensor'] = sensor
     df['year'] = int(yr)
     df['month'] = int(m)
@@ -54,8 +57,8 @@ def generate_monthly_dataframes(root):
             if len(csv_files) == 1:
                 df = setup_df(csv_files[0], yr, m)
             elif len(csv_files) == 2:
-                # in combined dataframe we will be getting more observations, this is dealth with
-                # is construct annual df by dropping duplicated locations.
+                # in combined dataframe we will be getting more observations, this is dealt with
+                # in construct annual df by dropping duplicated locations.
                 df_a = setup_df(csv_files[0], yr, m)
                 df_b = setup_df(csv_files[1], yr, m)
                 df = df_a.append(df_b, ignore_index=True)
@@ -162,7 +165,8 @@ def main():
         # read in the required dataframes
         month_df = pd.read_csv(month_df_fname, dtype={'lats': float, 'lons': float, 'times_seen_in_month': float,
                                                       'pixel_size': float, 'frp': object, 'sensor': object,
-                                                      'year': int, 'month': int})
+                                                      'year': int, 'month': int, 'radiances': object,
+                                                      'reflectances': object})
         annual_df = construct_annual_df(monthly_df_fnames[i:i+12])
 
         # add in coords
@@ -188,7 +192,8 @@ def main():
     for month_df_fname in monthly_df_fnames[-12:]:
         month_df = pd.read_csv(month_df_fname, dtype={'lats': float, 'lons': float, 'times_seen_in_month': float,
                                                       'pixel_size': float, 'frp': object, 'sensor': object,
-                                                      'year': int, 'month': int})
+                                                      'year': int, 'month': int, 'radiances': object,
+                                                      'reflectances': object})
         month_df['coords'] = generate_coords(month_df)
         month_hotspot_df = month_df.merge(_12_annum_hotspot_location_series.to_frame(), on=['coords'])
         save_month(month_hotspot_df, root)

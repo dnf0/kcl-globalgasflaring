@@ -45,7 +45,9 @@ def generate_month_df(csv_files_for_month, resolution):
             orbit_df = pd.read_csv(f)
             orbit_df['lons'] = myround(orbit_df['lons'].values, base=resolution)
             orbit_df['lats'] = myround(orbit_df['lats'].values, base=resolution)
-            orbit_df = orbit_df.groupby(['lons', 'lats'], as_index=False).agg({'frp': np.mean, 'reflectances': np.mean,
+            orbit_df = orbit_df.groupby(['lons', 'lats'], as_index=False).agg({'frp': np.mean,
+                                                                               'reflectances': np.mean,
+                                                                               'radiances': np.mean,
                                                                                'pixel_size': np.mean,
                                                                                'sun_elev': np.mean})
             month_flares.append(orbit_df)
@@ -57,14 +59,16 @@ def generate_month_df(csv_files_for_month, resolution):
 
 
 def extend_month_df(month_df):
-    month_df['coords'] = generate_coords(month_df)
     month_df['times_seen_in_month'] = np.ones(month_df.shape[0])
 
 
 def group_month(month_df):
     grouped = month_df.groupby(['lats', 'lons'], as_index=False).agg({'times_seen_in_month': np.sum,
                                                                       'pixel_size': np.mean,
-                                                                      'frp': lambda x: np.array(x)})
+                                                                      'frp': lambda x: np.array(x),
+                                                                      'radiances': lambda x: np.array(x),
+                                                                      'reflectances': lambda x: np.array(x),
+                                                                      })
     return grouped
 
 
