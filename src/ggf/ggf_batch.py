@@ -81,6 +81,16 @@ for path_to_data in filepaths.paths_to_data:
         if ('at2' in path_to_data) & (int(yr) > 2003):
             print 'continuing...', yr
             continue
+
+        # remove after testing
+        if ('at1' in path_to_data) | ('at2' in path_to_data):
+            continue
+        if int(yr) > 2003:
+            continue
+
+        if ('at2' in path_to_data) & (int(yr) > 2003):
+            print 'continuing...', yr
+            continue
        
         path = os.path.join(path_to_data,  yr)
         print path
@@ -99,10 +109,14 @@ for path_to_data in filepaths.paths_to_data:
                 if 'E1' in f:
                     sensor = 'at1'
 
+                ymd = f[14:22]
+
                 # TODO Remove after testing
                 sensor = 'ats_at2'
+                if not ((int(ymd[0:6]) > 200205) & (int(ymd[0:6]) < 200306)):
+                    continue
+                print 'submitting ymd: ', ymd
 
-                ymd = f[14:22]
                 out_dir = os.path.join(filepaths.path_to_cems_output_l2, sensor,
                                        ymd[0:4], ymd[4:6], ymd[6:8])
                 if not os.path.exists(out_dir):
