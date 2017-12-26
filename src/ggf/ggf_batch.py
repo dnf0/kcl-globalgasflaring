@@ -127,7 +127,7 @@ for path_to_data in filepaths.paths_to_data:
                                                      out_dir, True)
                 g = os.fdopen(gd, "w")
                 g.write('export PYTHONPATH=$PYTHONPATH:/home/users/dnfisher/projects/kcl-globalgasflaring/\n')
-                g.write(filepaths.ggf_dir + 'ggf_nobs.py ' +
+                g.write(filepaths.ggf_dir + 'ggf_colllocate_sensors.py ' +
                         data_path + ' ' +
                         out_dir + " \n")
                 g.write("rm -f " + script_file + "\n")

@@ -3,28 +3,6 @@
 """
 code description:
 
-For a given ATSR orbit we determine if any of the gas flares in our detected
-gas flare file have a potential observation.  This is done as:
-
-1. Get the start time of the ATSR file
-2. Restrict only those conditions where the flare might have been observed.  That is
-it being a night-time scene and either a) a flaring location (i.e. ref > 0.1) or b) a
-cloud free location (i.e. free from any cloud).  This gives us all possibly
-flare observation opportunities.
-3. Extract the lats and lons for these potential flaring sites in the ATSR orbit.
-4. Resample the ATSR lats and Lons to 1 arc minute resolution (same as monhtly aggregation)
-
-5. Form a KDtree using these ATSR lats and lons
-6. From the gas flare location DF. Get only those flares that have been seen
-burning before and after the ATSR overpass. This means that they were operating
-at the time of the ATSR overpass.
-7. Determine whether these flaring locations are contained within the ATSR orbit
-through comparison against the KDTree.
-8. The KDtree returns distances, any flare that is located in the atsr grid at a
-distance less the resampling resolution is considered to be observed in this orbit
-9. For these flares write out the flare ID, along with the ATSR lat and lon that
-was matched to the flare.  The lats and lons are used to make sure that the flares
-that we see are actually reasonable in terms of thier locations. I.e. as a sanity check.
 """
 
 import os
@@ -43,12 +21,17 @@ import src.config.filepaths as fp
 
 
 def get_at2_path(ats_path):
-    at2_path, ats_fname = ats_path.split('segregated/')
+    if 'segregated' in ats_path:
+    	at2_path, ats_fname = ats_path.split('segregated/')
+    else:
+        ats_fname = ats_path.split('/')[-1]
+        at2_path = ats_path.split(ats_fname)[0]
     at2_path = at2_path.replace('aatsr-v3', 'atsr2-v3')
     at2_path = at2_path.replace('ats_toa_1p', 'at2_toa_1p')
-
-    ats_timestamp = ats_fname[8:25]
-    return glob.glob(at2_path + '*' + ats_timestamp + '*')
+    ats_timestamp = ats_fname[14:25]
+    logger.info(at2_path)
+    logger.info(ats_timestamp)
+    return glob.glob(at2_path + '*' + ats_timestamp + '*.E2')[0]
 
 
 
@@ -62,20 +45,14 @@ def make_night_mask(ats_product):
     return solar_zenith_angle >= proc_const.day_night_angle
 
 
-def make_cloud_mask(ats_product):
-    cloud_mask = ats_product.get_band('cloud_flags_nadir').read_as_array()
-    # over land or water and cloud free (i.e. bit 0 is set (cloud free land)  or unset(cloud free water))
-    return cloud_mask <= 1
-
-
-def get_swir_mask(ats_product):
-    swir_ref = ats_product.get_band('reflec_nadir_1600').read_as_array()
-    return swir_ref > proc_const.swir_thresh
+def detect_flares(ats_product, mask):
+    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
+    nan_mask = np.isnan(swir)  # get rid of SWIR nans also
+    return (swir > proc_const.swir_thresh) & mask & ~nan_mask
 
 
 def myround(x, dec=20, base=60. / 3600):
     return np.round(base * np.round(x/base), dec)
-
 
 
 def setup_data(ats_product, mask):
@@ -119,12 +96,9 @@ def get_flaring_for_orbit(ds, resolution):
 
     # set up masks that define potential flaring sites
     night_mask = make_night_mask(ds)
-    cloud_free_mask = make_cloud_mask(ds)
-    swir_mask = get_swir_mask(ds)
+    flare_mask = detect_flares(ds, night_mask)
 
     # get the rounded lats and lons of the potential flaring sites
-    potential_flares = cloud_free_mask | swir_mask  # either cloud free or high swir
-    flare_mask = night_mask & potential_flares  # and also at night
     rounded_lats, rounded_lons, reflectances = setup_data(ds, flare_mask)
 
     # set up the cKDTree for querying flare locations

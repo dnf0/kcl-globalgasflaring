@@ -63,6 +63,7 @@ def extend_month_df(month_df):
 
 
 def group_month(month_df):
+    print month_df.info()
     grouped = month_df.groupby(['lats', 'lons'], as_index=False).agg({'times_seen_in_month': np.sum,
                                                                       'pixel_size': np.mean,
                                                                       'frp': lambda x: np.array(x),
