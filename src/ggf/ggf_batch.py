@@ -98,6 +98,10 @@ for path_to_data in filepaths.paths_to_data:
                     sensor = 'at2'
                 if 'E1' in f:
                     sensor = 'at1'
+
+                # TODO Remove after testing
+                sensor = 'ats_at2'
+
                 ymd = f[14:22]
                 out_dir = os.path.join(filepaths.path_to_cems_output_l2, sensor,
                                        ymd[0:4], ymd[4:6], ymd[6:8])

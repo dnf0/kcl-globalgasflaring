@@ -31,18 +31,25 @@ import os
 import sys
 import logging
 from datetime import datetime
+import glob
 
 import epr
 import numpy as np
 import scipy.spatial as spatial
-import scipy.stats as stats
 import pandas as pd
-
-import matplotlib.pyplot as plt
-
 
 import src.config.constants as proc_const
 import src.config.filepaths as fp
+
+
+def get_at2_path(ats_path):
+    at2_path, ats_fname = ats_path.split('segregated/')
+    at2_path = at2_path.replace('aatsr-v3', 'atsr2-v3')
+    at2_path = at2_path.replace('ats_toa_1p', 'at2_toa_1p')
+
+    ats_timestamp = ats_fname[8:25]
+    return glob.glob(at2_path + '*' + ats_timestamp + '*')
+
 
 
 def read_atsr(path_to_ats_data):
@@ -63,28 +70,18 @@ def make_cloud_mask(ats_product):
 
 def get_swir_mask(ats_product):
     swir_ref = ats_product.get_band('reflec_nadir_1600').read_as_array()
-    nan_mask = np.isnan(swir_ref)  # get rid of SWIR nans also
-    return (swir_ref > proc_const.swir_thresh) & ~nan_mask
+    return swir_ref > proc_const.swir_thresh
 
 
 def myround(x, dec=20, base=60. / 3600):
     return np.round(base * np.round(x/base), dec)
 
 
-def get_type(a):
-    if np.in1d(1, a)[0]:
-        return 1
-    else:
-        return 2
 
+def setup_data(ats_product, mask):
 
-def setup_data(ats_product, mask, cloud_free_mask, swir_mask):
-
-    # type mask
-    types = np.zeros(cloud_free_mask.shape)
-    types[cloud_free_mask] = 2
-    types[swir_mask] = 1
-    types = types[mask]
+    # get reflectances
+    reflectances = ats_product.get_band('reflec_nadir_1600').read_as_array()[mask]
 
     # mask lats and lons
     lats = ats_product.get_band('latitude').read_as_array()[mask]
@@ -97,10 +94,10 @@ def setup_data(ats_product, mask, cloud_free_mask, swir_mask):
     # set up dataframe to group the data
     df = pd.DataFrame({'lats': rounded_lats,
                        'lons': rounded_lons,
-                       'types': types})
+                       'reflectances': reflectances})
 
     # here we can calculate if it is a cloud free or flaring observation using pandas
-    grouped = df.groupby(['lats', 'lons'], as_index=False).agg({'types': get_type})
+    grouped = df.groupby(['lats', 'lons'], as_index=False).agg({'reflectances': np.mean})
 
     # # join together the round coordinates
     # combined_coords = zip(rounded_lats, rounded_lons)
@@ -113,46 +110,31 @@ def setup_data(ats_product, mask, cloud_free_mask, swir_mask):
 
     rounded_lats = grouped['lats'].values
     rounded_lons = grouped['lons'].values
-    mode_types = grouped['types'].values
+    mean_reflectances = grouped['reflectances'].values
 
-    return rounded_lats, rounded_lons, mode_types
+    return rounded_lats, rounded_lons, mean_reflectances
 
 
-def main():
-
-    # some processing constants
-    resolution = 60 / 3600.  # Degrees. same as with monthly aggregation
-
-    # read in the atsr prodcut
-    path_to_data = sys.argv[1]
-    path_to_output = sys.argv[2]
-    atsr_data = read_atsr(path_to_data)
-
-    if 'N1' in path_to_data:
-        sensor = 'ats'
-    if 'E2' in path_to_data:
-        sensor = 'at2'
-    if 'E1' in path_to_data:
-        sensor = 'at1'
+def get_flaring_for_orbit(ds, resolution):
 
     # set up masks that define potential flaring sites
-    night_mask = make_night_mask(atsr_data)
-    cloud_free_mask = make_cloud_mask(atsr_data)
-    swir_mask = get_swir_mask(atsr_data)
+    night_mask = make_night_mask(ds)
+    cloud_free_mask = make_cloud_mask(ds)
+    swir_mask = get_swir_mask(ds)
 
     # get the rounded lats and lons of the potential flaring sites
     potential_flares = cloud_free_mask | swir_mask  # either cloud free or high swir
     flare_mask = night_mask & potential_flares  # and also at night
-    rounded_lats, rounded_lons, mask_type_mode = setup_data(atsr_data, flare_mask, cloud_free_mask, swir_mask)
+    rounded_lats, rounded_lons, reflectances = setup_data(ds, flare_mask)
 
     # set up the cKDTree for querying flare locations
     combined_lat_lon = np.dstack([rounded_lats, rounded_lons])[0]
     orbit_kdtree = spatial.cKDTree(combined_lat_lon)
 
     # get atsr orbit time
-    year = int(atsr_data.id_string[14:18])
-    month = int(atsr_data.id_string[18:20])
-    day = int(atsr_data.id_string[20:22])
+    year = int(ds.id_string[14:18])
+    month = int(ds.id_string[18:20])
+    day = int(ds.id_string[20:22])
     orbit_time = datetime(year, month, day)
 
     # load in the flare dataframe
@@ -183,21 +165,43 @@ def main():
     flare_id = flare_df.flare_id[valid_distances].values
     matched_lats = combined_lat_lon[indexes[valid_distances], 0]
     matched_lons = combined_lat_lon[indexes[valid_distances], 1]
-    matched_mask_type = mask_type_mode[indexes[valid_distances]]
+    matched_reflectances = reflectances[indexes[valid_distances]]
 
     # set up output df
     output_df = pd.DataFrame({'flare_id': flare_id,
                               'matched_lats': matched_lats,
                               'matched_lons': matched_lons,
-                              'obs_types': matched_mask_type
+                              'reflectances': matched_reflectances
                               })
+    return output_df
+
+
+def main():
+
+    # some processing constants
+    resolution = 60 / 3600.  # Degrees. same as with monthly aggregation
+
+    # read in the aatsr product
+    path_to_ats_data = sys.argv[1]
+    path_to_output = sys.argv[2]
+
+    path_to_at2_data = get_at2_path(path_to_ats_data)
+    logger.info('ats_path: ' + path_to_at2_data)
+
+    ats_data = read_atsr(path_to_ats_data)
+    at2_data = read_atsr(path_to_at2_data)
+
+    ats_flare_df = get_flaring_for_orbit(ats_data, resolution)
+    at2_flare_df = get_flaring_for_orbit(at2_data, resolution)
+
+    # merge on flare ID so that we keep collocated observations
+    merged_df = ats_flare_df.merge(at2_flare_df, on='flare_id')
 
     # write out the recorded flare id's for this orbit
-    output_fname = atsr_data.id_string.split('.')[0] + '_sampling.csv'
-    if sensor.upper() not in output_fname:
-        output_fname = output_fname.replace(output_fname[0:3], sensor.upper())
+    output_fname = ats_data.id_string.split('.')[0] + '_collocated.csv'
+    output_fname = output_fname.replace(output_fname[0:3], 'ats_at2')
     csv_path = os.path.join(path_to_output, output_fname)
-    output_df.to_csv(csv_path, index=False)
+    merged_df.to_csv(csv_path, index=False)
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
