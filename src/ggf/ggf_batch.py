@@ -55,6 +55,49 @@ class BatchSystem:
             return m.groupdict()
 
 
+def process(ymd, python_exe):
+
+    if 'collocate' in python_exe:
+        if 'ats' in f.lower():
+            if (int(ymd[0:6]) > 200205) & (int(ymd[0:6]) < 200306):
+                return True
+        elif 'at2' in f.lower():
+            if (int(ymd[0:6]) > 199506) & (int(ymd[0:6]) < 199607):
+                return True
+        else:
+            return False
+
+    else:
+        if 'at2' in f.lower():
+            if int(ymd[0:6]) > 200306:
+                return False
+        elif 'at1' in f.lower():
+            if int(ymd[0:6]) > 199606:
+                return False
+        else:
+            return True
+
+
+def make_outpath(f, ymd, python_exe):
+    if 'collocate' in python_exe:
+        if 'ats' in f:
+            sensor = 'ats_at2'
+        else:
+            sensor = 'at2_at1'
+    else:
+        if 'N1' in f:
+            sensor = 'ats'
+        if 'E2' in f:
+            sensor = 'at2'
+        if 'E1' in f:
+            sensor = 'at1'
+
+    out_dir = os.path.join(filepaths.path_to_cems_output_l2, sensor,
+                           ymd[0:4], ymd[4:6], ymd[6:8])
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    return out_dir
+
 # setup the batch running class
 batch = BatchSystem('bsub',
                    'Job <(?P<ID>\d+)> is submitted to (?P<desc>\w*) queue '
@@ -72,62 +115,38 @@ batch = BatchSystem('bsub',
                     'ram'      : '-R "rusage[mem={}]"'.format})
 batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
+
+# define python script to run
+python_exe = 'ggf_collocate_sensors.py '
+
+
 # iterate over all ATSR files in directory
 for path_to_data in filepaths.paths_to_data:
     years = os.listdir(path_to_data)
     for yr in years:
         if len(yr) > 4:
             continue
-        if ('at2' in path_to_data) & (int(yr) > 2003):
-            print 'continuing...', yr
-            continue
-
-        # remove after testing
-        if ('at1' in path_to_data) | ('at2' in path_to_data):
-            continue
-        if int(yr) > 2003:
-            continue
-
-        if ('at2' in path_to_data) & (int(yr) > 2003):
-            print 'continuing...', yr
-            continue
-       
         path = os.path.join(path_to_data,  yr)
-        print path
         for root, dirs, files in os.walk(path):
             for f in files:
                 if f.split('.')[-1] not in ['N1', 'E2', 'E1']:
                     continue
-
                 data_path = os.path.join(root, f)
-
-                # build path to output
-                if 'N1' in f:
-                    sensor = 'ats'
-                if 'E2' in f:
-                    sensor = 'at2'
-                if 'E1' in f:
-                    sensor = 'at1'
-
                 ymd = f[14:22]
 
-                # TODO Remove after testing
-                sensor = 'ats_at2'
-                if not ((int(ymd[0:6]) > 200205) & (int(ymd[0:6]) < 200306)):
+                # check year, month and sensor to see if we are going to process
+                if not process(ymd, python_exe):
                     continue
-                print 'submitting ymd: ', ymd
 
-                out_dir = os.path.join(filepaths.path_to_cems_output_l2, sensor,
-                                       ymd[0:4], ymd[4:6], ymd[6:8])
-                if not os.path.exists(out_dir):
-                    os.makedirs(out_dir)
+                # construct ouptut path
+                out_dir = make_outpath(f, ymd, python_exe)
 
                 # for each ATSR file generate a bash script that calls ggf
                 (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
                                                      out_dir, True)
                 g = os.fdopen(gd, "w")
                 g.write('export PYTHONPATH=$PYTHONPATH:/home/users/dnfisher/projects/kcl-globalgasflaring/\n')
-                g.write(filepaths.ggf_dir + 'ggf_colllocate_sensors.py ' +
+                g.write(filepaths.ggf_dir + python_exe +
                         data_path + ' ' +
                         out_dir + " \n")
                 g.write("rm -f " + script_file + "\n")
