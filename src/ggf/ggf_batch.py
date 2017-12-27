@@ -80,7 +80,7 @@ def process(ymd, python_exe):
 
 def make_outpath(f, ymd, python_exe):
     if 'collocate' in python_exe:
-        if 'ats' in f:
+        if 'ats' in f.lower():
             sensor = 'ats_at2'
         else:
             sensor = 'at2_at1'

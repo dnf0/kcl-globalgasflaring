@@ -163,7 +163,7 @@ def main():
     path_to_data = sys.argv[1]
     path_to_output = sys.argv[2]
 
-    if 'ats' in path_to_data:
+    if 'ats_toa_1p' in path_to_data:
 
         path_to_comp_data = get_at2_path(path_to_data)
 
@@ -182,7 +182,7 @@ def main():
         csv_path = os.path.join(path_to_output, output_fname)
         merged_df.to_csv(csv_path, index=False)
 
-    if 'at2' in path_to_data:
+    if 'at2_toa_1p' in path_to_data:
 
         path_to_comp_data = get_at1_path(path_to_data)
 
