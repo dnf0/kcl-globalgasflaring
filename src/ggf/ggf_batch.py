@@ -62,7 +62,7 @@ def process(ymd, python_exe):
             if (int(ymd[0:6]) > 200205) & (int(ymd[0:6]) < 200306):
                 return True
         elif 'at2' in f.lower():
-            if (int(ymd[0:6]) > 199506) & (int(ymd[0:6]) < 199607):
+            if (int(ymd[0:6]) > 199506) & (int(ymd[0:6]) < 199512):
                 return True
         else:
             return False

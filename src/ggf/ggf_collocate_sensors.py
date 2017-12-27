@@ -22,7 +22,7 @@ import src.config.filepaths as fp
 
 def get_at2_path(ats_path):
     if 'segregated' in ats_path:
-    	at2_path, ats_fname = ats_path.split('segregated/')
+        at2_path, ats_fname = ats_path.split('segregated/')
     else:
         ats_fname = ats_path.split('/')[-1]
         at2_path = ats_path.split(ats_fname)[0]
@@ -33,6 +33,19 @@ def get_at2_path(ats_path):
     logger.info(ats_timestamp)
     return glob.glob(at2_path + '*' + ats_timestamp + '*.E2')[0]
 
+
+def get_at1_path(at2_path):
+    if 'segregated' in at2_path:
+    	at2_path, at2_fname = at2_path.split('segregated/')
+    else:
+        at2_fname = at2_path.split('/')[-1]
+        at1_path = at2_path.split(at2_fname)[0]
+    at1_path = at1_path.replace('atsr2-v3', 'atsr1-v3')
+    at1_path = at1_path.replace('at2_toa_1p', 'at1_toa_1p')
+    at2_timestamp = at2_fname[14:25]
+    logger.info(at1_path)
+    logger.info(at2_timestamp)
+    return glob.glob(at1_path + '*' + at2_timestamp + '*.E1')[0]
 
 
 def read_atsr(path_to_ats_data):
@@ -75,15 +88,6 @@ def setup_data(ats_product, mask):
 
     # here we can calculate if it is a cloud free or flaring observation using pandas
     grouped = df.groupby(['lats', 'lons'], as_index=False).agg({'reflectances': np.mean})
-
-    # # join together the round coordinates
-    # combined_coords = zip(rounded_lats, rounded_lons)
-    #
-    # # then get the unique lat and lon combinations
-    # unique_coords = set(combined_coords)
-    #
-    # # return them unzipped
-    # rounded_lats, rounded_lons = zip(*unique_coords)
 
     rounded_lats = grouped['lats'].values
     rounded_lons = grouped['lons'].values
@@ -156,26 +160,47 @@ def main():
     resolution = 60 / 3600.  # Degrees. same as with monthly aggregation
 
     # read in the aatsr product
-    path_to_ats_data = sys.argv[1]
+    path_to_data = sys.argv[1]
     path_to_output = sys.argv[2]
 
-    path_to_at2_data = get_at2_path(path_to_ats_data)
-    logger.info('ats_path: ' + path_to_at2_data)
+    if 'ats' in path_to_data:
 
-    ats_data = read_atsr(path_to_ats_data)
-    at2_data = read_atsr(path_to_at2_data)
+        path_to_comp_data = get_at2_path(path_to_data)
 
-    ats_flare_df = get_flaring_for_orbit(ats_data, resolution)
-    at2_flare_df = get_flaring_for_orbit(at2_data, resolution)
+        ats_data = read_atsr(path_to_data)
+        at2_data = read_atsr(path_to_comp_data)
 
-    # merge on flare ID so that we keep collocated observations
-    merged_df = ats_flare_df.merge(at2_flare_df, on='flare_id')
+        ats_flare_df = get_flaring_for_orbit(ats_data, resolution)
+        at2_flare_df = get_flaring_for_orbit(at2_data, resolution)
 
-    # write out the recorded flare id's for this orbit
-    output_fname = ats_data.id_string.split('.')[0] + '_collocated.csv'
-    output_fname = output_fname.replace(output_fname[0:3], 'ats_at2')
-    csv_path = os.path.join(path_to_output, output_fname)
-    merged_df.to_csv(csv_path, index=False)
+        # merge on flare ID so that we keep collocated observations
+        merged_df = ats_flare_df.merge(at2_flare_df, on='flare_id')
+
+        # write out the recorded flare id's for this orbit
+        output_fname = ats_data.id_string.split('.')[0] + '_collocated.csv'
+        output_fname = output_fname.replace(output_fname[0:3], 'ats_at2')
+        csv_path = os.path.join(path_to_output, output_fname)
+        merged_df.to_csv(csv_path, index=False)
+
+    if 'at2' in path_to_data:
+
+        path_to_comp_data = get_at1_path(path_to_data)
+
+        at2_data = read_atsr(path_to_data)
+        at1_data = read_atsr(path_to_comp_data)
+
+        at2_flare_df = get_flaring_for_orbit(at2_data, resolution)
+        at1_flare_df = get_flaring_for_orbit(at1_data, resolution)
+
+        # merge on flare ID so that we keep collocated observations
+        merged_df = at2_flare_df.merge(at1_flare_df, on='flare_id')
+
+        # write out the recorded flare id's for this orbit
+        output_fname = at2_data.id_string.split('.')[0] + '_collocated.csv'
+        output_fname = output_fname.replace(output_fname[0:3], 'at2_at1')
+        csv_path = os.path.join(path_to_output, output_fname)
+        merged_df.to_csv(csv_path, index=False)
+
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
