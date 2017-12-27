@@ -137,6 +137,8 @@ for path_to_data in filepaths.paths_to_data:
                 # check year, month and sensor to see if we are going to process
                 if not process(ymd, python_exe):
                     continue
+                else:
+                    print 'Submitting file job for file:', f
 
                 # construct ouptut path
                 out_dir = make_outpath(f, ymd, python_exe)
