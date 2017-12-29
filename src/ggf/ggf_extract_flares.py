@@ -62,8 +62,8 @@ def get_arcmin(x):
     max_minute = minute_fraction > 0.59
 
     floor_x[neg_values] *= -1
-    floor_x[neg_values] -= minute_fraction
-    floor_x[~neg_values] += minute_fraction
+    floor_x[neg_values] -= minute_fraction[neg_values]
+    floor_x[~neg_values] += minute_fraction[~neg_values]
 
     # deal with edge cases, and just round them all up
     if np.sum(max_minute) > 0:
@@ -78,7 +78,7 @@ def myround(x, dec=20, base=60. / 3600):
 
 def radiance_from_reflectance(pixels, ats_product, sensor):
     # convert from reflectance to radiance see Smith and Cox 2013
-    return pixels / 100.0 * proc_const.solar_irradiance[sensor] * sun_earth_distance(ats_product) ** 2 / np.pi
+    return pixels / 100.0 * proc_const.solar_irradiance[sensor] * sun_earth_distance(ats_product.id_string) ** 2 / np.pi
 
 
 def sun_earth_distance(id_string):
@@ -157,13 +157,13 @@ def get_type(a):
         return 2
 
 
-def group_hotspot_df(df):
+def group_sample_df(df):
     return df.groupby(['lats_arcmin', 'lons_arcmin'], as_index=False).agg({'types': get_type,
                                                                            'lats': np.mean,
                                                                            'lons': np.mean})
 
 
-def group_sample_df(df):
+def group_hotspot_df(df):
     agg_dict = {'frp': np.sum,  # sum to get the total FRP in the grid cell
                 'radiances': np.sum,
                 'reflectances': np.sum,
@@ -223,9 +223,13 @@ def main():
     extend_df(grouped_hotspot_df, sensor, atsr_data.id_string, hotspot_df=True)
     extend_df(grouped_sample_df, sensor, atsr_data.id_string)
 
+    logger.info(grouped_hotspot_df.info())
+
     # extract data in orbit related to flares by merging
     flare_sample_df = pd.merge(flare_df, grouped_sample_df, on=['lats_arcmin', 'lons_arcmin'])
     flare_hotspot_df = pd.merge(flare_df, grouped_hotspot_df, on=['lats_arcmin', 'lons_arcmin'])
+
+    logger.info(flare_hotspot_df.info())
 
     # write out the recorded flare data for this orbit
     sample_output_fname = atsr_data.id_string.split('.')[0] + '_sampling.csv'

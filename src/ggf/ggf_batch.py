@@ -117,7 +117,7 @@ batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 
 # define python script to run
-python_exe = 'ggf_detect_hotspots.py '
+python_exe = 'ggf_extract_flares.py '
 
 
 # iterate over all ATSR files in directory
