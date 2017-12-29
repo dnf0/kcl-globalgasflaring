@@ -38,12 +38,12 @@ def construct_annual_df(root, year_month_subset):
             continue
         elif len(csv_files) == 1:
             df = pd.read_csv(csv_files[0], usecols=['lats_arcmin', 'lons_arcmin'],
-                             dtype={'lats_arcmin': float, 'lons_arcmin': float})
+                             dtype={'lats_arcmin': int, 'lons_arcmin': int})
         elif len(csv_files) == 2:
             df_a = pd.read_csv(csv_files[0], usecols=['lats_arcmin', 'lons_arcmin'],
-                               dtype={'lats_arcmin': float, 'lons_arcmin': float})
+                               dtype={'lats_arcmin': int, 'lons_arcmin': int})
             df_b = pd.read_csv(csv_files[1], usecols=['lats_arcmin', 'lons_arcmin'],
-                               dtype={'lats_arcmin': float, 'lons_arcmin': float})
+                               dtype={'lats_arcmin': int, 'lons_arcmin': int})
             df = df_a.append(df_b, ignore_index=True)
 
         # drop any duplicate locations for the month so that we only get a single observations per location per month
