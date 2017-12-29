@@ -124,6 +124,7 @@ def main():
             # keep only the unique flaring locations in all flares, giving a map
             # of all flare locations seen over the entire ATSR time series.
             all_flares_df.drop_duplicates(inplace=True)
+        all_flares_df.to_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flare_locations.csv'))
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
