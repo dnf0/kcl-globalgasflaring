@@ -59,9 +59,15 @@ def get_arcmin(x):
     minute = np.around(decile * 60)  # round to nearest arcmin
     minute_fraction = minute*0.01  # convert to fractional value (ranges from 0 to 0.6)
 
+    max_minute = minute_fraction > 0.59
+
     floor_x[neg_values] *= -1
     floor_x[neg_values] -= minute_fraction
     floor_x[~neg_values] += minute_fraction
+
+    # deal with edge cases, and just round them all up
+    if np.sum(max_minute) > 0:
+        floor_x[max_minute] = np.around(floor_x[max_minute])
 
     return floor_x
 
