@@ -117,7 +117,7 @@ batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 
 # define python script to run
-python_exe = 'ggf_processor.py '
+python_exe = 'ggf_detect_hotspots.py '
 
 
 # iterate over all ATSR files in directory
@@ -130,8 +130,6 @@ for path_to_data in filepaths.paths_to_data:
         for root, dirs, files in os.walk(path):
             for f in files:
                 if f.split('.')[-1] not in ['N1', 'E2', 'E1']:
-                    continue
-                if not 'at1' in f.lower():
                     continue
                 data_path = os.path.join(root, f)
                 ymd = f[14:22]
