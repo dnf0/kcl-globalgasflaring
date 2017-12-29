@@ -62,20 +62,20 @@ def process(ymd, python_exe):
             if (int(ymd[0:6]) > 200205) & (int(ymd[0:6]) < 200306):
                 return True
         elif 'at2' in f.lower():
-            if (int(ymd[0:6]) > 199506) & (int(ymd[0:6]) < 199512):
+            if (int(ymd[0:6]) > 199506) & (int(ymd[0:6]) < 199612):
                 return True
         else:
             return False
 
     else:
         if 'at2' in f.lower():
-            if int(ymd[0:6]) > 200306:
-                return False
+            if int(ymd[0:6]) <= 200306:
+                return True
         elif 'at1' in f.lower():
-            if int(ymd[0:6]) > 199606:
-                return False
+            if int(ymd[0:6]) <= 199605:
+                return True
         else:
-            return True
+            return True  # we process all ATS data and this checks for that
 
 
 def make_outpath(f, ymd, python_exe):
@@ -117,7 +117,7 @@ batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 
 # define python script to run
-python_exe = 'ggf_collocate_sensors.py '
+python_exe = 'ggf_processor.py '
 
 
 # iterate over all ATSR files in directory
@@ -131,11 +131,14 @@ for path_to_data in filepaths.paths_to_data:
             for f in files:
                 if f.split('.')[-1] not in ['N1', 'E2', 'E1']:
                     continue
+                if not 'at1' in f.lower():
+                    continue
                 data_path = os.path.join(root, f)
                 ymd = f[14:22]
 
                 # check year, month and sensor to see if we are going to process
                 if not process(ymd, python_exe):
+                    print 'Did not submit job for file:', f
                     continue
                 else:
                     print 'Submitting file job for file:', f
