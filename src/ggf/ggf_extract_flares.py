@@ -1,32 +1,5 @@
 #!/home/users/dnfisher/soft/virtual_envs/ggf/bin/python2
 
-"""
-code description:
-
-For a given ATSR orbit we determine if any of the gas flares in our detected
-gas flare file have a potential observation.  This is done as:
-
-1. Get the start time of the ATSR file
-2. Restrict only those conditions where the flare might have been observed.  That is
-it being a night-time scene and either a) a flaring location (i.e. ref > 0.1) or b) a
-cloud free location (i.e. free from any cloud).  This gives us all possibly
-flare observation opportunities.
-3. Extract the lats and lons for these potential flaring sites in the ATSR orbit.
-4. Resample the ATSR lats and Lons to 1 arc minute resolution (same as monhtly aggregation)
-
-5. Form a KDtree using these ATSR lats and lons
-6. From the gas flare location DF. Get only those flares that have been seen
-burning before and after the ATSR overpass. This means that they were operating
-at the time of the ATSR overpass.
-7. Determine whether these flaring locations are contained within the ATSR orbit
-through comparison against the KDTree.
-8. The KDtree returns distances, any flare that is located in the atsr grid at a
-distance less the resampling resolution is considered to be observed in this orbit
-9. For these flares write out the flare ID, along with the ATSR lat and lon that
-was matched to the flare.  The lats and lons are used to make sure that the flares
-that we see are actually reasonable in terms of thier locations. I.e. as a sanity check.
-"""
-
 import os
 import sys
 import logging
@@ -34,14 +7,10 @@ from datetime import datetime
 
 import epr
 import numpy as np
-import scipy.spatial as spatial
-import scipy.stats as stats
 import pandas as pd
 
-import matplotlib.pyplot as plt
-
-
 import src.config.constants as proc_const
+import src.models.atsr_pixel_size as atsr_pixel_size
 import src.config.filepaths as fp
 
 
@@ -65,58 +34,151 @@ def make_night_mask(ats_product):
     return solar_zenith_angle >= proc_const.day_night_angle
 
 
+def detect_hotspots(ats_product):
+    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
+    nan_mask = np.isnan(swir)  # get rid of SWIR nans also
+    return (swir > proc_const.swir_thresh) & ~nan_mask
+
+
 def make_cloud_mask(ats_product):
     cloud_mask = ats_product.get_band('cloud_flags_nadir').read_as_array()
     # over land or water and cloud free (i.e. bit 0 is set (cloud free land)  or unset(cloud free water))
     return cloud_mask <= 1
 
 
-def get_swir_mask(ats_product):
-    swir_ref = ats_product.get_band('reflec_nadir_1600').read_as_array()
-    nan_mask = np.isnan(swir_ref)  # get rid of SWIR nans also
-    return (swir_ref > proc_const.swir_thresh) & ~nan_mask
+def get_arcmin(x):
+    '''
+    rounds the data decimal fraction of a degree
+    to the nearest arc minute
+    '''
+    neg_values = x < 0
+
+    abs_x = np.abs(x)
+    floor_x = np.floor(abs_x)
+    decile = abs_x - floor_x
+    minute = np.around(decile * 60)  # round to nearest arcmin
+    minute_fraction = minute*0.01  # convert to fractional value (ranges from 0 to 0.6)
+
+    floor_x[neg_values] *= -1
+    floor_x[neg_values] -= minute_fraction
+    floor_x[~neg_values] += minute_fraction
+
+    return floor_x
 
 
 def myround(x, dec=20, base=60. / 3600):
     return np.round(base * np.round(x/base), dec)
 
 
+def radiance_from_reflectance(pixels, ats_product, sensor):
+    # convert from reflectance to radiance see Smith and Cox 2013
+    return pixels / 100.0 * proc_const.solar_irradiance[sensor] * sun_earth_distance(ats_product) ** 2 / np.pi
+
+
+def sun_earth_distance(id_string):
+    doy = datetime.strptime(id_string[14:22], "%Y%m%d").timetuple().tm_yday
+    return 1 + 0.01672 * np.sin(2 * np.pi * (doy - 93.5) / 365.0)
+
+
+def compute_pixel_size(samples):
+    pix_sizes = atsr_pixel_size.compute() * 1000000  # convert from km^2 to m^2
+    return pix_sizes[samples]
+
+
+def compute_frp(pixel_radiances, pixel_sizes, sensor):
+    return pixel_sizes * proc_const.frp_coeff[sensor] * pixel_radiances / 1000000  # in MW
+
+
+def construct_hotspot_df(product, resolution, hotspot_mask, sensor):
+
+    lines, samples = np.where(hotspot_mask)
+    lats = product.get_band('latitude').read_as_array()[hotspot_mask]
+    lons = product.get_band('longitude').read_as_array()[hotspot_mask]
+
+    # round geographic data to desired reoslution
+    lats_arcmin = get_arcmin(lats)
+    lons_arcmin = get_arcmin(lons)
+    rounded_lats = myround(lats, base=resolution)
+    rounded_lons = myround(lons, base=resolution)
+
+    reflectances = product.get_band('reflec_nadir_1600').read_as_array()[hotspot_mask]
+    solar_elev_angle = product.get_band('sun_elev_nadir').read_as_array()[hotspot_mask]
+    view_elev_angle = product.get_band('view_elev_nadir').read_as_array()[hotspot_mask]
+
+    radiances = radiance_from_reflectance(reflectances, product, sensor)
+    pixel_size = compute_pixel_size(samples)
+    frp = compute_frp(radiances, pixel_size, sensor)
+
+    df = pd.DataFrame()
+    datasets = [rounded_lats, rounded_lons, lats_arcmin, lons_arcmin, frp,
+                radiances, reflectances, solar_elev_angle, view_elev_angle, pixel_size]
+    names = ['lats', 'lons', 'lats_arcmin', 'lons_arcmin', 'frp',
+             'radiances', 'reflectances', 'sun_elev', 'view_elev', 'pixel_size']
+    for k, v in zip(names, datasets):
+        df[k] = v
+    return df
+
+
+def construct_sample_df(product, resolution, cloud_free_mask, hotspot_mask, sample_mask):
+
+    # assign type mask
+    types = np.zeros(cloud_free_mask.shape)
+    types[cloud_free_mask] = 2
+    types[hotspot_mask] = 1
+    types = types[sample_mask]
+
+    lats = product.get_band('latitude').read_as_array()[sample_mask]
+    lons = product.get_band('longitude').read_as_array()[sample_mask]
+
+    # round geographic data to desired reoslution
+    lats_arcmin = get_arcmin(lats)
+    lons_arcmin = get_arcmin(lons)
+    rounded_lats = myround(lats, base=resolution)
+    rounded_lons = myround(lons, base=resolution)
+
+    df = pd.DataFrame()
+    datasets = [rounded_lats, rounded_lons, lats_arcmin, lons_arcmin, types]
+    names = ['lats', 'lons', 'lats_arcmin', 'lons_arcmin', 'types']
+    for k, v in zip(names, datasets):
+        df[k] = v
+    return df
+
+
 def get_type(a):
-    if np.in1d(1, a)[0]:
+    if np.in1d(1, a)[0]:  # if a gas flare pixel in grid cell, then return as gas flare type
         return 1
     else:
         return 2
 
 
-def setup_data(ats_product, mask, cloud_free_mask, swir_mask):
+def group_hotspot_df(df):
+    return df.groupby(['lats_arcmin', 'lons_arcmin'], as_index=False).agg({'types': get_type,
+                                                                           'lats': np.mean,
+                                                                           'lons': np.mean})
 
-    # type mask
-    types = np.zeros(cloud_free_mask.shape)
-    types[cloud_free_mask] = 2
-    types[swir_mask] = 1
-    types = types[mask]
 
-    # mask lats and lons
-    lats = ats_product.get_band('latitude').read_as_array()[mask]
-    lons = ats_product.get_band('longitude').read_as_array()[mask]
+def group_sample_df(df):
+    agg_dict = {'frp': np.sum,  # sum to get the total FRP in the grid cell
+                'radiances': np.sum,
+                'reflectances': np.sum,
+                'sun_elev': np.mean,
+                'view_elev': np.mean,
+                'pixel_size': np.sum,
+                'lats': np.mean,
+                'lons': np.mean}
+    return df.groupby(['lats_arcmin', 'lons_arcmin'], as_index=False).agg(agg_dict)
 
-    # then round them
-    rounded_lats = myround(lats)
-    rounded_lons = myround(lons)
 
-    # set up dataframe to group the data
-    df = pd.DataFrame({'lats': rounded_lats,
-                       'lons': rounded_lons,
-                       'types': types})
+def extend_df(df, sensor, id_string, hotspot_df=False):
+    df['year'] = int(id_string[14:18])
+    df['month'] = int(id_string[18:20])
+    df['day'] = int(id_string[20:22])
+    df['hhmm'] = int(id_string[23:27])
+    df['sensor'] = sensor
 
-    # here we can calculate if it is a cloud free or flaring observation using pandas
-    grouped = df.groupby(['lats', 'lons'], as_index=False).agg({'types': get_type})
-
-    rounded_lats = grouped['lats'].values
-    rounded_lons = grouped['lons'].values
-    mode_types = grouped['types'].values
-
-    return rounded_lats, rounded_lons, mode_types
+    if hotspot_df:
+        df['se_dist'] = sun_earth_distance(id_string)
+        df['frp_coeff'] = proc_const.frp_coeff[sensor]
 
 
 def main():
@@ -127,74 +189,50 @@ def main():
     # load in the flare location dataframe
     flare_df = pd.read_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flare_locations.csv'))
 
-    # read in the atsr prodcut
+    # read in the atsr product
     path_to_data = sys.argv[1]
     path_to_output = sys.argv[2]
     atsr_data = read_atsr(path_to_data)
     sensor = define_sensor(path_to_data)
 
-
-    # set up masks that define potential flaring sites
+    # set up various data masks
     night_mask = make_night_mask(atsr_data)
     cloud_free_mask = make_cloud_mask(atsr_data)
-    swir_mask = get_swir_mask(atsr_data)
 
-    # get the rounded lats and lons of the potential flaring sites
-    potential_flare_mask = cloud_free_mask | swir_mask  # either cloud free or high swir
-    flare_mask = night_mask & potential_flare_mask  # and also at night
-    rounded_lats, rounded_lons, mask_type_mode = setup_data(atsr_data, flare_mask, cloud_free_mask, swir_mask)
+    potential_hotspot_mask = detect_hotspots(atsr_data)
+    potential_sample_mask = cloud_free_mask | potential_hotspot_mask  # cloud free or high SWIR
 
-    # set up the cKDTree for querying flare locations
-    combined_lat_lon = np.dstack([rounded_lats, rounded_lons])[0]
-    orbit_kdtree = spatial.cKDTree(combined_lat_lon)
+    hotspot_mask = night_mask & potential_hotspot_mask
+    sample_mask = night_mask & potential_sample_mask
 
-    # get atsr orbit time
-    year = int(atsr_data.id_string[14:18])
-    month = int(atsr_data.id_string[18:20])
-    day = int(atsr_data.id_string[20:22])
-    orbit_time = datetime(year, month, day)
+    # extract all relevant information for both sampling and flare dataframes
+    hotspot_df = construct_hotspot_df(atsr_data, resolution, hotspot_mask, sensor)
+    sample_df = construct_sample_df(atsr_data, resolution, cloud_free_mask, hotspot_mask, sample_mask)
 
+    # group to rounded resolution (done in previous step) aggregating appropriately
+    grouped_hotspot_df = group_hotspot_df(hotspot_df)
+    grouped_sample_df = group_sample_df(sample_df)
 
-    # groupby flare id and get the start and stop time
-    flare_df = flare_df.groupby(['flare_id'], as_index=False).agg({'lats': np.mean, 'lons': np.mean,
-                                                                   'dt_start': np.min, 'dt_stop': np.max})
+    # extend grouped dataframes with relevant information
+    extend_df(grouped_hotspot_df, sensor, atsr_data.id_string, hotspot_df=True)
+    extend_df(grouped_sample_df, sensor, atsr_data.id_string)
 
-    flare_df['dt_start'] = pd.to_datetime(flare_df['dt_start'])
-    flare_df['dt_stop'] = pd.to_datetime(flare_df['dt_stop'])
+    # extract data in orbit related to flares by merging
+    flare_sample_df = pd.merge(flare_df, grouped_sample_df, on=['lats_arcmin', 'lons_arcmin'])
+    flare_hotspot_df = pd.merge(flare_df, grouped_hotspot_df, on=['lats_arcmin', 'lons_arcmin'])
 
-    # now subset down the dataframe by time to only those flares
-    # that have been seen burning before AND after this orbit
-    flare_df = flare_df[(flare_df.dt_start <= orbit_time) &
-                        (flare_df.dt_stop >= orbit_time)]
-    if flare_df.empty:
-        return
+    # write out the recorded flare data for this orbit
+    sample_output_fname = atsr_data.id_string.split('.')[0] + '_sampling.csv'
+    flare_output_fname = atsr_data.id_string.split('.')[0] + '_flares.csv'
 
-    # set up the flare lats and lons for assessment in kdtree
-    flare_lat_lon = np.array(zip(flare_df.lats.values, flare_df.lons.values))
+    sample_output_fname = sample_output_fname.replace(sample_output_fname[0:3], sensor.upper())
+    flare_output_fname = flare_output_fname.replace(flare_output_fname[0:3], sensor.upper())
 
-    # compare the flare locations to the potential locations in the orbit
-    distances, indexes = orbit_kdtree.query(flare_lat_lon)
+    sample_csv_path = os.path.join(path_to_output, sample_output_fname)
+    flare_csv_path = os.path.join(path_to_output, flare_output_fname)
 
-    # find the flaring locations in the orbit by distance measure
-    valid_distances = distances <= resolution / 2.  # TODO think we can drop the /2 and just do <
-    flare_id = flare_df.flare_id[valid_distances].values
-    matched_lats = combined_lat_lon[indexes[valid_distances], 0]
-    matched_lons = combined_lat_lon[indexes[valid_distances], 1]
-    matched_mask_type = mask_type_mode[indexes[valid_distances]]
-
-    # set up output df
-    output_df = pd.DataFrame({'flare_id': flare_id,
-                              'matched_lats': matched_lats,
-                              'matched_lons': matched_lons,
-                              'obs_types': matched_mask_type
-                              })
-
-    # write out the recorded flare id's for this orbit
-    output_fname = atsr_data.id_string.split('.')[0] + '_sampling.csv'
-    if sensor.upper() not in output_fname:
-        output_fname = output_fname.replace(output_fname[0:3], sensor.upper())
-    csv_path = os.path.join(path_to_output, output_fname)
-    output_df.to_csv(csv_path, index=False)
+    flare_sample_df.to_csv(sample_csv_path, index=False)
+    flare_hotspot_df.to_csv(flare_csv_path, index=False)
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

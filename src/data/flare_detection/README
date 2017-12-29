@@ -1,0 +1,22 @@
+Running Order:
+
+1. ggf/ggf_detect_hotspots.py (using ggf/ggf_batch.py)
+2. data/flare_detection/orbit_to_month.py
+3. data/flare_detection/detect_flare_hotspots.py
+4. ggf/ggf_extract_flares.py (using ggf/ggf_batch.py)
+
+
+ ggf_detect_hotposts.py processes all ATSR orbits and detects the presence of pixels with radiances >0.1.
+ It records the lat/lon position of these hotspots in a csv file "..._hotspots.csv" with the prefix being
+ the ATSR filename.
+
+ orbit_to_month.py iterates over all the hotspot.csv files and merges the individual orbits into monthly
+ products.  It records all unique monthly hotspots into a single .csv file with the name 'MM.csv' where MM is
+ the month.  It also adds two new columns lat_arcmin and lon_arcmin, which are the lat and lon locations
+ represented as arcminute in the decimals.
+
+ detect_flare_hotspots.py reduces the month files to a set of all flares across the entire atsr time series
+ providing a map of flaring activity across the planet from 1991-2012
+
+ ggf_extract_flares.py using the flare map, reprocesses all the orbits and checks whether any flare seen in the
+ map are contined in the given orbit.

@@ -40,18 +40,18 @@ def make_night_mask(ats_product):
     return solar_zenith_angle >= proc_const.day_night_angle
 
 
-def detect_flares(ats_product, mask):
+def detect_hotspots(ats_product):
     swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
     nan_mask = np.isnan(swir)  # get rid of SWIR nans also
-    return (swir > proc_const.swir_thresh) & mask & ~nan_mask
+    return (swir > proc_const.swir_thresh) & ~nan_mask
 
 
-def flare_data(product, mask):
+def flare_data(product, hotspot_mask):
 
     # first get data from sensor
-    lines, samples = np.where(mask)
-    lats = product.get_band('latitude').read_as_array()[mask]
-    lons = product.get_band('longitude').read_as_array()[mask]
+    lines, samples = np.where(hotspot_mask)
+    lats = product.get_band('latitude').read_as_array()[hotspot_mask]
+    lons = product.get_band('longitude').read_as_array()[hotspot_mask]
 
     # insert data into dataframe
     df = pd.DataFrame()
@@ -77,10 +77,11 @@ def main():
     night_mask = make_night_mask(atsr_data)
 
     # get nighttime flare mask
-    flare_mask = detect_flares(atsr_data, night_mask)
+    potential_hotspot_mask = detect_hotspots(atsr_data)
+    hotspot_mask = potential_hotspot_mask & night_mask
 
     # get nighttime flare radiances and frp and write out with meta data
-    df = flare_data(atsr_data, flare_mask)
+    df = flare_data(atsr_data, hotspot_mask)
 
     # write out
     output_fname = atsr_data.id_string.split('.')[0] + '_hotspots.csv'

@@ -29,12 +29,27 @@ def select_csv_files_for_month(sensor, year, month):
     return glob.glob(os.path.join(fp.path_to_cems_output_l2, sensor, year, month, "*", "*_flares.csv"))
 
 
+def get_arcmin(x):
+    '''
+    rounds the data decimal fraction of a degree
+    to the nearest arc minute
+    '''
+    neg_values = x < 0
+
+    abs_x = np.abs(x)
+    floor_x = np.floor(abs_x)
+    decile = abs_x - floor_x
+    minute = np.around(decile * 60)  # round to nearest arcmin
+    minute_fraction = minute*0.01  # convert to fractional value (ranges from 0 to 0.6)
+
+    floor_x[neg_values] *= -1
+    floor_x[neg_values] -= minute_fraction
+    floor_x[~neg_values] += minute_fraction
+
+    return floor_x
+
 def myround(x, dec=20, base=.000005):
     return np.round(base * np.round(x / base), dec)
-
-
-def generate_coords(df):
-    return zip(df.lats.values, df.lons.values)
 
 
 def generate_month_df(csv_files_for_month, resolution):
@@ -43,10 +58,12 @@ def generate_month_df(csv_files_for_month, resolution):
         try:
 
             orbit_df = pd.read_csv(f, usecols=['lats', 'lons'], dtype={'lats': float, 'lons': float})
+            orbit_df['lons_arcmin'] = get_arcmin(orbit_df['lons'].values)
+            orbit_df['lats_arcmin'] = get_arcmin(orbit_df['lats'].values)
             orbit_df['lons'] = myround(orbit_df['lons'].values, base=resolution)
             orbit_df['lats'] = myround(orbit_df['lats'].values, base=resolution)
             # keep only unique flaring locations seen in the orbit
-            orbit_df.drop_duplicates(inplace=True)
+            orbit_df.drop_duplicates(subset=['lats_arcmin', 'lons_arcmin'], inplace=True)
             month_flares.append(orbit_df)
         except Exception, e:
             logger.warning('Could not load csv ' + f + ' file with error: ' + str(e))
@@ -56,7 +73,7 @@ def generate_month_df(csv_files_for_month, resolution):
 
 def unique_month_locations(month_df):
     # keep only unique flaring locations seen in the month
-    return month_df.drop_duplicates(inplace=True)
+    return month_df.drop_duplicates(subset=['lats_arcmin', 'lons_arcmin'], inplace=True)
 
 
 def main():
