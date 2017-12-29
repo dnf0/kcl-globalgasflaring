@@ -30,10 +30,13 @@ def construct_annual_df(root, year_month_subset):
     for y, m in year_month_subset:
 
         csv_files = glob.glob(os.path.join(root, '*', str(y), str(m).zfill(2) + '.csv'))
+        print csv_files
 
         # sometimes we can have observations from AT1 and AT2 or AT2 and ATS, so might be two csv files.
         # Each sensor might have differing locations, so need to keep that in consideration and evaluate both.
-        if len(csv_files) == 1:
+        if len(csv_files) == 0:
+            continue
+        elif len(csv_files) == 1:
             df = pd.read_csv(csv_files[0], usecols=['lats_arcmin', 'lons_arcmin'],
                              dtype={'lats_arcmin': float, 'lons_arcmin': float})
         elif len(csv_files) == 2:
@@ -76,7 +79,7 @@ def main():
 
     # using the monthly dataframes perform the flare detection
     all_flares_df = None
-    for i in len(years_months[:-12]):
+    for i in xrange(len(years_months[:-12])):
 
         # read in the required dataframes
         annual_df = construct_annual_df(root, years_months[i:i+12])
@@ -95,7 +98,11 @@ def main():
             # keep only the unique flaring locations in all flares, giving a map
             # of all flare locations seen over the entire ATSR time series.
             all_flares_df.drop_duplicates(subset=['lats_arcmin', 'lons_arcmin'], inplace=True)
-        all_flares_df.to_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flare_locations.csv'))
+    
+    path_to_out = os.path.join(fp.path_to_cems_output_l3, 'all_sensors')
+    if not os.path.exists(path_to_out):
+        os.makedirs(path_to_out)
+    all_flares_df.to_csv(os.path.join(path_to_out, 'all_flare_locations.csv'))
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
