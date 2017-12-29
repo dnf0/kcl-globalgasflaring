@@ -51,6 +51,10 @@ def get_arcmin(x):
     # deal with edge cases, and just round them all up
     if np.sum(max_minute) > 0:
         floor_x[max_minute] = np.around(floor_x[max_minute])
+
+    # now to get rid of rounding errors and allow comparison multiply by 100 and convert to int
+    floor_x = (floor_x * 100).astype(int)
+
     return floor_x
 
 
