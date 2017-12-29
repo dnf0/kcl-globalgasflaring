@@ -26,7 +26,7 @@ import src.config.filepaths as fp
 
 
 def select_csv_files_for_month(sensor, year, month):
-    return glob.glob(os.path.join(fp.path_to_cems_output_l2, sensor, year, month, "*", "*_flares.csv"))
+    return glob.glob(os.path.join(fp.path_to_cems_output_l2, sensor, year, month, "*", "*_hotspots.csv"))
 
 
 def get_arcmin(x):
@@ -42,11 +42,17 @@ def get_arcmin(x):
     minute = np.around(decile * 60)  # round to nearest arcmin
     minute_fraction = minute*0.01  # convert to fractional value (ranges from 0 to 0.6)
 
-    floor_x[neg_values] *= -1
-    floor_x[neg_values] -= minute_fraction
-    floor_x[~neg_values] += minute_fraction
+    max_minute = minute_fraction > 0.59
 
+    floor_x[neg_values] *= -1
+    floor_x[neg_values] -= minute_fraction[neg_values]
+    floor_x[~neg_values] += minute_fraction[~neg_values]
+    
+    # deal with edge cases, and just round them all up
+    if np.sum(max_minute) > 0:
+        floor_x[max_minute] = np.around(floor_x[max_minute])
     return floor_x
+
 
 def myround(x, dec=20, base=.000005):
     return np.round(base * np.round(x / base), dec)
@@ -56,7 +62,6 @@ def generate_month_df(csv_files_for_month, resolution):
     month_flares = []
     for f in csv_files_for_month:
         try:
-
             orbit_df = pd.read_csv(f, usecols=['lats', 'lons'], dtype={'lats': float, 'lons': float})
             orbit_df['lons_arcmin'] = get_arcmin(orbit_df['lons'].values)
             orbit_df['lats_arcmin'] = get_arcmin(orbit_df['lats'].values)
@@ -73,7 +78,7 @@ def generate_month_df(csv_files_for_month, resolution):
 
 def unique_month_locations(month_df):
     # keep only unique flaring locations seen in the month
-    return month_df.drop_duplicates(subset=['lats_arcmin', 'lons_arcmin'], inplace=True)
+    month_df.drop_duplicates(subset=['lats_arcmin', 'lons_arcmin'], inplace=True)
 
 
 def main():
@@ -89,13 +94,13 @@ def main():
             for month in months:
                 csv_files_for_month = select_csv_files_for_month(sensor, year, month)
                 month_df = generate_month_df(csv_files_for_month, resolution)
-                month_df_unique = unique_month_locations(month_df)
-
+                unique_month_locations(month_df)
+                print month_df.head()
                 # dump to csv
                 path_to_out = os.path.join(fp.path_to_cems_output_l3, sensor, year)
                 if not os.path.exists(path_to_out):
                     os.makedirs(path_to_out)
-                month_df_unique.to_csv(os.path.join(path_to_out, month + '.csv'), index=False)
+                month_df.to_csv(os.path.join(path_to_out, month + '.csv'), index=False)
 
 
 if __name__ == '__main__':
