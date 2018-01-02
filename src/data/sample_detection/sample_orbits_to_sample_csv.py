@@ -13,7 +13,7 @@ def check_file(fname):
     y = int(ymd[0:4])
     m = int(ymd[4:6])
 
-    if 'at2' in fname:
+    if 'AT2' in fname:
         if (y == 2000) & (m == 12):
             return True
         elif (y == 2001) & (m >= 1) & (m <= 6):
@@ -25,7 +25,7 @@ def check_file(fname):
         else:
             return False
 
-    elif 'ats' in fname:
+    elif 'ATS' in fname:
         if (y == 2002) & (m == 5):
             return True
         else:
@@ -51,14 +51,14 @@ def main():
             # check if yr and month of csv file are in permitted months
             fname = f.split('/')[-1]
             if check_file(fname):
+                print 'not processing f', f
                 continue
-
             sample_df = pd.read_csv(f)
 
             # add in sample, cloud free and flare counts columns
             sample_df['sample_counts'] = 1.
-            sample_df['cloud_free_counts'] = sample_df.types == 2
-            sample_df['flare_counts'] = sample_df.types == 1
+            sample_df['cloud_free_counts'] = (sample_df.types == 2).astype(int)
+            sample_df['flare_counts'] = (sample_df.types == 1).astype(int)
 
             # group samples to nearest arc minute, which gives the individual flares
             # and sum total obs (flares + cloud free), total flares, and total cloud free
@@ -69,7 +69,7 @@ def main():
             else:
                 # merge each csv df to the total df, which records the total number of samples
                 # across entire time series, excluding the months we are not interested in
-                output_df.append(grouped_sample_df)
+                output_df = output_df.append(grouped_sample_df)
                 output_df = output_df.groupby(to_group, as_index=False).agg(agg_dict)
 
         except Exception, e:
