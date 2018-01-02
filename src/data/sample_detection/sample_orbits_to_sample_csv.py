@@ -1,6 +1,7 @@
 import os
 import glob
 import logging
+from datetime import datetime
 
 import pandas as pd
 import numpy as np
@@ -8,8 +9,8 @@ import numpy as np
 import src.config.filepaths as fp
 
 
-def check_file(fname):
-    ymd = fname[14:22]
+def check_file(fname, ymd):
+
     y = int(ymd[0:4])
     m = int(ymd[4:6])
 
@@ -37,7 +38,14 @@ def check_file(fname):
 
 def main():
 
-    csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_sampling.csv')
+    # set up output path
+    path_to_out = os.path.join(fp.path_to_cems_output_l3, 'all_sensors')
+
+    # flare start stop df
+    start_stop_df = pd.read_csv(os.path.join(path_to_out, 'flare_start_stop.csv'))
+    print 'Check start stop in datetime format'
+    print start_stop_df.info()
+
     output_df = None
     to_group = ['lats_arcmin', 'lons_arcmin']
     agg_dict = {'sample_counts': np.sum,
@@ -45,41 +53,46 @@ def main():
                 'flare_counts': np.sum,
                 }
 
-    # now lets get count the samples
+    csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_sampling.csv')
     for f in csv_filepaths:
         try:
             # check if yr and month of csv file are in permitted months
             fname = f.split('/')[-1]
-            if check_file(fname):
+            ymd = fname[14:22]
+            file_time = datetime.strptime(ymd, '%Y%m&d')
+
+            if check_file(fname, ymd):
                 print 'not processing f', f
                 continue
-            sample_df = pd.read_csv(f)
 
-            # add in sample, cloud free and flare counts columns
+            # read csv and add in new columns
+            sample_df = pd.read_csv(f)
             sample_df['sample_counts'] = 1.
             sample_df['cloud_free_counts'] = (sample_df.types == 2).astype(int)
             sample_df['flare_counts'] = (sample_df.types == 1).astype(int)
 
-            # group samples to nearest arc minute, which gives the individual flares
-            # and sum total obs (flares + cloud free), total flares, and total cloud free
-            grouped_sample_df = sample_df.groupby(to_group, as_index=False).agg(agg_dict)
+            # reduce start stop dataframe to only those flares seen burning before of after
+            # current csv file time.  Giving the indexes of flares actually operating during
+            # this overpass of this csv file.
+            valid_start_stop_df = start_stop_df[(start_stop_df.dt_start <= file_time) &
+                                                (start_stop_df.dt_stop >= file_time)]
 
+            # reduce the sample df to the operating flares by merging
+            sample_df = pd.merge(sample_df, valid_start_stop_df, on=to_group)
+
+            # record the samples in the output df, grouping each orbit csv as it is
+            # appended and summing the sampling counts.
             if output_df is None:
-                output_df = grouped_sample_df
+                output_df = sample_df
             else:
-                # merge each csv df to the total df, which records the total number of samples
-                # across entire time series, excluding the months we are not interested in
-                output_df = output_df.append(grouped_sample_df)
+                output_df = output_df.append(sample_df)
                 output_df = output_df.groupby(to_group, as_index=False).agg(agg_dict)
 
         except Exception, e:
             logger.warning('Could not load csv file with error: ' + str(e))
 
     # dump to csv
-    if not os.path.exists(os.path.join(fp.path_to_cems_output_l3, 'all_sensors')):
-        os.makedirs(os.path.join(fp.path_to_cems_output_l3, 'all_sensors'))
-
-    output_df.to_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_sampling.csv'))
+    output_df.to_csv(os.path.join(path_to_out, 'all_sampling.csv'))
 
 
 if __name__ == '__main__':
