@@ -1,60 +1,85 @@
 import os
 import glob
 import logging
-import re
-from collections import defaultdict
 
 import pandas as pd
+import numpy as np
 
 import src.config.filepaths as fp
+
+
+def check_file(fname):
+    ymd = fname[14:22]
+    y = int(ymd[0:4])
+    m = int(ymd[4:6])
+
+    if 'at2' in fname:
+        if (y == 2000) & (m == 12):
+            return True
+        elif (y == 2001) & (m >= 1) & (m <= 6):
+            return True
+        elif (y == 2001) & (m >= 9) & (m <= 12):
+            return True
+        elif (y == 2002) & (m >= 1) & (m <= 6):
+            return True
+        else:
+            return False
+
+    elif 'ats' in fname:
+        if (y == 2002) & (m == 5):
+            return True
+        else:
+            return False
+
+    else:
+        return False
+
 
 def main():
 
     csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_sampling.csv')
-
-    sample_counter = defaultdict(int)
-    cloud_free_counts = defaultdict(int)
-    flare_counts = defaultdict(int)
-    lats = defaultdict(float)
-    lons = defaultdict(float)
-    lats_arcmin = defaultdict(int)
-    lons_arcmin = defaultdict(int)
+    output_df = None
+    to_group = ['lats_arcmin', 'lons_arcmin']
+    agg_dict = {'sample_counts': np.sum,
+                'cloud_free_counts': np.sum,
+                'flare_counts': np.sum,
+                }
 
     # now lets get count the samples
     for f in csv_filepaths:
         try:
+            # check if yr and month of csv file are in permitted months
+            fname = f.split('/')[-1]
+            if check_file(fname):
+                continue
+
             sample_df = pd.read_csv(f)
 
-            for index, row in sample_df.iterrows():
+            # add in sample, cloud free and flare counts columns
+            sample_df['sample_counts'] = 1.
+            sample_df['cloud_free_counts'] = sample_df.types == 2
+            sample_df['flare_counts'] = sample_df.types == 1
 
-                k = str(row.lats_arcmin) + str(row.lons_arcmin)
+            # group samples to nearest arc minute, which gives the individual flares
+            # and sum total obs (flares + cloud free), total flares, and total cloud free
+            grouped_sample_df = sample_df.groupby(to_group, as_index=False).agg(agg_dict)
 
-                sample_counter[k] += 1
-                lats[k] = row.lats
-                lons[k] = row.lons
-                lats_arcmin[k] = row.lats_arcmin
-                lons_arcmin[k] = row.lons_arcmin
-                if row.types == 2:
-                    cloud_free_counts[k] += 1
-                if row.types == 1:
-                    flare_counts[k] += 1
+            if output_df is None:
+                output_df = grouped_sample_df
+            else:
+                # merge each csv df to the total df, which records the total number of samples
+                # across entire time series, excluding the months we are not interested in
+                output_df.append(grouped_sample_df)
+                output_df = output_df.groupby(to_group, as_index=False).agg(agg_dict)
 
         except Exception, e:
             logger.warning('Could not load csv file with error: ' + str(e))
-
-    out_df = pd.DataFrame({"sample_counts": sample_counter,
-                           "cloud_free_counts": cloud_free_counts,
-                           "flare_counts": flare_counts,
-                           "sample_lats": lats,
-                           "sample_lons": lons,
-                           "lats_arcmin": lats_arcmin,
-                           "lons_arcmin": lons_arcmin})
 
     # dump to csv
     if not os.path.exists(os.path.join(fp.path_to_cems_output_l3, 'all_sensors')):
         os.makedirs(os.path.join(fp.path_to_cems_output_l3, 'all_sensors'))
 
-    out_df.to_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_sampling.csv'))
+    output_df.to_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_sampling.csv'))
 
 
 if __name__ == '__main__':
