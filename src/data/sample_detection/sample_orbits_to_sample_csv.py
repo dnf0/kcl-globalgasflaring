@@ -43,8 +43,8 @@ def main():
 
     # flare start stop df
     start_stop_df = pd.read_csv(os.path.join(path_to_out, 'flare_start_stop.csv'))
-    print 'Check start stop in datetime format'
-    print start_stop_df.info()
+    start_stop_df.dt_start = pd.to_datetime(start_stop_df.dt_start) 
+    start_stop_df.dt_stop = pd.to_datetime(start_stop_df.dt_stop)
 
     output_df = None
     to_group = ['lats_arcmin', 'lons_arcmin']
@@ -59,8 +59,7 @@ def main():
             # check if yr and month of csv file are in permitted months
             fname = f.split('/')[-1]
             ymd = fname[14:22]
-            file_time = datetime.strptime(ymd, '%Y%m&d')
-
+            file_time = datetime.strptime(ymd, '%Y%m%d')
             if check_file(fname, ymd):
                 print 'not processing f', f
                 continue
@@ -79,7 +78,7 @@ def main():
 
             # reduce the sample df to the operating flares by merging
             sample_df = pd.merge(sample_df, valid_start_stop_df, on=to_group)
-
+            
             # record the samples in the output df, grouping each orbit csv as it is
             # appended and summing the sampling counts.
             if output_df is None:
