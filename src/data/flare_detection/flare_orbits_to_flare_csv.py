@@ -15,14 +15,15 @@ import src.config.filepaths as fp
 def main():
 
     df_list = []
-    cols = ['frp', 'radiances', 'reflectances', 'sun_elev',
-            'view_elev', 'pixel_size', 'lats', 'lons', 'lats_arcmin',
+    cols = ['frp', 'swir_radiances', 'mwir_radiances', 'mwir_bg',
+             'pixel_size', 'lats', 'lons', 'lats_arcmin',
             'lons_arcmin', 'year', 'month', 'day', 'hhmm', 'sensor',
-            'se_dist', 'frp_coeff']
-    dtypes = {'frp': float, 'radiances': float, 'reflectances': float, 'sun_elev': float,
-            'view_elev': float, 'pixel_size': float, 'lats': float, 'lons': float, 'lats_arcmin': int,
+            'se_dist', 'frp_coeff', 'cloud_bg_pc', 'hotspot_bg_pc', 'inval_pixels_bg_pc', 'bg_size_used']
+    dtypes = {'frp': float, 'swir_radiances': float, 'mwir_radiances': float, 'mwir_bg': float,
+             'pixel_size': float, 'lats': float, 'lons': float, 'lats_arcmin': int,
             'lons_arcmin': int, 'year': int, 'month': int, 'day': int, 'hhmm': int, 'sensor': str,
-            'se_dist': float, 'frp_coeff': float}
+            'se_dist': float, 'frp_coeff': float, 'cloud_bg_pc': float, 'hotspot_bg_pc': float,
+            'inval_pixels_bg_pc': float, 'bg_size_used': int}
 
     csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_flares.csv')
     for f in csv_filepaths:
