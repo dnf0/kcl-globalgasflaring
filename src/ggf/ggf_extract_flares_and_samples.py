@@ -226,10 +226,19 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_free_mask,
     for k, v in zip(names, datasets):
         flare_df[k] = v
 
-    # get the background for each cluster
-    thermal_bg_df = determine_thermal_background_contribution(flare_df, product,
-                                                              hotspot_mask, cloud_free_mask)
-    flare_df = flare_df.merge(thermal_bg_df, on=['lats_arcmin', 'lons_arcmin'])
+    # get the background for each cluster if not AT1
+    if sensor != 'at1':
+        thermal_bg_df = determine_thermal_background_contribution(flare_df, product,
+                                                                  hotspot_mask, cloud_free_mask)
+        flare_df = flare_df.merge(thermal_bg_df, on=['lats_arcmin', 'lons_arcmin'])
+    else:
+
+        # no MWIR channel on ATS, so lets set to null.
+        flare_df['mwir_bg'] = -999
+        flare_df['cloud_bg_pc'] = -999
+        flare_df['hotspot_bg_pc'] = -999
+        flare_df['inval_pixels_bg_pc'] = -999
+        flare_df['bg_size_used'] = -999
 
     return flare_df
 
