@@ -132,20 +132,19 @@ def construct_hotspot_line_sample_df(product, hotspot_mask):
 def determine_thermal_background_contribution(flare_line_sample_df, product, hotspot_mask, cloud_free_mask):
     # get MWIR and LWIR data
     mwir_bt = product.get_band('btemp_nadir_0370').read_as_array()
-    lwir_bt = product.get_band('btemp_nadir_1100').read_as_array()
 
     # bg window rad
-    bg_sizes = [2, 4, 6, 8]
+    bg_sizes = [2, 4, 6, 8, 10, 12]
 
     # get a line and sample estimate for each cluster
     cluster_df = flare_line_sample_df.groupby(['lats_arcmin', 'lons_arcmin'], as_index=False).agg({'lines': np.max,
                                                                                                    'samples': np.max})
     # get the background radiances
     mwir_bg = []
-    lwir_bg = []
     cloud_bg_pc = []
     hotspot_bg_pc = []
     inval_pixels_bg_pc = []
+    bg_size_used = []
     for i, row in cluster_df.iterrows():
         valid_bg = False
         for bg_size in bg_sizes:
@@ -159,8 +158,7 @@ def determine_thermal_background_contribution(flare_line_sample_df, product, hot
             # build mask
             bg_mask = cloud_free_mask[min_y:max_y, min_x:max_x] & \
                       ~hotspot_mask[min_y:max_y, min_x:max_x] & \
-                      (mwir_bt[min_y:max_y, min_x:max_x] > 0) & \
-                      (lwir_bt[min_y:max_y, min_x:max_x] > 0)
+                      (mwir_bt[min_y:max_y, min_x:max_x] > 0)
 
             if np.sum(bg_mask) / float(bg_mask.size) > 0.6:
                 valid_bg = True
@@ -171,62 +169,28 @@ def determine_thermal_background_contribution(flare_line_sample_df, product, hot
             mwir_subset = radiance_from_BT(3.7, mwir_subset)
             mwir_bg.append(np.mean(mwir_subset[bg_mask]))
 
-            lwir_subset = lwir_bt[min_y:max_y, min_x:max_x]
-            lwir_subset = radiance_from_BT(11, lwir_subset)
-            lwir_bg.append(np.mean(lwir_subset[bg_mask]))
         else:
             mwir_bg.append(-1)
-            lwir_bg.append(-1)
 
         # store mask info for determining what is causing fails
+        bg_size_used.append(bg_size)
         mask_size = float(bg_mask.size)
         cloud_bg_pc.append(np.sum(~cloud_free_mask[min_y:max_y, min_x:max_x])/mask_size)
         hotspot_bg_pc.append(np.sum(hotspot_mask[min_y:max_y, min_x:max_x])/mask_size)
-        inval = (mwir_bt[min_y:max_y, min_x:max_x] <= 0) | (lwir_bt[min_y:max_y, min_x:max_x] <= 0)
+        inval = (mwir_bt[min_y:max_y, min_x:max_x] <= 0)
         inval_pixels_bg_pc.append(np.sum(inval)/mask_size)
 
 
     cluster_df['mwir_bg'] = mwir_bg
-    cluster_df['lwir_bg'] = lwir_bg
     cluster_df['cloud_bg_pc'] = cloud_bg_pc
     cluster_df['hotspot_bg_pc'] = hotspot_bg_pc
     cluster_df['inval_pixels_bg_pc'] = inval_pixels_bg_pc
+    cluster_df['bg_size_used'] = bg_size_used
 
     cluster_df.drop(['lines', 'samples'], axis=1, inplace=True)
 
     # return the backgorunds
     return cluster_df
-
-
-def determine_flare_type(flare_df):
-    # mwir pixel is nan use lwir
-
-    use_mwir = (flare_df.mwir_radiances != np.nan) & \
-               (flare_df.mwir_radiances > flare_df.mwir_bg) & \
-               (flare_df.mwir_bg != -1)
-    use_lwir = (flare_df.mwir_radiances == np.nan) & \
-               (flare_df.lwir_radiances > flare_df.lwir_bg) & \
-               (flare_df.lwir_bg != -1)
-    missing = ~(use_mwir | use_lwir)
-
-    mwir_rad = flare_df.mwir_radiances - flare_df.mwir_bg
-    lwir_rad = flare_df.lwir_radiances - flare_df.lwir_bg
-
-    swir_mwir_ratio = flare_df.swir_radiances / mwir_rad
-    swir_lwir_ratio = flare_df.swir_radiances / lwir_rad
-
-    # non flares will be set as zero
-    types = np.zeros(mwir_rad.shape)
-
-    # set the flares as 1
-    types[use_mwir] = ((swir_mwir_ratio < proc_const.mwir_max_ratio) &
-                       (swir_mwir_ratio > proc_const.mwir_min_ratio))[use_mwir]
-    types[use_lwir] = ((swir_lwir_ratio < proc_const.lwir_max_ratio) &
-                       (swir_lwir_ratio > proc_const.lwir_min_ratio))[use_lwir]
-
-    # set missing as 2 (can be caused by no background or background higher than flare)
-    types[missing] = 2
-    return types
 
 
 def construct_hotspot_df(flare_df, hotspot_mask, cloud_free_mask,
@@ -247,9 +211,6 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_free_mask,
     mwir_radiances = radiance_from_BT(3.7, mwir_bt)
     mwir_radiances[mwir_radiances < 0] = np.nan
 
-    lwir_bt = product.get_band('btemp_nadir_1100').read_as_array()[coords]
-    lwir_radiances = radiance_from_BT(11, lwir_bt)
-
     pixel_size = compute_pixel_size(flare_df.samples.values)
     frp = compute_frp(swir_radiances, pixel_size, sensor)
 
@@ -257,12 +218,10 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_free_mask,
     view_elev_angle = product.get_band('view_elev_nadir').read_as_array()[coords]
 
     datasets = [rounded_lats, rounded_lons, frp,
-                swir_radiances, swir_reflectances,
-                mwir_radiances, lwir_radiances,
+                swir_radiances, swir_reflectances, mwir_radiances,
                 solar_elev_angle, view_elev_angle, pixel_size]
     names = ['lats', 'lons', 'frp',
-             'swir_radiances', 'swir_reflectances',
-             'mwir_radiances', 'lwir_radiances',
+             'swir_radiances', 'swir_reflectances', 'mwir_radiances',
              'sun_elev', 'view_elev', 'pixel_size']
     for k, v in zip(names, datasets):
         flare_df[k] = v
@@ -271,11 +230,6 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_free_mask,
     thermal_bg_df = determine_thermal_background_contribution(flare_df, product,
                                                               hotspot_mask, cloud_free_mask)
     flare_df = flare_df.merge(thermal_bg_df, on=['lats_arcmin', 'lons_arcmin'])
-
-    # now with the background information we can determine the type of each pixel in the cluster
-    types = determine_flare_type(flare_df)
-
-    flare_df['types'] = types
 
     return flare_df
 
@@ -332,12 +286,14 @@ def group_hotspot_df(df):
                 'swir_radiances': np.mean,
                 'mwir_radiances': np.mean,
                 'mwir_bg': np.mean,
-                'lwir_radiances': np.mean,
-                'lwir_bg': np.mean,
                 'pixel_size': np.sum,
                 'lats': np.mean,
                 'lons': np.mean,
-                'types': hotspot_type_aggregator}
+                'cloud_bg_pc': np.mean,
+                'hotspot_bg_pc': np.mean,
+                'inval_pixels_bg_pc': np.mean,
+                'bg_size_used': np.mean,
+                }
     return df.groupby(['lats_arcmin', 'lons_arcmin'], as_index=False).agg(agg_dict)
 
 
@@ -361,11 +317,8 @@ def main():
     flare_df = pd.read_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flare_locations.csv'))
 
     # read in the atsr product
-    # path_to_data = sys.argv[1]
-    # path_to_output = sys.argv[2]
-    root = '/Users/danielfisher/Projects/kcl-globalgasflaring/data/raw/atsr'
-    path_to_data = os.path.join(root, 'ATS_TOA_1PUUPA20120406_181820_000065273113_00242_52842_6784.N1')
-    path_to_output = ''
+    path_to_data = sys.argv[1]
+    path_to_output = sys.argv[2]
 
     atsr_data = read_atsr(path_to_data)
     sensor = define_sensor(path_to_data)
