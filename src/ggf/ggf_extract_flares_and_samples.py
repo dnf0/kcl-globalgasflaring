@@ -207,9 +207,7 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_free_mask,
     swir_reflectances = product.get_band('reflec_nadir_1600').read_as_array()[coords]
     swir_radiances = radiance_from_reflectance(swir_reflectances, product, sensor)
 
-    mwir_bt = product.get_band('btemp_nadir_0370').read_as_array()[coords]
-    mwir_radiances = radiance_from_BT(3.7, mwir_bt)
-    mwir_radiances[mwir_radiances < 0] = np.nan
+
 
     pixel_size = compute_pixel_size(flare_df.samples.values)
     frp = compute_frp(swir_radiances, pixel_size, sensor)
@@ -218,22 +216,29 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_free_mask,
     view_elev_angle = product.get_band('view_elev_nadir').read_as_array()[coords]
 
     datasets = [rounded_lats, rounded_lons, frp,
-                swir_radiances, swir_reflectances, mwir_radiances,
+                swir_radiances, swir_reflectances,
                 solar_elev_angle, view_elev_angle, pixel_size]
     names = ['lats', 'lons', 'frp',
-             'swir_radiances', 'swir_reflectances', 'mwir_radiances',
+             'swir_radiances', 'swir_reflectances',
              'sun_elev', 'view_elev', 'pixel_size']
     for k, v in zip(names, datasets):
         flare_df[k] = v
 
     # get the background for each cluster if not AT1
     if sensor != 'at1':
+
+        mwir_bt = product.get_band('btemp_nadir_0370').read_as_array()[coords]
+        mwir_radiances = radiance_from_BT(3.7, mwir_bt)
+        mwir_radiances[mwir_radiances < 0] = np.nan
+        flare_df['mwir_radiances'] = mwir_radiances
+
         thermal_bg_df = determine_thermal_background_contribution(flare_df, product,
                                                                   hotspot_mask, cloud_free_mask)
         flare_df = flare_df.merge(thermal_bg_df, on=['lats_arcmin', 'lons_arcmin'])
     else:
 
         # no MWIR channel on ATS, so lets set to null.
+        flare_df['mwir_radiances'] = -999
         flare_df['mwir_bg'] = -999
         flare_df['cloud_bg_pc'] = -999
         flare_df['hotspot_bg_pc'] = -999

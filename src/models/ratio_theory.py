@@ -53,7 +53,7 @@ if __name__ == "__main__":
     ax.plot(temps, ratio_mwir,  "k-", markersize=4)
 
     ax.set_xlabel("Temperature (K)", fontsize=16)
-    ax.set_ylabel("$L_{1.6} / L_{4}$", fontsize=16)
+    ax.set_ylabel("$L_{1.6} / L_{3.7}$", fontsize=16)
     plt.show()
 
     #fp ='/Users/dnf/Dropbox/working_documents/papers/TGRS-swir-frp-notshared/figures/Figure_2.png'
