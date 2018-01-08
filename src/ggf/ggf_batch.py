@@ -55,42 +55,25 @@ class BatchSystem:
             return m.groupdict()
 
 
-def process(ymd, python_exe):
-
-    if 'collocate' in python_exe:
-        if 'ats' in f.lower():
-            if (int(ymd[0:6]) > 200205) & (int(ymd[0:6]) < 200306):
-                return True
-        elif 'at2' in f.lower():
-            if (int(ymd[0:6]) > 199506) & (int(ymd[0:6]) < 199612):
-                return True
-        else:
-            return False
-
+def process(ymd):
+    if 'at2' in f.lower():
+        if int(ymd[0:6]) <= 200306:
+            return True
+    elif 'at1' in f.lower():
+        if int(ymd[0:6]) <= 199605:
+            return True
     else:
-        if 'at2' in f.lower():
-            if int(ymd[0:6]) <= 200306:
-                return True
-        elif 'at1' in f.lower():
-            if int(ymd[0:6]) <= 199605:
-                return True
-        else:
-            return True  # we process all ATS data and this checks for that
+        return True  # we process all ATS data and this checks for that
 
 
-def make_outpath(f, ymd, python_exe):
-    if 'collocate' in python_exe:
-        if 'ats' in f.lower():
-            sensor = 'ats_at2'
-        else:
-            sensor = 'at2_at1'
-    else:
-        if 'N1' in f:
-            sensor = 'ats'
-        if 'E2' in f:
-            sensor = 'at2'
-        if 'E1' in f:
-            sensor = 'at1'
+def make_outpath(f, ymd):
+
+    if 'N1' in f:
+        sensor = 'ats'
+    if 'E2' in f:
+        sensor = 'at2'
+    if 'E1' in f:
+        sensor = 'at1'
 
     out_dir = os.path.join(filepaths.path_to_cems_output_l2, sensor,
                            ymd[0:4], ymd[4:6], ymd[6:8])
@@ -135,14 +118,14 @@ for path_to_data in filepaths.paths_to_data:
                 ymd = f[14:22]
 
                 # check year, month and sensor to see if we are going to process
-                if not process(ymd, python_exe):
+                if not process(ymd):
                     print 'Did not submit job for file:', f
                     continue
                 else:
                     print 'Submitting file job for file:', f
 
                 # construct ouptut path
-                out_dir = make_outpath(f, ymd, python_exe)
+                out_dir = make_outpath(f, ymd)
 
                 # for each ATSR file generate a bash script that calls ggf
                 (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',

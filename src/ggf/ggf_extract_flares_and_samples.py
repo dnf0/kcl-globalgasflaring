@@ -273,7 +273,7 @@ def construct_sample_df(product, resolution, cloud_free_mask, hotspot_mask, samp
 
 
 def sample_type_aggregator(a):
-    if np.in1d(1, a)[0]:  # if a gas flare pixel in grid cell, then return as gas flare type, else cloud
+    if np.in1d(1, a)[0]:  # if a gas flare pixel in grid cell, then return as gas flare type, else cloud free obs
         return 1
     else:
         return 2
