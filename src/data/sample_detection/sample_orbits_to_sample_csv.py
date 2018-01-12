@@ -56,7 +56,7 @@ def main():
     df_list = []
     current_year_unset = True
 
-    csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_sampling.csv')
+    csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + 'at1/*/*/*/*_sampling.csv')
     for f in csv_filepaths:
         try:
             # check if yr and month of csv file are in permitted months
