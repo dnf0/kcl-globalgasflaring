@@ -45,10 +45,10 @@ if __name__ == "__main__":
     ratio_mwir = spect_rad_swir / spect_rad_mwir
     ratio_lwir = spect_rad_swir / spect_rad_lwir
 
-    print 'MWIR ratio 1500K', ratio_mwir[1500]
+    print 'MWIR ratio 1400K', ratio_mwir[1400]
     print 'MWIR ratio 2300K', ratio_mwir[2300]
-    print 'MWIR ratio 1500K', ratio_lwir[1500]
-    print 'MWIR ratio 2300K', ratio_lwir[2300]
+    print 'LWIR ratio 1400K', ratio_lwir[1400]
+    print 'LWIR ratio 2300K', ratio_lwir[2300]
 
     ax.plot(temps, ratio_mwir,  "k-", markersize=4)
 
