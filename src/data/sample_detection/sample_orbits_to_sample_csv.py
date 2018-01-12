@@ -46,7 +46,7 @@ def main():
     start_stop_df.dt_start = pd.to_datetime(start_stop_df.dt_start) 
     start_stop_df.dt_stop = pd.to_datetime(start_stop_df.dt_stop)
 
-    output_df = None
+    output_df_list = []
     to_subset = ['lats_arcmin', 'lons_arcmin']
     to_group = ['lats_arcmin', 'lons_arcmin', 'year']
     agg_dict = {'sample_counts': np.sum,
@@ -64,7 +64,7 @@ def main():
             if check_file(fname, ymd):
                 print 'not processing f', f
                 continue
-	    else:
+            else:
                 print 'processing:', f
 
             # read csv and add in new columns
@@ -82,17 +82,17 @@ def main():
             # reduce the sample df to the operating flares by merging on coordinates
             sample_df = pd.merge(sample_df, valid_start_stop_df, on=to_subset)
             
-            # record the samples in the output df, grouping each orbit csv as it is
-            # appended and summing the sampling counts.  Resulting in each flare
-            # grouped by year.
-            if output_df is None:
-                output_df = sample_df
-            else:
-                output_df = output_df.append(sample_df)
-                output_df = output_df.groupby(to_group, as_index=False).agg(agg_dict)
+            # store the df for later concatenation
+            output_df_list.append(sample_df)
 
         except Exception, e:
             logger.warning('Could not load csv file with error: ' + str(e))
+
+    # concatenate the datafrmes
+    output_df = pd.concat(output_df_list, ignore_index=True)
+
+    # group on year and flare
+    output_df = output_df.groupby(to_group, as_index=False).agg(agg_dict)
 
     # dump to csv
     output_df.to_csv(os.path.join(path_to_out, 'all_sampling_annual.csv'))
