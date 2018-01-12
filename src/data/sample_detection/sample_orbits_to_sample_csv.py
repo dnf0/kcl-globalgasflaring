@@ -46,7 +46,6 @@ def main():
     start_stop_df.dt_start = pd.to_datetime(start_stop_df.dt_start) 
     start_stop_df.dt_stop = pd.to_datetime(start_stop_df.dt_stop)
 
-    output_df_list = []
     to_subset = ['lats_arcmin', 'lons_arcmin']
     to_group = ['lats_arcmin', 'lons_arcmin', 'year']
     agg_dict = {'sample_counts': np.sum,
@@ -54,18 +53,27 @@ def main():
                 'flare_counts': np.sum,
                 }
 
+    df_list = []
+    current_year_unset = True
+
     csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_sampling.csv')
     for f in csv_filepaths:
         try:
             # check if yr and month of csv file are in permitted months
             fname = f.split('/')[-1]
             ymd = fname[14:22]
+
             file_time = datetime.strptime(ymd, '%Y%m%d')
             if check_file(fname, ymd):
                 print 'not processing f', f
                 continue
             else:
                 print 'processing:', f
+
+            year = int(ymd[0:4])
+            if current_year_unset:
+                current_year = year
+                current_year_unset = False
 
             # read csv and add in new columns
             sample_df = pd.read_csv(f)
@@ -83,19 +91,26 @@ def main():
             sample_df = pd.merge(sample_df, valid_start_stop_df, on=to_subset)
             
             # store the df for later concatenation
-            output_df_list.append(sample_df)
+            df_list.append(sample_df)
 
         except Exception, e:
             logger.warning('Could not load csv file with error: ' + str(e))
 
-    # concatenate the datafrmes
-    output_df = pd.concat(output_df_list, ignore_index=True)
 
-    # group on year and flare
-    output_df = output_df.groupby(to_group, as_index=False).agg(agg_dict)
+        if year != current_year:
 
-    # dump to csv
-    output_df.to_csv(os.path.join(path_to_out, 'all_sampling_annual.csv'))
+            # concatenate the datafrmes
+            output_df = pd.concat(df_list, ignore_index=True)
+
+            # group on year and flare
+            output_df = output_df.groupby(to_group, as_index=False).agg(agg_dict)
+
+            # dump to csv
+            output_df.to_csv(os.path.join(path_to_out, str(year) + '_all_sampling.csv'))
+
+            # update iteration stuff
+            current_year = year
+            df_list = []
 
 
 if __name__ == '__main__':
