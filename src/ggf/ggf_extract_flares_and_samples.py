@@ -352,7 +352,7 @@ def main():
     flare_output_fname = atsr_data.id_string.split('.')[0] + '_flares.csv'
     flare_output_fname = flare_output_fname.replace(flare_output_fname[0:3], sensor.upper())
     flare_csv_path = os.path.join(path_to_output, flare_output_fname)
-    flare_hotspot_df.to_csv(flare_csv_path, index=False)
+    grouped_hotspot_df.to_csv(flare_csv_path, index=False)
 
     # do the processing for samples
     sample_df = construct_sample_df(atsr_data, resolution, cloud_free_mask, hotspot_mask, sample_mask)

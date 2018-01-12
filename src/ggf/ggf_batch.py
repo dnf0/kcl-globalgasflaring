@@ -129,7 +129,7 @@ for path_to_data in filepaths.paths_to_data:
         path = os.path.join(path_to_data,  yr)
         for root, dirs, files in os.walk(path):
             for f in files:
-                if f.split('.')[-1] not in ['E1']:
+                if f.split('.')[-1] not in ['N1', 'E2', 'E1']:
                     continue
                 data_path = os.path.join(root, f)
                 ymd = f[14:22]
