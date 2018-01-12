@@ -75,6 +75,20 @@ def main():
                 current_year = year
                 current_year_unset = False
 
+            if year != current_year:
+                # concatenate the datafrmes
+                output_df = pd.concat(df_list, ignore_index=True)
+
+                # group on year and flare
+                output_df = output_df.groupby(to_group, as_index=False).agg(agg_dict)
+
+                # dump to csv
+                output_df.to_csv(os.path.join(path_to_out, str(current_year) + '_all_sampling.csv'))
+
+                # update iteration stuff
+                current_year = year
+                df_list = []
+
             # read csv and add in new columns
             sample_df = pd.read_csv(f)
             sample_df['sample_counts'] = 1.
@@ -97,20 +111,7 @@ def main():
             logger.warning('Could not load csv file with error: ' + str(e))
 
 
-        if year != current_year:
 
-            # concatenate the datafrmes
-            output_df = pd.concat(df_list, ignore_index=True)
-
-            # group on year and flare
-            output_df = output_df.groupby(to_group, as_index=False).agg(agg_dict)
-
-            # dump to csv
-            output_df.to_csv(os.path.join(path_to_out, str(year) + '_all_sampling.csv'))
-
-            # update iteration stuff
-            current_year = year
-            df_list = []
 
 
 if __name__ == '__main__':
