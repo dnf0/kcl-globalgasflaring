@@ -64,6 +64,8 @@ def main():
             if check_file(fname, ymd):
                 print 'not processing f', f
                 continue
+	    else:
+                print 'processing:', f
 
             # read csv and add in new columns
             sample_df = pd.read_csv(f)
@@ -85,11 +87,9 @@ def main():
             # grouped by year.
             if output_df is None:
                 output_df = sample_df
-                print output_df.head()
             else:
                 output_df = output_df.append(sample_df)
                 output_df = output_df.groupby(to_group, as_index=False).agg(agg_dict)
-                print output_df.head()
 
         except Exception, e:
             logger.warning('Could not load csv file with error: ' + str(e))
