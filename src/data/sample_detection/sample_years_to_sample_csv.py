@@ -12,9 +12,10 @@ def main():
     # set up output path
     path_to_out = os.path.join(fp.path_to_cems_output_l3, 'all_sensors')
 
-    annual_csv_filepaths = glob.glob(path_to_out + '*_sampling.csv')
+    annual_csv_filepaths = glob.glob(path_to_out + '/*_sampling.csv')
     df_list = []
     for f in annual_csv_filepaths:
+        print f
         if f.split('/')[-1] == 'all_sampling.csv':
             continue
         df_list.append(pd.read_csv(f))
