@@ -35,6 +35,28 @@ def check_file(fname, ymd):
     else:
         return False
 
+# hack until I figure out how to pass args to agg
+def sum_lt_1(a):
+    return np.sum(a < 1)
+
+def sum_lt_5(a):
+    return np.sum(a < 5)
+
+def sum_lt_10(a):
+    return np.sum(a < 10)
+
+def sum_lt_20(a):
+    return np.sum(a < 20)
+
+def sum_lt_30(a):
+    return np.sum(a < 30)
+
+def sum_lt_40(a):
+    return np.sum(a < 40)
+
+def sum_lt_50(a):
+    return np.sum(a < 50)
+
 
 def main():
 
@@ -48,15 +70,19 @@ def main():
 
     to_subset = ['lats_arcmin', 'lons_arcmin']
     to_group = ['lats_arcmin', 'lons_arcmin', 'year']
-    agg_dict = {'sample_counts': np.sum,
-                'cloud_free_counts': np.sum,
-                'flare_counts': np.sum,
+    agg_dict = {'50': sum_lt_50,
+                '40': sum_lt_40,
+                '30': sum_lt_30,
+                '20': sum_lt_20,
+                '10': sum_lt_10,
+                '5': sum_lt_5,
+                '1': sum_lt_1,
                 }
 
     df_list = []
     current_year_unset = True
 
-    csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + 'at1/*/*/*/*_sampling.csv')
+    csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_sampling.csv')
     for f in csv_filepaths:
         try:
             # check if yr and month of csv file are in permitted months
@@ -78,6 +104,16 @@ def main():
             if year != current_year:
                 # concatenate the datafrmes
                 output_df = pd.concat(df_list, ignore_index=True)
+
+                # add in columns to count number of samples with less
+                # than the defined cloud cover percentage, for given year and flare location.
+                output_df['50'] = output_df.cloud_cover
+                output_df['40'] = output_df.cloud_cover
+                output_df['30'] = output_df.cloud_cover
+                output_df['20'] = output_df.cloud_cover
+                output_df['10'] = output_df.cloud_cover
+                output_df['5'] = output_df.cloud_cover
+                output_df['1'] = output_df.cloud_cover
 
                 # group on year and flare
                 output_df = output_df.groupby(to_group, as_index=False).agg(agg_dict)
