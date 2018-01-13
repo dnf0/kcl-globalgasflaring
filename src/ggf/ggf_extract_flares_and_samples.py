@@ -8,6 +8,7 @@ from datetime import datetime
 import epr
 import numpy as np
 import pandas as pd
+import scipy.ndimage as ndimage
 
 import src.config.constants as proc_const
 import src.models.atsr_pixel_size as atsr_pixel_size
@@ -129,14 +130,16 @@ def construct_hotspot_line_sample_df(product, hotspot_mask):
     return df
 
 
-def determine_thermal_background_contribution(flare_line_sample_df, product, hotspot_mask, cloud_free_mask):
+def determine_thermal_background_contribution(flare_line_sample_df, product, hotspot_mask,
+                                              cloud_mask, background_mask):
     # get MWIR and LWIR data
     mwir_bt = product.get_band('btemp_nadir_0370').read_as_array()
 
     # bg window rad
-    bg_sizes = [2, 4, 6, 8, 10, 12]
+    bg_size = 8  # TODO MOVE TO CONFIG
 
-    # get a line and sample estimate for each cluster
+    # get a line and sample estimate for each cluster so we compute the background for the entire flare
+    # cluster in one go.
     cluster_df = flare_line_sample_df.groupby(['lats_arcmin', 'lons_arcmin'], as_index=False).agg({'lines': np.max,
                                                                                                    'samples': np.max})
     # get the background radiances
@@ -146,25 +149,18 @@ def determine_thermal_background_contribution(flare_line_sample_df, product, hot
     inval_pixels_bg_pc = []
     bg_size_used = []
     for i, row in cluster_df.iterrows():
-        valid_bg = False
-        for bg_size in bg_sizes:
 
-            # check for edges
-            min_x = row.samples - bg_size if row.samples - bg_size > 0 else 0
-            max_x = row.samples + bg_size if row.samples + bg_size < 511 else 511
-            min_y = row.lines - bg_size if row.lines - bg_size > 0 else 0
-            max_y = row.lines + bg_size if row.lines + bg_size < cloud_free_mask.shape[0] else cloud_free_mask.shape[0]
+        # check for edges
+        min_x = row.samples - bg_size if row.samples - bg_size > 0 else 0
+        max_x = row.samples + bg_size + 1 if row.samples + bg_size + 1 < 511 else 511
+        min_y = row.lines - bg_size if row.lines - bg_size > 0 else 0
+        max_y = row.lines + bg_size + 1 if row.lines + bg_size + 1 < background_mask.shape[0] else background_mask.shape[0]
 
-            # build mask
-            bg_mask = cloud_free_mask[min_y:max_y, min_x:max_x] & \
-                      ~hotspot_mask[min_y:max_y, min_x:max_x] & \
-                      (mwir_bt[min_y:max_y, min_x:max_x] > 0)
+        # build mask
+        bg_mask = background_mask[min_y:max_y, min_x:max_x] & \
+                  (mwir_bt[min_y:max_y, min_x:max_x] > 0)
 
-            if np.sum(bg_mask) / float(bg_mask.size) > 0.6:
-                valid_bg = True
-                break
-
-        if valid_bg:
+        if np.sum(bg_mask) / float(bg_mask.size) > 0.6:
             mwir_subset = mwir_bt[min_y:max_y, min_x:max_x]
             mwir_subset = radiance_from_BT(3.7, mwir_subset)
             mwir_bg.append(np.mean(mwir_subset[bg_mask]))
@@ -175,11 +171,10 @@ def determine_thermal_background_contribution(flare_line_sample_df, product, hot
         # store mask info for determining what is causing fails
         bg_size_used.append(bg_size)
         mask_size = float(bg_mask.size)
-        cloud_bg_pc.append(np.sum(~cloud_free_mask[min_y:max_y, min_x:max_x])/mask_size)
+        cloud_bg_pc.append(np.sum(cloud_mask[min_y:max_y, min_x:max_x])/mask_size)
         hotspot_bg_pc.append(np.sum(hotspot_mask[min_y:max_y, min_x:max_x])/mask_size)
         inval = (mwir_bt[min_y:max_y, min_x:max_x] <= 0)
         inval_pixels_bg_pc.append(np.sum(inval)/mask_size)
-
 
     cluster_df['mwir_bg'] = mwir_bg
     cluster_df['cloud_bg_pc'] = cloud_bg_pc
@@ -193,7 +188,7 @@ def determine_thermal_background_contribution(flare_line_sample_df, product, hot
     return cluster_df
 
 
-def construct_hotspot_df(flare_df, hotspot_mask, cloud_free_mask,
+def construct_hotspot_df(flare_df, hotspot_mask, cloud_mask, background_mask,
                          product, resolution, sensor):
     coords = [flare_df.lines.values, flare_df.samples.values]
 
@@ -206,8 +201,6 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_free_mask,
 
     swir_reflectances = product.get_band('reflec_nadir_1600').read_as_array()[coords]
     swir_radiances = radiance_from_reflectance(swir_reflectances, product, sensor)
-
-
 
     pixel_size = compute_pixel_size(flare_df.samples.values)
     frp = compute_frp(swir_radiances, pixel_size, sensor)
@@ -232,8 +225,8 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_free_mask,
         mwir_radiances[mwir_radiances < 0] = np.nan
         flare_df['mwir_radiances'] = mwir_radiances
 
-        thermal_bg_df = determine_thermal_background_contribution(flare_df, product,
-                                                                  hotspot_mask, cloud_free_mask)
+        thermal_bg_df = determine_thermal_background_contribution(flare_df, product, hotspot_mask,
+                                                                  cloud_mask, background_mask)
         flare_df = flare_df.merge(thermal_bg_df, on=['lats_arcmin', 'lons_arcmin'])
     else:
 
@@ -248,51 +241,37 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_free_mask,
     return flare_df
 
 
-def construct_sample_df(product, resolution, cloud_free_mask, hotspot_mask, sample_mask):
-    # assign type mask
-    types = np.zeros(cloud_free_mask.shape)
-    types[cloud_free_mask] = 2
-    types[hotspot_mask] = 1
-    types = types[sample_mask]
+def construct_sample_df(flare_df, product, cloud_mask, night_mask):
 
-    lats = product.get_band('latitude').read_as_array()[sample_mask]
-    lons = product.get_band('longitude').read_as_array()[sample_mask]
+    bg_size = 2*8 + 1  # TODO MOVE TO CONFIG
 
-    # round geographic data to desired reoslution
+    # set up filter kernel
+    k = np.ones([bg_size, bg_size])
+
+    # get summed cloud mask for bg window size
+    sum = ndimage.convolve(cloud_mask.astype(int), k, mode='constant', cval=0.0)
+
+    # get samples in each bg window
+    count = ndimage.convolve(np.ones(cloud_mask.shape), k, mode='constant', cval=0.0)
+
+    # get mean cloud coverage percent for bg window
+    cloud_cover = sum/count
+
+    # get geographic coordinates
+    lats = product.get_band('latitude').read_as_array()
+    lons = product.get_band('longitude').read_as_array()
     lats_arcmin = get_arcmin(lats)
     lons_arcmin = get_arcmin(lons)
-    rounded_lats = myround(lats, base=resolution)
-    rounded_lons = myround(lons, base=resolution)
 
-    df = pd.DataFrame()
-    datasets = [rounded_lats, rounded_lons, lats_arcmin, lons_arcmin, types]
-    names = ['lats', 'lons', 'lats_arcmin', 'lons_arcmin', 'types']
-    for k, v in zip(names, datasets):
-        df[k] = v
-    return df
+    # set up df for merging
+    orbit_df = pd.DataFrame()
+    orbit_df['lats_arcmin'] = lats_arcmin[night_mask]
+    orbit_df['lons_arcmin'] = lons_arcmin[night_mask]
+    orbit_df['cloud_cover'] = cloud_cover[night_mask]
 
+    orbit_df = orbit_df.merge(flare_df, on=['lats_arcmin', 'lons_arcmin'])
 
-def sample_type_aggregator(a):
-    if np.in1d(1, a)[0]:  # if a gas flare pixel in grid cell, then return as gas flare type, else cloud free obs
-        return 1
-    else:
-        return 2
-
-
-def group_sample_df(df):
-    return df.groupby(['lats_arcmin', 'lons_arcmin'], as_index=False).agg({'types': sample_type_aggregator,
-                                                                           'lats': np.mean,
-                                                                           'lons': np.mean})
-
-
-def hotspot_type_aggregator(a):
-    '''
-    Just take the most common value.
-    0 is non-flare hotspot
-    1 is flare hotspot
-    2 is non retrieval caused by missing or warm background
-    '''
-    return np.bincount(a).argmax()
+    return orbit_df
 
 
 def group_hotspot_df(df):
@@ -311,6 +290,10 @@ def group_hotspot_df(df):
     return df.groupby(['lats_arcmin', 'lons_arcmin'], as_index=False).agg(agg_dict)
 
 
+def group_sample_df(df):
+    return df.groupby(['lats_arcmin', 'lons_arcmin'], as_index=False).agg({'cloud_cover': np.mean})
+
+
 def extend_df(df, sensor, id_string, hotspot_df=False):
     df['year'] = int(id_string[14:18])
     df['month'] = int(id_string[18:20])
@@ -325,7 +308,7 @@ def extend_df(df, sensor, id_string, hotspot_df=False):
 
 def main():
     # some processing constants
-    resolution = 60 / 3600.  # Degrees. same as with monthly aggregation
+    resolution = 60 / 3600.  # TODO MOVE TO CONSTANTS
 
     # load in the persistent flare location dataframe
     flare_df = pd.read_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flare_locations.csv'))
@@ -339,18 +322,28 @@ def main():
 
     # set up various data masks
     night_mask = make_night_mask(atsr_data)
-    cloud_free_mask = make_cloud_mask(atsr_data)
 
+    is_not_cloud_mask = make_cloud_mask(atsr_data)
     potential_hotspot_mask = detect_hotspots(atsr_data)
-    potential_sample_mask = cloud_free_mask | potential_hotspot_mask  # cloud free or high SWIR
 
     hotspot_mask = night_mask & potential_hotspot_mask
-    sample_mask = night_mask & potential_sample_mask
+    cloud_mask = night_mask & ~potential_hotspot_mask & ~is_not_cloud_mask
+    background_mask = night_mask & ~potential_hotspot_mask & is_not_cloud_mask
+
+    # do the processing for samples, where we just get the cloud cover for each location
+    sample_df = construct_sample_df(flare_df, atsr_data, cloud_mask, night_mask)
+    grouped_sample_df = group_sample_df(sample_df)
+    extend_df(grouped_sample_df, sensor, atsr_data.id_string)
+    sample_output_fname = atsr_data.id_string.split('.')[0] + '_sampling.csv'
+    sample_output_fname = sample_output_fname.replace(sample_output_fname[0:3], sensor.upper())
+    sample_csv_path = os.path.join(path_to_output, sample_output_fname)
+    grouped_sample_df.to_csv(sample_csv_path, index=False)
 
     # do the processing for flares
     hotspot_line_sample_df = construct_hotspot_line_sample_df(atsr_data, hotspot_mask)
     flare_line_sample_df = pd.merge(flare_df, hotspot_line_sample_df, on=['lats_arcmin', 'lons_arcmin'])
-    flare_hotspot_df = construct_hotspot_df(flare_line_sample_df, hotspot_mask, cloud_free_mask,
+    flare_hotspot_df = construct_hotspot_df(flare_line_sample_df, hotspot_mask,
+                                            cloud_mask, background_mask,
                                             atsr_data, resolution, sensor)
     grouped_hotspot_df = group_hotspot_df(flare_hotspot_df)
     extend_df(grouped_hotspot_df, sensor, atsr_data.id_string, hotspot_df=True)
@@ -358,16 +351,6 @@ def main():
     flare_output_fname = flare_output_fname.replace(flare_output_fname[0:3], sensor.upper())
     flare_csv_path = os.path.join(path_to_output, flare_output_fname)
     grouped_hotspot_df.to_csv(flare_csv_path, index=False)
-
-    # do the processing for samples
-    sample_df = construct_sample_df(atsr_data, resolution, cloud_free_mask, hotspot_mask, sample_mask)
-    grouped_sample_df = group_sample_df(sample_df)
-    extend_df(grouped_sample_df, sensor, atsr_data.id_string)
-    flare_sample_df = pd.merge(flare_df, grouped_sample_df, on=['lats_arcmin', 'lons_arcmin'])
-    sample_output_fname = atsr_data.id_string.split('.')[0] + '_sampling.csv'
-    sample_output_fname = sample_output_fname.replace(sample_output_fname[0:3], sensor.upper())
-    sample_csv_path = os.path.join(path_to_output, sample_output_fname)
-    flare_sample_df.to_csv(sample_csv_path, index=False)
 
 
 if __name__ == "__main__":
