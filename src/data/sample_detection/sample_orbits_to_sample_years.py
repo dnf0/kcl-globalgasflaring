@@ -37,25 +37,25 @@ def check_file(fname, ymd):
 
 # hack until I figure out how to pass args to agg
 def sum_lt_1(a):
-    return np.sum(a < 1)
+    return np.sum(a < 0.01)
 
 def sum_lt_5(a):
-    return np.sum(a < 5)
+    return np.sum(a < 0.05)
 
 def sum_lt_10(a):
-    return np.sum(a < 10)
+    return np.sum(a < 0.1)
 
 def sum_lt_20(a):
-    return np.sum(a < 20)
+    return np.sum(a < 0.2)
 
 def sum_lt_30(a):
-    return np.sum(a < 30)
+    return np.sum(a < 0.3)
 
 def sum_lt_40(a):
-    return np.sum(a < 40)
+    return np.sum(a < 0.4)
 
 def sum_lt_50(a):
-    return np.sum(a < 50)
+    return np.sum(a < 0.5)
 
 
 def main():
@@ -104,16 +104,17 @@ def main():
             if year != current_year:
                 # concatenate the datafrmes
                 output_df = pd.concat(df_list, ignore_index=True)
-
+                
                 # add in columns to count number of samples with less
                 # than the defined cloud cover percentage, for given year and flare location.
-                output_df['50'] = output_df.cloud_cover
-                output_df['40'] = output_df.cloud_cover
-                output_df['30'] = output_df.cloud_cover
-                output_df['20'] = output_df.cloud_cover
-                output_df['10'] = output_df.cloud_cover
-                output_df['5'] = output_df.cloud_cover
-                output_df['1'] = output_df.cloud_cover
+                output_df['50'] = output_df.cloud_cover.copy()
+                output_df['40'] = output_df.cloud_cover.copy()
+                output_df['30'] = output_df.cloud_cover.copy()
+                output_df['20'] = output_df.cloud_cover.copy()
+                output_df['10'] = output_df.cloud_cover.copy()
+                output_df['5'] = output_df.cloud_cover.copy()
+                output_df['1'] = output_df.cloud_cover.copy()
+                print output_df
 
                 # group on year and flare
                 output_df = output_df.groupby(to_group, as_index=False).agg(agg_dict)
@@ -127,9 +128,6 @@ def main():
 
             # read csv and add in new columns
             sample_df = pd.read_csv(f)
-            sample_df['sample_counts'] = 1.
-            sample_df['cloud_free_counts'] = (sample_df.types == 2).astype(int)
-            sample_df['flare_counts'] = (sample_df.types == 1).astype(int)
 
             # reduce start stop dataframe to only those flares seen burning before of after
             # current csv file time.  Giving the indexes of flares actually operating during
