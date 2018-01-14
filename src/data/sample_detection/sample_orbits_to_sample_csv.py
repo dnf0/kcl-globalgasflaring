@@ -1,10 +1,8 @@
 import os
 import glob
 import logging
-from datetime import datetime
 
 import pandas as pd
-import numpy as np
 
 import src.config.filepaths as fp
 
