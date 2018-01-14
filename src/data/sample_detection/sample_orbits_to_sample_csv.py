@@ -15,6 +15,7 @@ def main():
 
     csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_sampling.csv')
     for f in csv_filepaths:
+        print f
         df_list.append(pd.read_csv(f))
 
     df = pd.concat(df_list, ignore_index=True)
