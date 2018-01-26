@@ -10,6 +10,7 @@ import sys
 import os
 import logging
 import zipfile
+import shutil
 
 import numpy as np
 from netCDF4 import Dataset
@@ -19,18 +20,29 @@ from scipy.interpolate import RectBivariateSpline
 import src.config.constants as proc_const
 
 
-def extract_zip(input_zip):
+def extract_zip(input_zip, path_to_temp):
     data_dict = {}
     to_extract = ["S5_radiance_cn.nc",
                   "geodetic_cn.nc", "geometry_tn.nc",
                   "cartesian_cn.nc", "cartesian_tx.nc",
                   "indices_cn.nc", "flags_cn.nc"]
-    input_zip=zipfile.ZipFile(input_zip)
-    for name in input_zip.namelist():
-        split_name = name.split('/')[-1]
-        if split_name in to_extract:
-            var_name = split_name.split('.')[0]
-            data_dict[var_name] = Dataset(input_zip.extract(name))
+    with zipfile.ZipFile(input_zip) as input:
+        for name in input.namelist():
+            split_name = name.split('/')[-1]
+            if split_name in to_extract:
+                var_name = split_name.split('.')[0]
+                source = Dataset(input.extract(name, path_to_temp))
+                data_dict[var_name] = source
+
+    # remove the unzip files
+    extracted_files = os.listdir(".")
+    for f in extracted_files:
+        absolute_path = os.path.abspath(f)  # get the absolute path
+        if os.path.isdir(absolute_path):  # test if the path points to a directory
+            shutil.rmtree(absolute_path)
+        else:  # normal file
+            os.remove(absolute_path)
+
     return data_dict
 
 
@@ -110,9 +122,10 @@ def main():
     # read in the atsr prodcut and land water
     path_to_data = sys.argv[1]
     path_to_output = sys.argv[2]
+    path_to_temp = sys.argv[3]
 
     # open zip file
-    s3_data = extract_zip(path_to_data)
+    s3_data = extract_zip(path_to_data, path_to_temp)
 
     # get day/night mask, if no night mask return save empty df
     night_mask = make_night_mask(s3_data)

@@ -55,7 +55,7 @@ class BatchSystem:
             return m.groupdict()
 
 
-def process(ymd):
+def check_atx_year(ymd):
     if 'at2' in f.lower():
         if int(ymd[0:6]) <= 200306:
             return True
@@ -66,7 +66,7 @@ def process(ymd):
         return True  # we process all ATS data and this checks for that
 
 
-def make_outpath(f, ymd):
+def make_outpath_atx(f, ymd):
 
     if 'N1' in f:
         sensor = 'ats'
@@ -80,6 +80,85 @@ def make_outpath(f, ymd):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     return out_dir
+
+
+def submit_atx(root, f):
+
+    if f.split('.')[-1] not in ['N1', 'E2', 'E1']:
+        return
+
+    data_path = os.path.join(root, f)
+
+    # check year, month and sensor to see if we are going to process
+    ymd = f[14:22]
+    if not check_atx_year(ymd):
+        print 'Did not submit job for file:', f
+        return
+    else:
+        print 'Submitting file job for file:', f
+
+    # construct ouptut path
+    out_dir = make_outpath_atx(f, ymd)
+
+    # for each ATSR file generate a bash script that calls ggf
+    (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
+                                         out_dir, True)
+    g = os.fdopen(gd, "w")
+    g.write('export PYTHONPATH=$PYTHONPATH:/home/users/dnfisher/projects/kcl-globalgasflaring/\n')
+    g.write(filepaths.ggf_dir + python_exe +
+            data_path + ' ' +
+            out_dir + " \n")
+    g.write("rm -f " + script_file + "\n")
+    g.close()
+    os.chmod(script_file, 0o755)
+
+    # generate bsub call using print_batch
+    cmd = batch.print_batch(batch_values, exe=script_file)
+
+    # use subprocess to call the print batch command
+    try:
+        out = subprocess.check_output(cmd.split(' '))
+        jid = batch.parse_out(out, 'ID')
+    except Exception, e:
+        print 'Subprocess failed with error:', str(e)
+
+
+def submit_sls(root, f):
+
+    if '.zip' not in f:
+        return
+
+    ymd = f[16:24]
+    print ymd
+
+    data_dir = os.path.join(root, f)
+    out_dir = make_outpath_sls(f, ymd)
+    temp_dir = filepaths.path_to_temp
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+
+    # for each ATSR file generate a bash script that calls ggf
+    (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
+                                         out_dir, True)
+    g = os.fdopen(gd, "w")
+    g.write('export PYTHONPATH=$PYTHONPATH:/home/users/dnfisher/projects/kcl-globalgasflaring/\n')
+    g.write(filepaths.ggf_dir + python_exe +
+            data_dir + ' ' +
+            out_dir + ' ' +
+            temp_dir + " \n" )
+    g.write("rm -f " + script_file + "\n")
+    g.close()
+    os.chmod(script_file, 0o755)
+
+    # generate bsub call using print_batch
+    cmd = batch.print_batch(batch_values, exe=script_file)
+
+    # use subprocess to call the print batch command
+    try:
+        out = subprocess.check_output(cmd.split(' '))
+        jid = batch.parse_out(out, 'ID')
+    except Exception, e:
+        print 'Subprocess failed with error:', str(e)
 
 # setup the batch running class
 batch = BatchSystem('bsub',
@@ -102,9 +181,13 @@ batch_values = {'email'    : 'danielfisher0@gmail.com'}
 # define python script to run
 python_exe = 'ggf_extract_flares_and_samples_atx.py '
 
+if 'atx' in python_exe:
+    paths = filepaths.paths_to_atx_data
+else:
+    paths = filepaths.path_to_sls_data
 
 # iterate over all ATSR files in directory
-for path_to_data in filepaths.paths_to_data:
+for path_to_data in paths:
     years = os.listdir(path_to_data)
     for yr in years:
         if len(yr) > 4:
@@ -112,39 +195,10 @@ for path_to_data in filepaths.paths_to_data:
         path = os.path.join(path_to_data,  yr)
         for root, dirs, files in os.walk(path):
             for f in files:
-                if f.split('.')[-1] not in [ 'E1']:
-                    continue
-                data_path = os.path.join(root, f)
-                ymd = f[14:22]
 
-                # check year, month and sensor to see if we are going to process
-                if not process(ymd):
-                    print 'Did not submit job for file:', f
-                    continue
+                if 'atx' in python_exe:
+                    submit_atx(root, f)
                 else:
-                    print 'Submitting file job for file:', f
+                    submit_sls(root, f)
 
-                # construct ouptut path
-                out_dir = make_outpath(f, ymd)
 
-                # for each ATSR file generate a bash script that calls ggf
-                (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
-                                                     out_dir, True)
-                g = os.fdopen(gd, "w")
-                g.write('export PYTHONPATH=$PYTHONPATH:/home/users/dnfisher/projects/kcl-globalgasflaring/\n')
-                g.write(filepaths.ggf_dir + python_exe +
-                        data_path + ' ' +
-                        out_dir + " \n")
-                g.write("rm -f " + script_file + "\n")
-                g.close()
-                os.chmod(script_file, 0o755)
-
-                # generate bsub call using print_batch
-                cmd = batch.print_batch(batch_values, exe=script_file)
-
-                # use subprocess to call the print batch command
-                try:
-                    out = subprocess.check_output(cmd.split(' '))
-                    jid = batch.parse_out(out, 'ID')
-                except Exception, e:
-                    print 'Subprocess failed with error:', str(e)

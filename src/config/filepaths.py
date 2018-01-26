@@ -13,9 +13,12 @@ cems_root = '/home/users/dnfisher/projects/kcl-globalgasflaring/'
 ggf_dir = cems_root + 'src/ggf/'
 
 # Paths to ATSR data on CEMS
-paths_to_data = ['/neodc/aatsr_multimission/aatsr-v3/data/ats_toa_1p',
-                 '/neodc/aatsr_multimission/atsr2-v3/data/at2_toa_1p',
-                 '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p']
+paths_to_atx_data = ['/neodc/aatsr_multimission/aatsr-v3/data/ats_toa_1p',
+                     '/neodc/aatsr_multimission/atsr2-v3/data/at2_toa_1p',
+                     '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p']
+
+path_to_sls_data = ['/neodc/sentinel3a/data/SLSTR/L1_RBT']
+path_to_temp = '/home/users/dnfisher/nceo_aerosolfire/data/temp/sls_unzipped'
 
 # Paths to processing output folder on CEMS
 output_root = '/home/users/dnfisher/nceo_aerosolfire/data/temp/'
