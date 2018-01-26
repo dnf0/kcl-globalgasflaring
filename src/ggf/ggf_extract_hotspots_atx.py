@@ -9,15 +9,12 @@ to detect flares based on hotspot persistency.
 import os
 import sys
 import logging
-from datetime import datetime
 
 import epr
 import numpy as np
-from netCDF4 import Dataset
 import pandas as pd
 
 import src.config.constants as proc_const
-import src.models.atsr_pixel_size as atsr_pixel_size
 
 
 def read_atsr(path_to_ats_data):
