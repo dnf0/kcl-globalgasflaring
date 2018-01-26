@@ -35,7 +35,8 @@ if __name__ == "__main__":
 
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 5))
 
-    temps = np.arange(0,3000, 1)  # in K
+    temps = np.arange(0,4000, 1)  # in K
+
 
     spect_rad_swir = flare_area_pc * planck_radiance(1.6, temps)
     spect_rad_mwir = flare_area_pc * planck_radiance(3.7, temps)
@@ -46,9 +47,10 @@ if __name__ == "__main__":
     ratio_lwir = spect_rad_swir / spect_rad_lwir
 
     print 'MWIR ratio 1400K', ratio_mwir[1400]
-    print 'MWIR ratio 2300K', ratio_mwir[2300]
+    print 'MWIR ratio 3500K', ratio_mwir[3500]
     print 'LWIR ratio 1400K', ratio_lwir[1400]
-    print 'LWIR ratio 2300K', ratio_lwir[2300]
+    print 'LWIR ratio 3500K', ratio_lwir[3500]
+
 
     ax.plot(temps, ratio_mwir,  "k-", markersize=4)
 

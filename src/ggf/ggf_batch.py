@@ -100,7 +100,7 @@ batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 
 # define python script to run
-python_exe = 'ggf_extract_flares_and_samples.py '
+python_exe = 'ggf_extract_flares_and_samples_atx.py '
 
 
 # iterate over all ATSR files in directory
