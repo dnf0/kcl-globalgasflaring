@@ -123,13 +123,22 @@ def submit_atx(root, f):
         print 'Subprocess failed with error:', str(e)
 
 
+def make_outpath_sls(f, ymd):
+    sensor = 'sls'
+    out_dir = os.path.join(filepaths.path_to_cems_output_l2, sensor,
+                           ymd[0:4], ymd[4:6], ymd[6:8])
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    return out_dir
+
+
 def submit_sls(root, f):
 
     if '.zip' not in f:
         return
+    print 'Submitting file job for file:', f
 
     ymd = f[16:24]
-    print ymd
 
     data_dir = os.path.join(root, f)
     out_dir = make_outpath_sls(f, ymd)
@@ -137,7 +146,6 @@ def submit_sls(root, f):
     if not os.path.exists(temp_dir):
         os.makedirs(temp_dir)
 
-    # for each ATSR file generate a bash script that calls ggf
     (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
                                          out_dir, True)
     g = os.fdopen(gd, "w")
@@ -145,7 +153,7 @@ def submit_sls(root, f):
     g.write(filepaths.ggf_dir + python_exe +
             data_dir + ' ' +
             out_dir + ' ' +
-            temp_dir + " \n" )
+            temp_dir + " \n")
     g.write("rm -f " + script_file + "\n")
     g.close()
     os.chmod(script_file, 0o755)
@@ -179,7 +187,7 @@ batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 
 # define python script to run
-python_exe = 'ggf_extract_flares_and_samples_atx.py '
+python_exe = 'ggf_extract_hotspots_sls.py '
 
 if 'atx' in python_exe:
     paths = filepaths.paths_to_atx_data

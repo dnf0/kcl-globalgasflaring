@@ -35,13 +35,11 @@ def extract_zip(input_zip, path_to_temp):
                 data_dict[var_name] = source
 
     # remove the unzip files
-    extracted_files = os.listdir(".")
-    for f in extracted_files:
-        absolute_path = os.path.abspath(f)  # get the absolute path
-        if os.path.isdir(absolute_path):  # test if the path points to a directory
-            shutil.rmtree(absolute_path)
-        else:  # normal file
-            os.remove(absolute_path)
+    dir_to_remove = os.path.join(path_to_temp, input_zip.split('/')[-1].replace('zip', 'SEN3'))
+    if os.path.isdir(dir_to_remove):  # test if the path points to a directory
+        shutil.rmtree(dir_to_remove)
+    else:  # normal file
+        os.remove(dir_to_remove)
 
     return data_dict
 
@@ -119,30 +117,23 @@ def flare_data(s3_data, hotspot_mask):
 
 def main():
 
-    # read in the atsr prodcut and land water
     path_to_data = sys.argv[1]
     path_to_output = sys.argv[2]
     path_to_temp = sys.argv[3]
 
-    # open zip file
     s3_data = extract_zip(path_to_data, path_to_temp)
 
-    # get day/night mask, if no night mask return save empty df
     night_mask = make_night_mask(s3_data)
     if night_mask.max() == 0:
         return
 
-    # set up the vza mask so that we only get data similar to atsr
     vza_mask = make_vza_mask(s3_data)
 
-    # get nighttime hotspots
     potential_hotspot_mask = detect_hotspots(s3_data)
     hotspot_mask = potential_hotspot_mask & night_mask & vza_mask
 
-    # get nighttime flare radiances and frp and write out with meta data
     df = flare_data(s3_data, hotspot_mask)
 
-    # write out
     output_fname = path_to_data.split('/')[-1].split('.')[0] + '_hotspots.csv'
     csv_path = os.path.join(path_to_output, output_fname)
     df.to_csv(csv_path, index=False)
