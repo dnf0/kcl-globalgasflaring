@@ -37,7 +37,7 @@ def extract_zip(input_zip, path_to_temp):
     # remove the unzip files
     dir_to_remove = os.path.join(path_to_temp, input_zip.split('/')[-1].replace('zip', 'SEN3'))
     if os.path.isdir(dir_to_remove):  # test if the path points to a directory
-        shutil.rmtree(dir_to_remove)
+        shutil.rmtree(dir_to_remove, ignore_errors=True)
     else:  # normal file
         os.remove(dir_to_remove)
 

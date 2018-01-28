@@ -201,12 +201,10 @@ for path_to_data in paths:
         if len(yr) > 4:
             continue
         path = os.path.join(path_to_data,  yr)
-        for root, dirs, files in os.walk(path):
+        for root, dirs, files in os.walk(path, followlinks=True):
             for f in files:
-
                 if 'atx' in python_exe:
                     submit_atx(root, f)
                 else:
                     submit_sls(root, f)
-
 
