@@ -17,9 +17,4 @@ frp_coeff = {'ats': const.sigma / 8.29908189231e-09,
              'at2': const.sigma / 8.2215268253e-09,
              'at1': const.sigma / 8.23565040885e-09}
 
-# thresholds use for determining whether a pixel is a flare or not
-mwir_max_ratio = 2.04
-mwir_min_ratio = 5.97
 
-lwir_max_ratio = 53.18
-lwir_min_ratio = 240.10
