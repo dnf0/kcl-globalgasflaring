@@ -75,17 +75,17 @@ def interpolate_vza(s3_data):
     tx_x_var = s3_data['cartesian_tx']['x_tx'][0, :]
     tx_y_var = s3_data['cartesian_tx']['y_tx'][:, 0]
 
-    cn_x_var = s3_data['cartesian_cn']['x_cn'][:]
-    cn_y_var = s3_data['cartesian_cn']['y_cn'][:]
+    cn_x_var = s3_data['cartesian_an']['x_an'][:]
+    an_y_var = s3_data['cartesian_an']['y_an'][:]
 
     spl = RectBivariateSpline(tx_y_var, tx_x_var[::-1], sat_zn[:, ::-1].filled(0))
-    interpolated = spl.ev(cn_y_var.compressed(),
-                          cn_x_var.compressed())
+    interpolated = spl.ev(an_y_var.compressed(),
+                          an_x_var.compressed())
     interpolated = np.ma.masked_invalid(interpolated, copy=False)
-    sat_zn = np.ma.empty(cn_y_var.shape,
+    sat_zn = np.ma.empty(an_y_var.shape,
                       dtype=sat_zn.dtype)
-    sat_zn[np.logical_not(np.ma.getmaskarray(cn_y_var))] = interpolated
-    sat_zn.mask = cn_y_var.mask
+    sat_zn[np.logical_not(np.ma.getmaskarray(an_y_var))] = interpolated
+    sat_zn.mask = an_y_var.mask
     return sat_zn
 
 
@@ -96,15 +96,15 @@ def make_vza_mask(s3_data):
 
 def detect_hotspots(s3_data):
     # fill nan's with zero.  Solar constant comes from SLSTR viscal product
-    swir = s3_data['S5_radiance_cn']['S5_radiance_cn'][:].filled(0) / 254.23103333 * np.pi * 100
+    swir = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0) / 254.23103333 * np.pi * 100
     return swir > proc_const.swir_thresh
 
 
 def flare_data(s3_data, hotspot_mask):
 
     lines, samples = np.where(hotspot_mask)
-    lats = s3_data['geodetic_cn']['latitude_cn'][:][hotspot_mask]
-    lons = s3_data['geodetic_cn']['longitude_cn'][:][hotspot_mask]
+    lats = s3_data['geodetic_an']['latitude_an'][:][hotspot_mask]
+    lons = s3_data['geodetic_an']['longitude_an'][:][hotspot_mask]
 
     df = pd.DataFrame()
     datasets = [lines, samples, lats, lons]
