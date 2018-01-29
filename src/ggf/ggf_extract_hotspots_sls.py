@@ -50,17 +50,17 @@ def interpolate_szn(s3_data):
     tx_x_var = s3_data['cartesian_tx']['x_tx'][0, :]
     tx_y_var = s3_data['cartesian_tx']['y_tx'][:, 0]
 
-    cn_x_var = s3_data['cartesian_cn']['x_cn'][:]
-    cn_y_var = s3_data['cartesian_cn']['y_cn'][:]
+    an_x_var = s3_data['cartesian_an']['x_an'][:]
+    an_y_var = s3_data['cartesian_an']['y_an'][:]
 
     spl = RectBivariateSpline(tx_y_var, tx_x_var[::-1], szn[:, ::-1].filled(0))
-    interpolated = spl.ev(cn_y_var.compressed(),
-                          cn_x_var.compressed())
+    interpolated = spl.ev(an_y_var.compressed(),
+                          an_x_var.compressed())
     interpolated = np.ma.masked_invalid(interpolated, copy=False)
-    szn = np.ma.empty(cn_y_var.shape,
+    szn = np.ma.empty(an_y_var.shape,
                       dtype=szn.dtype)
-    szn[np.logical_not(np.ma.getmaskarray(cn_y_var))] = interpolated
-    szn.mask = cn_y_var.mask
+    szn[np.logical_not(np.ma.getmaskarray(an_y_var))] = interpolated
+    szn.mask = an_y_var.mask
     return szn
 
 
