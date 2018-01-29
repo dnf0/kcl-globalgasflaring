@@ -75,7 +75,7 @@ def interpolate_vza(s3_data):
     tx_x_var = s3_data['cartesian_tx']['x_tx'][0, :]
     tx_y_var = s3_data['cartesian_tx']['y_tx'][:, 0]
 
-    cn_x_var = s3_data['cartesian_an']['x_an'][:]
+    an_x_var = s3_data['cartesian_an']['x_an'][:]
     an_y_var = s3_data['cartesian_an']['y_an'][:]
 
     spl = RectBivariateSpline(tx_y_var, tx_x_var[::-1], sat_zn[:, ::-1].filled(0))
