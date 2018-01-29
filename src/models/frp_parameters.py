@@ -83,7 +83,7 @@ def main():
     flare_area_pc = flare_size / pixel_size  # unitless
     frp_true = pixel_size * flare_area_pc * (const.sigma * actual_temps ** 4)
 
-    sensors = ['ATSR2', 'ATSR1', 'AATSR']
+    sensors = ['ATSR2', 'ATSR1', 'AATSR', 'SLSTR']
     for sensor in sensors:
         sensor_fname = sensor + "_16.txt"
         sensor_srf = np.loadtxt(os.path.join(fp.path_to_srfs, sensor_fname))
