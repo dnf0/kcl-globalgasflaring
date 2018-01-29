@@ -15,7 +15,7 @@ import src.config.filepaths as fp
 
 def generate_years_months_iterator():
     iterator = []
-    years = np.arange(1991,2013,1)
+    years = np.arange(2016,2019,1)
     months = np.arange(1,13,1)
     for yr in years:
         for m in months:
