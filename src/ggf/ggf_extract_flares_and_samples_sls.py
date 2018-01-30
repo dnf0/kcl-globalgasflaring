@@ -32,7 +32,7 @@ def extract_zip(input_zip, path_to_temp):
     data_dict = {}
     to_extract = ["S5_radiance_cn.nc", "S7_BT_in.nc",
                   "geodetic_cn.nc", "geometry_tn.nc",
-                  "cartesian_cn.nc", "cartesian_tx.nc",
+                  "cartesian_cn.nc", "cartesian_in.nc", "cartesian_tx.nc",
                   "indices_cn.nc", "flags_cn.nc"]
     with zipfile.ZipFile(input_zip) as input:
         for name in input.namelist():
@@ -176,7 +176,7 @@ def construct_hotspot_line_sample_df(s3_data, hotspot_mask):
     return df
 
 
-def resample_mwir(s3_data):
+def interpolate_mwir(s3_data):
     resampled_mwir_bt = ndimage.zoom(s3_data['S7_BT_in']['S7_BT_in'][:], 2, mode='nearest', order=0)
     mask = resampled_mwir_bt < 0
     resampled_mwir_radiances = radiance_from_BT(3.74, resampled_mwir_bt)

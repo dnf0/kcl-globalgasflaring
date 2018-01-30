@@ -66,7 +66,7 @@ def interpolate_szn(s3_data):
 
 def make_night_mask(s3_data):
     solar_zenith_angle = interpolate_szn(s3_data)
-    return solar_zenith_angle.filled(0) >= proc_const.day_night_angle
+    return solar_zenith_angle, solar_zenith_angle.filled(0) >= proc_const.day_night_angle
 
 
 def interpolate_vza(s3_data):
@@ -91,7 +91,7 @@ def interpolate_vza(s3_data):
 
 def make_vza_mask(s3_data):
     view_zenith_angles = interpolate_vza(s3_data)
-    return view_zenith_angles.filled(100) <= 22
+    return view_zenith_angles, view_zenith_angles.filled(100) <= 22
 
 
 def detect_hotspots(s3_data):
@@ -100,15 +100,17 @@ def detect_hotspots(s3_data):
     return swir > proc_const.swir_thresh
 
 
-def flare_data(s3_data, hotspot_mask):
+def flare_data(s3_data, sza, vza, hotspot_mask):
 
     lines, samples = np.where(hotspot_mask)
     lats = s3_data['geodetic_cn']['latitude_cn'][:][hotspot_mask]
     lons = s3_data['geodetic_cn']['longitude_cn'][:][hotspot_mask]
+    sza = sza[hotspot_mask]
+    vza = vza[hotspot_mask]
 
     df = pd.DataFrame()
-    datasets = [lines, samples, lats, lons]
-    names = ['lines', 'samples', 'lats', 'lons']
+    datasets = [lines, samples, lats, lons, sza, vza]
+    names = ['lines', 'samples', 'lats', 'lons', 'sza', 'vza']
     for k,v in zip(names, datasets):
         df[k] = v
 
@@ -123,16 +125,16 @@ def main():
 
     s3_data = extract_zip(path_to_data, path_to_temp)
 
-    night_mask = make_night_mask(s3_data)
+    sza, night_mask = make_night_mask(s3_data)
     if night_mask.max() == 0:
         return
 
-    vza_mask = make_vza_mask(s3_data)
+    vza, vza_mask = make_vza_mask(s3_data)
 
     potential_hotspot_mask = detect_hotspots(s3_data)
     hotspot_mask = potential_hotspot_mask & night_mask & vza_mask
 
-    df = flare_data(s3_data, hotspot_mask)
+    df = flare_data(s3_data, sza, vza, hotspot_mask)
 
     output_fname = path_to_data.split('/')[-1].split('.')[0] + '_hotspots.csv'
     csv_path = os.path.join(path_to_output, output_fname)
