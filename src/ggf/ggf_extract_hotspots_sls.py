@@ -66,7 +66,7 @@ def interpolate_szn(s3_data):
 
 def make_night_mask(s3_data):
     solar_zenith_angle = interpolate_szn(s3_data)
-    return solar_zenith_angle.filled(0) >= proc_const.day_night_angle
+    return solar_zenith_angle, solar_zenith_angle.filled(0) >= proc_const.day_night_angle
 
 
 def interpolate_vza(s3_data):
@@ -91,7 +91,7 @@ def interpolate_vza(s3_data):
 
 def make_vza_mask(s3_data):
     view_zenith_angles = interpolate_vza(s3_data)
-    return view_zenith_angles.filled(100) <= 22
+    return view_zenith_angles, view_zenith_angles.filled(100) <= 22
 
 
 def detect_hotspots(s3_data):
