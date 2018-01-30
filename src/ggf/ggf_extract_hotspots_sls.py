@@ -22,10 +22,10 @@ import src.config.constants as proc_const
 
 def extract_zip(input_zip, path_to_temp):
     data_dict = {}
-    to_extract = ["S5_radiance_cn.nc",
-                  "geodetic_cn.nc", "geometry_tn.nc",
-                  "cartesian_cn.nc", "cartesian_tx.nc",
-                  "indices_cn.nc", "flags_cn.nc"]
+    to_extract = ["S5_radiance_an.nc",
+                  "geodetic_an.nc", "geometry_tn.nc",
+                  "cartesian_an.nc", "cartesian_tx.nc",
+                  "indices_an.nc", "flags_an.nc"]
     with zipfile.ZipFile(input_zip) as input:
         for name in input.namelist():
             split_name = name.split('/')[-1]
@@ -50,23 +50,23 @@ def interpolate_szn(s3_data):
     tx_x_var = s3_data['cartesian_tx']['x_tx'][0, :]
     tx_y_var = s3_data['cartesian_tx']['y_tx'][:, 0]
 
-    cn_x_var = s3_data['cartesian_cn']['x_cn'][:]
-    cn_y_var = s3_data['cartesian_cn']['y_cn'][:]
+    an_x_var = s3_data['cartesian_an']['x_an'][:]
+    an_y_var = s3_data['cartesian_an']['y_an'][:]
 
     spl = RectBivariateSpline(tx_y_var, tx_x_var[::-1], szn[:, ::-1].filled(0))
-    interpolated = spl.ev(cn_y_var.compressed(),
-                          cn_x_var.compressed())
+    interpolated = spl.ev(an_y_var.compressed(),
+                          an_x_var.compressed())
     interpolated = np.ma.masked_invalid(interpolated, copy=False)
-    szn = np.ma.empty(cn_y_var.shape,
+    szn = np.ma.empty(an_y_var.shape,
                       dtype=szn.dtype)
-    szn[np.logical_not(np.ma.getmaskarray(cn_y_var))] = interpolated
-    szn.mask = cn_y_var.mask
+    szn[np.logical_not(np.ma.getmaskarray(an_y_var))] = interpolated
+    szn.mask = an_y_var.mask
     return szn
 
 
 def make_night_mask(s3_data):
     solar_zenith_angle = interpolate_szn(s3_data)
-    return solar_zenith_angle, solar_zenith_angle.filled(0) >= proc_const.day_night_angle
+    return solar_zenith_angle.filled(0) >= proc_const.day_night_angle
 
 
 def interpolate_vza(s3_data):
@@ -75,36 +75,36 @@ def interpolate_vza(s3_data):
     tx_x_var = s3_data['cartesian_tx']['x_tx'][0, :]
     tx_y_var = s3_data['cartesian_tx']['y_tx'][:, 0]
 
-    cn_x_var = s3_data['cartesian_cn']['x_cn'][:]
-    cn_y_var = s3_data['cartesian_cn']['y_cn'][:]
+    an_x_var = s3_data['cartesian_an']['x_an'][:]
+    an_y_var = s3_data['cartesian_an']['y_an'][:]
 
     spl = RectBivariateSpline(tx_y_var, tx_x_var[::-1], sat_zn[:, ::-1].filled(0))
-    interpolated = spl.ev(cn_y_var.compressed(),
-                          cn_x_var.compressed())
+    interpolated = spl.ev(an_y_var.compressed(),
+                          an_x_var.compressed())
     interpolated = np.ma.masked_invalid(interpolated, copy=False)
-    sat_zn = np.ma.empty(cn_y_var.shape,
+    sat_zn = np.ma.empty(an_y_var.shape,
                       dtype=sat_zn.dtype)
-    sat_zn[np.logical_not(np.ma.getmaskarray(cn_y_var))] = interpolated
-    sat_zn.mask = cn_y_var.mask
+    sat_zn[np.logical_not(np.ma.getmaskarray(an_y_var))] = interpolated
+    sat_zn.mask = an_y_var.mask
     return sat_zn
 
 
 def make_vza_mask(s3_data):
     view_zenith_angles = interpolate_vza(s3_data)
-    return view_zenith_angles, view_zenith_angles.filled(100) <= 22
+    return view_zenith_angles.filled(100) <= 22
 
 
 def detect_hotspots(s3_data):
     # fill nan's with zero.  Solar constant comes from SLSTR viscal product
-    swir = s3_data['S5_radiance_cn']['S5_radiance_cn'][:].filled(0) / 254.23103333 * np.pi * 100
+    swir = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0) / 254.23103333 * np.pi * 100
     return swir > proc_const.swir_thresh
 
 
 def flare_data(s3_data, sza, vza, hotspot_mask):
 
     lines, samples = np.where(hotspot_mask)
-    lats = s3_data['geodetic_cn']['latitude_cn'][:][hotspot_mask]
-    lons = s3_data['geodetic_cn']['longitude_cn'][:][hotspot_mask]
+    lats = s3_data['geodetic_an']['latitude_an'][:][hotspot_mask]
+    lons = s3_data['geodetic_an']['longitude_an'][:][hotspot_mask]
     sza = sza[hotspot_mask]
     vza = vza[hotspot_mask]
 
