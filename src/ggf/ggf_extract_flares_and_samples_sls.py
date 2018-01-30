@@ -30,10 +30,10 @@ def merge_flare_dataframes(ats_flare_df, sls_flare_df):
 
 def extract_zip(input_zip, path_to_temp):
     data_dict = {}
-    to_extract = ["S5_radiance_cn.nc", "S7_BT_in.nc",
-                  "geodetic_cn.nc", "geometry_tn.nc",
-                  "cartesian_cn.nc", "cartesian_tx.nc",
-                  "indices_cn.nc", "flags_cn.nc"]
+    to_extract = ["S5_radiance_an.nc", "S7_BT_in.nc",
+                  "geodetic_an.nc", "geometry_tn.nc",
+                  "cartesian_an.nc", "cartesian_tx.nc",
+                  "indices_an.nc", "flags_an.nc"]
     with zipfile.ZipFile(input_zip) as input:
         for name in input.namelist():
             split_name = name.split('/')[-1]
@@ -49,17 +49,17 @@ def interpolate_szn(s3_data):
     tx_x_var = s3_data['cartesian_tx']['x_tx'][0, :]
     tx_y_var = s3_data['cartesian_tx']['y_tx'][:, 0]
 
-    cn_x_var = s3_data['cartesian_cn']['x_cn'][:]
-    cn_y_var = s3_data['cartesian_cn']['y_cn'][:]
+    an_x_var = s3_data['cartesian_an']['x_an'][:]
+    an_y_var = s3_data['cartesian_an']['y_an'][:]
 
     spl = RectBivariateSpline(tx_y_var, tx_x_var[::-1], szn[:, ::-1].filled(0))
-    interpolated = spl.ev(cn_y_var.compressed(),
-                          cn_x_var.compressed())
+    interpolated = spl.ev(an_y_var.compressed(),
+                          an_x_var.compressed())
     interpolated = np.ma.masked_invalid(interpolated, copy=False)
-    szn = np.ma.empty(cn_y_var.shape,
+    szn = np.ma.empty(an_y_var.shape,
                       dtype=szn.dtype)
-    szn[np.logical_not(np.ma.getmaskarray(cn_y_var))] = interpolated
-    szn.mask = cn_y_var.mask
+    szn[np.logical_not(np.ma.getmaskarray(an_y_var))] = interpolated
+    szn.mask = an_y_var.mask
     return szn
 
 
@@ -74,17 +74,17 @@ def interpolate_vza(s3_data):
     tx_x_var = s3_data['cartesian_tx']['x_tx'][0, :]
     tx_y_var = s3_data['cartesian_tx']['y_tx'][:, 0]
 
-    cn_x_var = s3_data['cartesian_cn']['x_cn'][:]
-    cn_y_var = s3_data['cartesian_cn']['y_cn'][:]
+    an_x_var = s3_data['cartesian_an']['x_an'][:]
+    an_y_var = s3_data['cartesian_an']['y_an'][:]
 
     spl = RectBivariateSpline(tx_y_var, tx_x_var[::-1], sat_zn[:, ::-1].filled(0))
-    interpolated = spl.ev(cn_y_var.compressed(),
-                          cn_x_var.compressed())
+    interpolated = spl.ev(an_y_var.compressed(),
+                          an_x_var.compressed())
     interpolated = np.ma.masked_invalid(interpolated, copy=False)
-    sat_zn = np.ma.empty(cn_y_var.shape,
+    sat_zn = np.ma.empty(an_y_var.shape,
                       dtype=sat_zn.dtype)
-    sat_zn[np.logical_not(np.ma.getmaskarray(cn_y_var))] = interpolated
-    sat_zn.mask = cn_y_var.mask
+    sat_zn[np.logical_not(np.ma.getmaskarray(an_y_var))] = interpolated
+    sat_zn.mask = an_y_var.mask
     return sat_zn
 
 
@@ -95,13 +95,13 @@ def make_vza_mask(s3_data):
 
 def detect_hotspots(s3_data):
     # fill nan's with zero.  Solar constant comes from SLSTR viscal product
-    swir = s3_data['S5_radiance_cn']['S5_radiance_cn'][:].filled(0) / 254.23103333 * np.pi * 100
-    return swir > proc_const.swir_thresh
+    thresh = proc_const.swir_thresh / (100 * np.pi) * 254.23103333  # convert ref threhsold to rad
+    return s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0) > thresh
 
 
 def make_cloud_mask(s3_data):
     # over land or water and cloud free (i.e. bit 0 is set (cloud free land)  or unset(cloud free water))
-    return s3_data['flags_cn']['cloud_cn'][:] == 0
+    return s3_data['flags_an']['cloud_an'][:] == 0
 
 
 def get_arcmin(x):
@@ -161,8 +161,8 @@ def compute_frp(pixel_radiances, pixel_sizes, sensor):
 
 def construct_hotspot_line_sample_df(s3_data, hotspot_mask):
     lines, samples = np.where(hotspot_mask)
-    lats = s3_data['geodetic_cn']['latitude_cn'][:][hotspot_mask]
-    lons = s3_data['geodetic_cn']['longitude_cn'][:][hotspot_mask]
+    lats = s3_data['geodetic_an']['latitude_an'][:][hotspot_mask]
+    lons = s3_data['geodetic_an']['longitude_an'][:][hotspot_mask]
 
     # round geographic data to desired reoslution
     lats_arcmin = get_arcmin(lats)
@@ -240,14 +240,14 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_cover, background_mask,
                          s3_data, resolution, sza, vza, sensor):
     coords = [flare_df.lines.values, flare_df.samples.values]
 
-    lats = s3_data['geodetic_cn']['latitude_cn'][:][coords]
-    lons = s3_data['geodetic_cn']['longitude_cn'][:][coords]
+    lats = s3_data['geodetic_an']['latitude_an'][:][coords]
+    lons = s3_data['geodetic_an']['longitude_an'][:][coords]
 
     # round geographic data to desired reoslution
     rounded_lats = myround(lats, base=resolution)
     rounded_lons = myround(lons, base=resolution)
 
-    swir_radiances = s3_data['S5_radiance_cn']['S5_radiance_cn'][:].filled(0)
+    swir_radiances = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0)
     swir_reflectances = swir_radiances / 254.23103333 * np.pi * 100
 
     pixel_size = compute_pixel_size(s3_data, flare_df.samples.values)
@@ -283,8 +283,8 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_cover, background_mask,
 def construct_sample_df(flare_df, s3_data, cloud_cover, night_mask):
 
     # get geographic coordinates
-    lats = s3_data['geodetic_cn']['latitude_cn'][:]
-    lons = s3_data['geodetic_cn']['longitude_cn'][:]
+    lats = s3_data['geodetic_an']['latitude_an'][:]
+    lons = s3_data['geodetic_an']['longitude_an'][:]
     lats_arcmin = get_arcmin(lats)
     lons_arcmin = get_arcmin(lons)
 
