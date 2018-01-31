@@ -40,7 +40,7 @@ def make_night_mask(ats_product):
 def detect_hotspots(ats_product):
     swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
     nan_mask = np.isnan(swir)  # get rid of SWIR nans also
-    return (swir > proc_const.swir_thresh) & ~nan_mask
+    return (swir > proc_const.swir_thresh_ats) & ~nan_mask
 
 
 def flare_data(product, hotspot_mask):

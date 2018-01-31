@@ -95,7 +95,7 @@ def make_vza_mask(s3_data):
 
 def detect_hotspots(s3_data):
     # fill nan's with zero.  Solar constant comes from SLSTR viscal product
-    thresh = proc_const.swir_thresh / (100 * np.pi) * 254.23103333  # convert ref threhsold to rad
+    thresh = proc_const.swir_thresh_sls / (100 * np.pi) * 254.23103333  # convert ref threhsold to rad
     return s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0) > thresh
 
 

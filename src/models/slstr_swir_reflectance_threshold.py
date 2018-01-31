@@ -26,8 +26,8 @@ def main():
 
     l = 1.6e-6  # wavelegnth in m
 
-    # pixel_area = 1.0**2 * 1000000  # m^2
-    # areas = np.logspace(0, 6, 1000)  # m^2
+    #pixel_area = 1.0**2 * 1000000  # m^2
+    #areas = np.logspace(0, np.log10(pixel_area), 1000)  # m^2
 
     pixel_area = 0.5**2 * 1000000  # m^2
     areas = np.logspace(0, np.log10(pixel_area), 1000)  # m^2
@@ -46,11 +46,12 @@ def main():
     # now convert to reflectances
     reflectances = radiances / 254.23103333 * np.pi * 100
 
-    valid = (reflectances <= 0.105) & (reflectances > 0.0995)
+    valid = (reflectances <= 0.405) & (reflectances > 0.395)
 
-    plt.pcolormesh(fractional_areas, temps, reflectances, vmax = 0.1)
-    plt.plot(fractional_areas[valid], temps[valid], 'k-', label="0.1")
+    plt.pcolormesh(fractional_areas, temps, reflectances, vmax = 0.4)
+    plt.plot(fractional_areas[valid], temps[valid], 'k-', label="0.4")
     plt.plot([0.0004, 0.0004], [400, 1590], 'k--')
+    plt.plot([fractional_areas.min(), fractional_areas.max()], [944, 944], 'r--')
     cbar = plt.colorbar()
     cbar.set_label('1.6 $\mu m$ Reflectance')
     plt.ylabel("Flare Temperature ($K$)")
