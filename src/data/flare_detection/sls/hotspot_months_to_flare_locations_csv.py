@@ -98,6 +98,7 @@ def main():
             # keep only the unique flaring locations in all flares, giving a map
             # of all flare locations seen over the entire ATSR time series.
             all_flares_df.drop_duplicates(subset=['lats_arcmin', 'lons_arcmin'], inplace=True)
+        print all_flares_df.shape
     
     path_to_out = os.path.join(fp.path_to_cems_output_l3, 'all_sensors')
     if not os.path.exists(path_to_out):

@@ -107,10 +107,11 @@ def flare_data(s3_data, sza, vza, hotspot_mask):
     lons = s3_data['geodetic_an']['longitude_an'][:][hotspot_mask]
     sza = sza[hotspot_mask]
     vza = vza[hotspot_mask]
+    rad = s3_data['S5_radiance_an']['S5_radiance_an'][:][hotspot_mask]
 
     df = pd.DataFrame()
-    datasets = [lines, samples, lats, lons, sza, vza]
-    names = ['lines', 'samples', 'lats', 'lons', 'sza', 'vza']
+    datasets = [lines, samples, lats, lons, sza, vza, rad]
+    names = ['lines', 'samples', 'lats', 'lons', 'sza', 'vza', 'rad']
     for k,v in zip(names, datasets):
         df[k] = v
 
