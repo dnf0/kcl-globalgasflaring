@@ -11,6 +11,7 @@ import os
 import logging
 import zipfile
 import shutil
+import glob
 
 import numpy as np
 from netCDF4 import Dataset
@@ -37,7 +38,7 @@ def extract_zip(input_zip, path_to_temp):
     # remove the unzip files
     dir_to_remove = os.path.join(path_to_temp, input_zip.split('/')[-1].replace('zip', 'SEN3'))
     if os.path.isdir(dir_to_remove):  # test if the path points to a directory
-        shutil.rmtree(dir_to_remove, ignore_errors=True)
+        shutil.rmtree(path_to_temp, ignore_errors=True)
     else:  # normal file
         os.remove(dir_to_remove)
 
@@ -123,7 +124,7 @@ def main():
     path_to_data = sys.argv[1]
     path_to_output = sys.argv[2]
     path_to_temp = sys.argv[3]
-
+    
     s3_data = extract_zip(path_to_data, path_to_temp)
 
     sza, night_mask = make_night_mask(s3_data)

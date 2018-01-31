@@ -18,7 +18,7 @@ paths_to_atx_data = ['/neodc/aatsr_multimission/aatsr-v3/data/ats_toa_1p',
                      '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p']
 
 path_to_sls_data = ['/neodc/sentinel3a/data/SLSTR/L1_RBT']
-path_to_temp = '/home/users/dnfisher/nceo_aerosolfire/data/temp/sls_unzipped'
+path_to_temp = '/home/users/dnfisher/nceo_aerosolfire/data/temp/sls_unzipped_test'
 path_to_cems_sls_pix_sizes = '/home/users/dnfisher/nceo_aerosolfire/data/temp/external/slstr_500m_pixel_size.txt'
 
 # Paths to processing output folder on CEMS
