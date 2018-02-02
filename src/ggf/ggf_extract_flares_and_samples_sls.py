@@ -389,9 +389,11 @@ def main():
     potential_hotspot_mask = detect_hotspots(s3_data)
     is_not_cloud_mask = make_cloud_mask(s3_data)
 
-    hotspot_mask = night_mask & vza_mask & potential_hotspot_mask
-    cloud_mask = night_mask & vza_mask & ~potential_hotspot_mask & ~is_not_cloud_mask
-    background_mask = night_mask & vza_mask & ~potential_hotspot_mask & is_not_cloud_mask
+    valid_mask = night_mask & vza_mask
+
+    hotspot_mask = valid_mask & potential_hotspot_mask
+    cloud_mask = valid_mask & ~potential_hotspot_mask & ~is_not_cloud_mask
+    background_mask = valid_mask & ~potential_hotspot_mask & is_not_cloud_mask
     print 'mask time', time.time() - t
 
 
@@ -406,7 +408,7 @@ def main():
 
     t = time.time()
     # do the processing for samples, where we just get the cloud cover for each location
-    sample_df = construct_sample_df(flare_df, s3_data, cloud_cover, night_mask)
+    sample_df = construct_sample_df(flare_df, s3_data, cloud_cover, valid_mask)
     grouped_sample_df = group_sample_df(sample_df)
     extend_df(grouped_sample_df, ymdhm)
     sample_output_fname = path_to_data.split('/')[-1].split('.')[0] + '_sampling.csv'
