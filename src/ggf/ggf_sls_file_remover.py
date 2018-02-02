@@ -12,6 +12,7 @@ import src.config.filepaths as fp
 def main():
     while True:
         for f in os.listdir(fp.path_to_temp):
+            print 'removing', f
             try:
                 os.rmdir(f)
             except:

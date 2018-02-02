@@ -5,6 +5,8 @@ import sys
 import logging
 from datetime import datetime
 import zipfile
+import shutil
+import time
 
 from netCDF4 import Dataset
 import numpy as np
@@ -42,6 +44,14 @@ def extract_zip(input_zip, path_to_temp):
                 source = Dataset(input.extract(name, path_to_temp))
                 data_dict[var_name] = source
 
+    # remove the unzip files
+    dir_to_remove = os.path.join(path_to_temp, input_zip.split('/')[-1].replace('zip', 'SEN3'))
+    if os.path.isdir(dir_to_remove):  # test if the path points to a directory
+        shutil.rmtree(path_to_temp, ignore_errors=True)
+    else:  # normal file
+        os.remove(dir_to_remove)
+
+    return data_dict
 
 def interpolate_szn(s3_data):
     szn = s3_data['geometry_tn']['solar_zenith_tn'][:]
@@ -250,7 +260,8 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_cover, background_mask,
     swir_radiances = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0)
     swir_reflectances = swir_radiances / 254.23103333 * np.pi * 100
 
-    pixel_size = compute_pixel_size(s3_data, flare_df.samples.values)
+    pixel_size = compute_pixel_size(flare_df.samples.values)
+    print pixel_size
     frp = compute_frp(swir_radiances, pixel_size, sensor)
 
     sza_subset = sza[coords]
@@ -343,36 +354,57 @@ def main():
     # merge dataframe
     flare_df = merge_flare_dataframes(ats_flare_df, sls_flare_df)
 
+    print flare_df.head()
+    print flare_df.shape
+
     # read in the atsr product
-    path_to_data = sys.argv[1]
-    path_to_output = sys.argv[2]
-    path_to_temp = sys.argv[3]
+    #path_to_data = sys.argv[1]
+    #path_to_output = sys.argv[2]
+    #path_to_temp = sys.argv[3]
+
+    data = 'S3A_SL_1_RBT____20180104T185242_20180104T185542_20180105T224332_0179_026_213_6419_LN2_O_NT_002.zip'
+    path_to_data = os.path.join('/neodc/sentinel3a/data/SLSTR/L1_RBT/2018/01/04', data)
+    path_to_output = fp.path_to_temp
+    path_to_temp = fp.path_to_temp
 
     # get ymd
     ymdhm = path_to_data.split('/')[-1][16:29]
     print ymdhm
 
+    t = time.time()
     s3_data = extract_zip(path_to_data, path_to_temp)
+    print 'loading time', time.time() - t
 
+    t = time.time()
     sza, night_mask = make_night_mask(s3_data)
     if night_mask.max() == 0:
         return
+    print 'sza time', time.time() - t
 
+    t = time.time()
     vza, vza_mask = make_vza_mask(s3_data)
+    print 'vza time', time.time() - t
+
+    t = time.time()
     potential_hotspot_mask = detect_hotspots(s3_data)
     is_not_cloud_mask = make_cloud_mask(s3_data)
 
     hotspot_mask = night_mask & vza_mask & potential_hotspot_mask
     cloud_mask = night_mask & vza_mask & ~potential_hotspot_mask & ~is_not_cloud_mask
     background_mask = night_mask & vza_mask & ~potential_hotspot_mask & is_not_cloud_mask
+    print 'mask time', time.time() - t
 
+
+    t = time.time()
     # get cloud cover map from cloud mask
     bg_size = 2*16 + 1  #  16 as 500m resolution TODO MOVE TO CONFIG
     k = np.ones([bg_size, bg_size])
     sum = ndimage.convolve(cloud_mask.astype(int), k, mode='constant', cval=0.0)
     count = ndimage.convolve(np.ones(cloud_mask.shape), k, mode='constant', cval=0.0)
     cloud_cover = sum/count
+    print 'cc time', time.time() - t
 
+    t = time.time()
     # do the processing for samples, where we just get the cloud cover for each location
     sample_df = construct_sample_df(flare_df, s3_data, cloud_cover, night_mask)
     grouped_sample_df = group_sample_df(sample_df)
@@ -380,8 +412,11 @@ def main():
     sample_output_fname = path_to_data.split('/')[-1].split('.')[0] + '_sampling.csv'
     sample_csv_path = os.path.join(path_to_output, sample_output_fname)
     grouped_sample_df.to_csv(sample_csv_path, index=False)
+    print 'sample time', time.time() - t
 
+    t = time.time()
     # do the processing for persistent hotspots
+    print np.sum(hotspot_mask)
     hotspot_line_sample_df = construct_hotspot_line_sample_df(s3_data, hotspot_mask)
     persistent_hotspot_line_sample_df = pd.merge(flare_df, hotspot_line_sample_df, on=['lats_arcmin', 'lons_arcmin'])
     persistent_hotspot_df = construct_hotspot_df(persistent_hotspot_line_sample_df,
@@ -398,7 +433,7 @@ def main():
     flare_output_fname = path_to_data.split('/')[-1].split('.')[0] + '_flares.csv'
     flare_csv_path = os.path.join(path_to_output, flare_output_fname)
     grouped_persistent_hotspot_df.to_csv(flare_csv_path, index=False)
-
+    print 'hotspot time', time.time() - t
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

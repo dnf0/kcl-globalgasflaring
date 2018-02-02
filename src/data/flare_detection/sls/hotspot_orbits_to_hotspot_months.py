@@ -97,15 +97,17 @@ def main():
             months = os.listdir(month_dir)
             for month in months:
                 csv_files_for_month = select_csv_files_for_month(sensor, year, month)
-                month_df = generate_month_df(csv_files_for_month, resolution)
-                unique_month_locations(month_df)
-                print month_df.head()
-                # dump to csv
-                path_to_out = os.path.join(fp.path_to_cems_output_l3, sensor, year)
-                if not os.path.exists(path_to_out):
-                    os.makedirs(path_to_out)
-                month_df.to_csv(os.path.join(path_to_out, month + '.csv'), index=False)
-
+                try:
+                    month_df = generate_month_df(csv_files_for_month, resolution)
+                    unique_month_locations(month_df)
+                    print month_df.head()
+                    # dump to csv
+                    path_to_out = os.path.join(fp.path_to_cems_output_l3, sensor, year)
+                    if not os.path.exists(path_to_out):
+                        os.makedirs(path_to_out)
+                    month_df.to_csv(os.path.join(path_to_out, month + '.csv'), index=False)
+                except:
+                    continue
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
