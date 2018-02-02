@@ -18,11 +18,11 @@ paths_to_atx_data = ['/neodc/aatsr_multimission/aatsr-v3/data/ats_toa_1p',
                      '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p']
 
 path_to_sls_data = ['/neodc/sentinel3a/data/SLSTR/L1_RBT']
-path_to_temp = '/group_workspaces/cems/nceo_aerosolfire/nceo_aerosolfire/data/temp/sls_unzipped_test'
-path_to_sls_pix_sizes = '/group_workspaces/cems/nceo_aerosolfire/nceo_aerosolfire/data/temp/external/slstr_500m_pixel_size.txt'
+path_to_temp = '/group_workspaces/cems/nceo_aerosolfire/data/temp/sls_unzipped_test'
+path_to_sls_pix_sizes = '/group_workspaces/cems/nceo_aerosolfire/data/temp/external/slstr_500m_pixel_size.txt'
 
 # Paths to processing output folder on CEMS
-output_root = '/group_workspaces/cems/nceo_aerosolfire/nceo_aerosolfire/data/temp/'
+output_root = '/group_workspaces/cems/nceo_aerosolfire/data/temp/'
 #output_root = '/Users/dnf/Projects/kcl-globalgasflaring/data/'
 #output_root = '/Users/danielfisher/Projects/kcl-globalgasflaring/data/'
 path_to_cems_output_intermediate = output_root + 'processed/l3/intermediate/'

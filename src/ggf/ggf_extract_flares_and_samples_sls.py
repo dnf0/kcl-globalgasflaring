@@ -356,14 +356,14 @@ def main():
     flare_df = merge_flare_dataframes(ats_flare_df, sls_flare_df)
 
     # read in the atsr product
-    #path_to_data = sys.argv[1]
-    #path_to_output = sys.argv[2]
-    #path_to_temp = sys.argv[3]
+    path_to_data = sys.argv[1]
+    path_to_output = sys.argv[2]
+    path_to_temp = sys.argv[3]
 
-    data = 'S3A_SL_1_RBT____20180104T185242_20180104T185542_20180105T224332_0179_026_213_6419_LN2_O_NT_002.zip'
-    path_to_data = os.path.join('/neodc/sentinel3a/data/SLSTR/L1_RBT/2018/01/04', data)
-    path_to_output = fp.path_to_temp
-    path_to_temp = fp.path_to_temp
+    #data = 'S3A_SL_1_RBT____20180104T185242_20180104T185542_20180105T224332_0179_026_213_6419_LN2_O_NT_002.zip'
+    #path_to_data = os.path.join('/neodc/sentinel3a/data/SLSTR/L1_RBT/2018/01/04', data)
+    #path_to_output = fp.path_to_temp
+    #path_to_temp = fp.path_to_temp
 
     # get ymd
     ymdhm = path_to_data.split('/')[-1][16:29]

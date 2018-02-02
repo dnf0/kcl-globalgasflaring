@@ -188,7 +188,7 @@ batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 
 # define python script to run
-python_exe = 'ggf_extract_flares_and_samples_sls.py '
+python_exe = 'ggf_extract_hotspots_sls.py '
 
 if 'atx' in python_exe:
     paths = filepaths.paths_to_atx_data

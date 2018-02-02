@@ -11,13 +11,15 @@ import src.config.filepaths as fp
 
 def main():
     while True:
-        for f in os.listdir(fp.path_to_temp):
-            print 'removing', f
-            try:
-                os.rmdir(f)
-            except:
-                continue
-
+        try:
+            for f in os.listdir(fp.path_to_temp):
+                print 'removing', f
+                try:
+                    os.rmdir(f)
+                except:
+                    continue
+        except:
+            continue
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
