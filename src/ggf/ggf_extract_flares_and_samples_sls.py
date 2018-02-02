@@ -47,16 +47,15 @@ def extract_zip(input_zip, path_to_temp):
     # remove the unzip files
     dir_to_remove = os.path.join(path_to_temp, input_zip.split('/')[-1].replace('zip', 'SEN3'))
     if os.path.isdir(dir_to_remove):  # test if the path points to a directory
-        shutil.rmtree(path_to_temp, ignore_errors=True)
+        shutil.rmtree(dir_to_remove, ignore_errors=True)
     else:  # normal file
         os.remove(dir_to_remove)
 
-    return data_dict, dir_to_remove 
+    return data_dict
 
 
 def interpolate_szn(s3_data):
     szn = s3_data['geometry_tn']['solar_zenith_tn'][:]
-    print szn
 
     tx_x_var = s3_data['cartesian_tx']['x_tx'][0, :]
     tx_y_var = s3_data['cartesian_tx']['y_tx'][:, 0]
@@ -356,23 +355,23 @@ def main():
     flare_df = merge_flare_dataframes(ats_flare_df, sls_flare_df)
 
     # read in the atsr product
-    #path_to_data = sys.argv[1]
-    #path_to_output = sys.argv[2]
-    #path_to_temp = sys.argv[3]
+    path_to_data = sys.argv[1]
+    path_to_output = sys.argv[2]
+    path_to_temp = sys.argv[3]
 
-    data = 'S3A_SL_1_RBT____20180104T185242_20180104T185542_20180105T224332_0179_026_213_6419_LN2_O_NT_002.zip'
-    path_to_data = os.path.join('/neodc/sentinel3a/data/SLSTR/L1_RBT/2018/01/04', data)
-    path_to_output = fp.path_to_temp
-    path_to_temp = fp.path_to_temp
+    # data = 'S3A_SL_1_RBT____20180104T185242_20180104T185542_20180105T224332_0179_026_213_6419_LN2_O_NT_002.zip'
+    # path_to_data = os.path.join('/neodc/sentinel3a/data/SLSTR/L1_RBT/2018/01/04', data)
+    # path_to_output = fp.path_to_temp
+    # path_to_temp = fp.path_to_temp
 
     # get ymd
     ymdhm = path_to_data.split('/')[-1][16:29]
 
-    s3_data, dir_to_remove = extract_zip(path_to_data, path_to_temp)
+    s3_data = extract_zip(path_to_data, path_to_temp)
 
     sza, night_mask = make_night_mask(s3_data)
     if night_mask.max() == 0:
-        return dir_to_remove
+        return
 
     vza, vza_mask = make_vza_mask(s3_data)
 
@@ -418,7 +417,7 @@ def main():
         flare_output_fname = path_to_data.split('/')[-1].split('.')[0] + '_flares.csv'
         flare_csv_path = os.path.join(path_to_output, flare_output_fname)
         grouped_persistent_hotspot_df.to_csv(flare_csv_path, index=False)
-    return dir_to_remove
+    return
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
