@@ -155,7 +155,6 @@ def submit_sls(root, f):
             out_dir + ' ' +
             temp_dir + " \n")
     g.write("rm -f " + script_file + "\n")
-    g.write("rm -rf " + os.path.join(temp_dir, f.replace('zip','SEN3')) + "\n")
 
     g.close()
     os.chmod(script_file, 0o755)
