@@ -47,16 +47,15 @@ def extract_zip(input_zip, path_to_temp):
     # remove the unzip files
     dir_to_remove = os.path.join(path_to_temp, input_zip.split('/')[-1].replace('zip', 'SEN3'))
     if os.path.isdir(dir_to_remove):  # test if the path points to a directory
-        shutil.rmtree(path_to_temp, ignore_errors=True)
+        shutil.rmtree(dir_to_remove, ignore_errors=True)
     else:  # normal file
         os.remove(dir_to_remove)
 
-    return data_dict, dir_to_remove 
+    return data_dict
 
 
 def interpolate_szn(s3_data):
     szn = s3_data['geometry_tn']['solar_zenith_tn'][:]
-    print szn
 
     tx_x_var = s3_data['cartesian_tx']['x_tx'][0, :]
     tx_y_var = s3_data['cartesian_tx']['y_tx'][:, 0]
@@ -368,11 +367,11 @@ def main():
     # get ymd
     ymdhm = path_to_data.split('/')[-1][16:29]
 
-    s3_data, dir_to_remove = extract_zip(path_to_data, path_to_temp)
+    s3_data = extract_zip(path_to_data, path_to_temp)
 
     sza, night_mask = make_night_mask(s3_data)
     if night_mask.max() == 0:
-        return dir_to_remove
+        return
 
     vza, vza_mask = make_vza_mask(s3_data)
 
@@ -418,7 +417,7 @@ def main():
         flare_output_fname = path_to_data.split('/')[-1].split('.')[0] + '_flares.csv'
         flare_csv_path = os.path.join(path_to_output, flare_output_fname)
         grouped_persistent_hotspot_df.to_csv(flare_csv_path, index=False)
-    return dir_to_remove
+    return
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
