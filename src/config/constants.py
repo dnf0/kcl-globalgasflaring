@@ -13,7 +13,7 @@ day_night_angle = 101  # solar zenith angles must be > 101 deg VIIRS night-time 
 # significant flares pixels.  E.g. over Iraq.  TODO make a visualisation to show this!
 swir_thresh_ats = 0.1  # from Casadio et al. 2012 paper
 #swir_thresh_sls = 0.4  # pixel are factor of four smaller, so increase by factor of 4 to make similar
-swir_thresh_sls = 0.2
+swir_thresh_sls = 0.1
 
 frp_coeff = {'sls': const.sigma / 8.19919059044e-09,
              'ats': const.sigma / 8.29908189231e-09,

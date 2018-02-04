@@ -66,13 +66,14 @@ def generate_month_df(csv_files_for_month, resolution):
     month_flares = []
     for f in csv_files_for_month:
         try:
-            orbit_df = pd.read_csv(f, usecols=['lats', 'lons'], dtype={'lats': float, 'lons': float})
+            orbit_df = pd.read_csv(f, usecols=['lats', 'lons', 'rad'], dtype={'lats': float, 'lons': float, 'rad':float})
             orbit_df['lons_arcmin'] = get_arcmin(orbit_df['lons'].values)
             orbit_df['lats_arcmin'] = get_arcmin(orbit_df['lats'].values)
             orbit_df['lons'] = myround(orbit_df['lons'].values, base=resolution)
             orbit_df['lats'] = myround(orbit_df['lats'].values, base=resolution)
             # keep only unique flaring locations seen in the orbit
             orbit_df.drop_duplicates(subset=['lats_arcmin', 'lons_arcmin'], inplace=True)
+            orbit_df = orbit_df[orbit_df.rad > 0.12]
             month_flares.append(orbit_df)
         except Exception, e:
             logger.warning('Could not load csv ' + f + ' file with error: ' + str(e))

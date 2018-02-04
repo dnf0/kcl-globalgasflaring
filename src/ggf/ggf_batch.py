@@ -139,6 +139,11 @@ def submit_sls(root, f):
     print 'Submitting file job for file:', f
 
     ymd = f[16:24]
+    if int(ymd[0:4]) == 2016:
+        return
+    if (int(ymd[0:4]) == 2017) & (int(ymd[4:6]) < 3):
+        print 'nope'
+        return
 
     data_dir = os.path.join(root, f)
     out_dir = make_outpath_sls(f, ymd)
