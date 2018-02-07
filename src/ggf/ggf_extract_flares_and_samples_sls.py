@@ -258,7 +258,7 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_cover, background_mask,
     rounded_lats = myround(lats, base=resolution)
     rounded_lons = myround(lons, base=resolution)
 
-    swir_radiances = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0)
+    swir_radiances = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0)['coords']
     swir_reflectances = swir_radiances / 254.23103333 * np.pi * 100
 
     pixel_size = compute_pixel_size(flare_df.samples.values)
@@ -277,7 +277,6 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_cover, background_mask,
              'sza', 'vza', 'pixel_size']
     for k, v in zip(names, datasets):
         flare_df[k] = v
-
 
     # get the background for each cluster
     resampled_mwir_radiances = resample_mwir(s3_data)
