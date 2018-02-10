@@ -13,7 +13,7 @@ def main():
 
     csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_sampling.csv')
     for f in csv_filepaths:
-        if 'S3A' in f:
+        if not 'S3A' in f:
             continue
         print f
         df_list.append(pd.read_csv(f))
@@ -23,7 +23,7 @@ def main():
     path_to_out = os.path.join(fp.path_to_cems_output_l3, 'all_sensors')
     if not os.path.exists(path_to_out):
         os.makedirs(path_to_out)
-    df.to_csv(os.path.join(path_to_out, 'all_sampling_atx.csv'))
+    df.to_csv(os.path.join(path_to_out, 'all_sampling_sls.csv'))
 
 
 if __name__ == '__main__':
