@@ -32,7 +32,7 @@ def merge_flare_dataframes(ats_flare_df, sls_flare_df):
 
 def extract_zip(input_zip, path_to_temp):
     data_dict = {}
-    to_extract = ["S5_radiance_an.nc", "S7_BT_in.nc",
+    to_extract = ["S5_radiance_an.nc", "S6_radiance_an.nc",
                   "geodetic_an.nc", "geometry_tn.nc",
                   "cartesian_an.nc", "cartesian_tx.nc",
                   "indices_an.nc", "flags_an.nc"]
@@ -148,18 +148,6 @@ def myround(x, dec=20, base=60. / 3600):
     return np.round(base * np.round(x / base), dec)
 
 
-def radiance_from_BT(wvl, temp):
-    '''
-    wvl: wavelngth (microns)
-    temp: temperature (kelvin)
-    '''
-    c1 = 1.19e-16  # W m-2 sr-1
-    c2 = 1.44e-2  # mK
-    wt = (wvl * 1.e-6) * temp  # m K
-    d = (wvl * 1.e-6) ** 5 * (np.exp(c2 / wt) - 1)
-    return c1 / d * 1.e-6  # W m-2 sr-1 um-1
-
-
 def compute_pixel_size(samples):
     pix_sizes = np.loadtxt(fp.path_to_sls_pix_sizes)
     pix_sizes *= 1000000  # convert from km^2 to m^2
@@ -187,67 +175,7 @@ def construct_hotspot_line_sample_df(s3_data, hotspot_mask):
     return df
 
 
-def resample_mwir(s3_data):
-    resampled_mwir_bt = ndimage.zoom(s3_data['S7_BT_in']['S7_BT_in'][:], 2, mode='nearest', order=0)
-    mask = resampled_mwir_bt < 0
-    resampled_mwir_radiances = radiance_from_BT(3.74, resampled_mwir_bt)
-    resampled_mwir_radiances[mask] = -32768.
-    return resampled_mwir_radiances
-
-
-def determine_thermal_background_contribution(flare_line_sample_df, resampled_mwir_radiances,
-                                              hotspot_mask, background_mask):
-
-    # bg window rad
-    bg_size = 16  # TODO MOVE TO CONFIG
-
-    # get a line and sample estimate for each cluster so we compute the background for the entire flare
-    # cluster in one go.
-    cluster_df = flare_line_sample_df.groupby(['lats_arcmin', 'lons_arcmin'], as_index=False).agg({'lines': np.max,
-                                                                                                   'samples': np.max})
-    # get the background radiances
-    mwir_bg = []
-    hotspot_bg_pc = []
-    inval_pixels_bg_pc = []
-    bg_size_used = []
-    for i, row in cluster_df.iterrows():
-
-        # check for edges
-        min_x = row.samples - bg_size if row.samples - bg_size > 0 else 0
-        max_x = row.samples + bg_size + 1 if row.samples + bg_size + 1 < background_mask.shape[1] else background_mask.shape[1]
-        min_y = row.lines - bg_size if row.lines - bg_size > 0 else 0
-        max_y = row.lines + bg_size + 1 if row.lines + bg_size + 1 < background_mask.shape[0] else background_mask.shape[0]
-
-        # build mask
-        bg_mask = background_mask[min_y:max_y, min_x:max_x] & \
-                  (resampled_mwir_radiances[min_y:max_y, min_x:max_x] > 0)
-
-        if np.sum(bg_mask) / float(bg_mask.size) > 0.6:
-            mwir_subset = resampled_mwir_radiances[min_y:max_y, min_x:max_x]
-            mwir_bg.append(np.mean(mwir_subset[bg_mask]))
-
-        else:
-            mwir_bg.append(-1)
-
-        # store mask info for determining what is causing fails
-        bg_size_used.append(bg_size)
-        mask_size = float(bg_mask.size)
-        hotspot_bg_pc.append(np.sum(hotspot_mask[min_y:max_y, min_x:max_x])/mask_size)
-        inval = (resampled_mwir_radiances[min_y:max_y, min_x:max_x] <= 0)
-        inval_pixels_bg_pc.append(np.sum(inval)/mask_size)
-
-    cluster_df['mwir_bg'] = mwir_bg
-    cluster_df['hotspot_bg_pc'] = hotspot_bg_pc
-    cluster_df['inval_pixels_bg_pc'] = inval_pixels_bg_pc
-    cluster_df['bg_size_used'] = bg_size_used
-
-    cluster_df.drop(['lines', 'samples'], axis=1, inplace=True)
-
-    # return the backgorunds
-    return cluster_df
-
-
-def construct_hotspot_df(flare_df, hotspot_mask, cloud_cover, background_mask,
+def construct_hotspot_df(flare_df, cloud_cover,
                          s3_data, resolution, sza, vza, sensor):
     coords = [flare_df.lines.values, flare_df.samples.values]
 
@@ -261,6 +189,8 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_cover, background_mask,
     swir_radiances = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0)[coords]
     swir_reflectances = swir_radiances / 254.23103333 * np.pi * 100
 
+    swir_radiances_22 = s3_data['S6_radiance_an']['S6_radiance_an'][:].filled(0)[coords]
+
     pixel_size = compute_pixel_size(flare_df.samples.values)
     frp = compute_frp(swir_radiances, pixel_size, sensor)
 
@@ -270,23 +200,14 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_cover, background_mask,
     cc = cloud_cover[coords]
 
     datasets = [rounded_lats, rounded_lons, frp, cc,
-                swir_radiances, swir_reflectances,
+                swir_radiances, swir_reflectances, swir_radiances_22,
                 sza_subset, vza_subset, pixel_size]
     names = ['lats', 'lons', 'frp', 'cloud_cover',
-             'swir_radiances', 'swir_reflectances',
+             'swir_radiances', 'swir_reflectances', 'swir_radiances_22',
              'sza', 'vza', 'pixel_size']
     for k, v in zip(names, datasets):
         flare_df[k] = v
 
-    # get the background for each cluster
-    resampled_mwir_radiances = resample_mwir(s3_data)
-    thermal_bg_df = determine_thermal_background_contribution(flare_df, resampled_mwir_radiances,
-                                                              hotspot_mask, background_mask)
-
-    resampled_mwir_radiances[resampled_mwir_radiances < 0] = np.nan
-    flare_df['mwir_radiances'] = resampled_mwir_radiances[coords]
-
-    flare_df = flare_df.merge(thermal_bg_df, on=['lats_arcmin', 'lons_arcmin'])
     return flare_df
 
 
@@ -312,15 +233,11 @@ def construct_sample_df(flare_df, s3_data, cloud_cover, night_mask):
 def group_hotspot_df(df):
     agg_dict = {'frp': np.sum,  # sum to get the total FRP in the grid cell
                 'swir_radiances': np.mean,
-                'mwir_radiances': np.mean,
-                'mwir_bg': np.mean,
+                'swir_radiances_22': np.mean,
                 'pixel_size': np.sum,
                 'lats': np.mean,
                 'lons': np.mean,
                 'cloud_cover': np.mean,
-                'hotspot_bg_pc': np.mean,
-                'inval_pixels_bg_pc': np.mean,
-                'bg_size_used': np.mean,
                 'sza': np.mean,
                 'vza': np.mean,
                 }
@@ -381,7 +298,6 @@ def main():
 
     hotspot_mask = valid_mask & potential_hotspot_mask
     cloud_mask = valid_mask & ~potential_hotspot_mask & ~is_not_cloud_mask
-    background_mask = valid_mask & ~potential_hotspot_mask & is_not_cloud_mask
 
     # get cloud cover map from cloud mask
     bg_size = 2*16 + 1  #  16 as 500m resolution TODO MOVE TO CONFIG
@@ -403,9 +319,7 @@ def main():
         hotspot_line_sample_df = construct_hotspot_line_sample_df(s3_data, hotspot_mask)
         persistent_hotspot_line_sample_df = pd.merge(flare_df, hotspot_line_sample_df, on=['lats_arcmin', 'lons_arcmin'])
         persistent_hotspot_df = construct_hotspot_df(persistent_hotspot_line_sample_df,
-                                                     hotspot_mask,
                                                      cloud_cover,
-                                                     background_mask,
                                                      s3_data,
                                                      resolution,
                                                      sza,

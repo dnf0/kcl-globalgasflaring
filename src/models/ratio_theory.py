@@ -39,17 +39,19 @@ if __name__ == "__main__":
 
 
     spect_rad_swir = flare_area_pc * planck_radiance(1.6, temps)
+    spect_rad_swir_2 = flare_area_pc * planck_radiance(2.2, temps)
     spect_rad_mwir = flare_area_pc * planck_radiance(3.7, temps)
     spect_rad_lwir = flare_area_pc * planck_radiance(11, temps)
 
 
     ratio_mwir = spect_rad_swir / spect_rad_mwir
-    ratio_lwir = spect_rad_swir / spect_rad_lwir
+    ratio_swir = spect_rad_swir / spect_rad_swir_2
 
     print 'MWIR ratio 1400K', ratio_mwir[1400]
     print 'MWIR ratio 3500K', ratio_mwir[3500]
-    print 'LWIR ratio 1400K', ratio_lwir[1400]
-    print 'LWIR ratio 3500K', ratio_lwir[3500]
+    print 'LWIR ratio 1400K', ratio_swir[1400]
+    print 'LWIR ratio 3500K', ratio_swir[3500]
+
 
 
     ax.plot(temps, ratio_mwir,  "k-", markersize=4)
