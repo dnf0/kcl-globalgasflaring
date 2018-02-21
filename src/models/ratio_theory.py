@@ -49,8 +49,8 @@ if __name__ == "__main__":
 
     print 'MWIR ratio 1400K', ratio_mwir[1400]
     print 'MWIR ratio 3500K', ratio_mwir[3500]
-    print 'LWIR ratio 1400K', ratio_swir[1400]
-    print 'LWIR ratio 3500K', ratio_swir[3500]
+    print 'SWIR ratio 1400K', ratio_swir[1400]
+    print 'SWIR ratio 2500K', ratio_swir[2500]
 
 
 
