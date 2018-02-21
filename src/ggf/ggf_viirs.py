@@ -170,6 +170,10 @@ def main():
             print 'Could not process', sdr_file, 'with error:', e
             continue
 
+        if np.min(lats) < -90:
+            print 'Could not process', sdr_file, 'due to files errors'
+            continue
+
         # now build the masks
         sza_mask = sza < 22
         valid_mask = rad_mask & sza_mask
