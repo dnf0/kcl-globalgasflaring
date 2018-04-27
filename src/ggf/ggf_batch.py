@@ -138,12 +138,12 @@ def submit_sls(root, f):
         return
     print 'Submitting file job for file:', f
 
-    ymd = f[16:24]
-    if int(ymd[0:4]) == 2016:
-        return
-    if (int(ymd[0:4]) == 2017) & (int(ymd[4:6]) < 6):
-        print 'nope'
-        return
+    # ymd = f[16:24]
+    # if int(ymd[0:4]) == 2016:
+    #     return
+    # if (int(ymd[0:4]) == 2017) & (int(ymd[4:6]) < 6):
+    #     print 'nope'
+    #     return
 
     data_dir = os.path.join(root, f)
     out_dir = make_outpath_sls(f, ymd)
@@ -193,7 +193,7 @@ batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 
 # define python script to run
-python_exe = 'ggf_extract_flares_and_samples_sls.py '
+python_exe = 'ggf_extract_hotspots_atx.py '
 
 if 'atx' in python_exe:
     paths = filepaths.paths_to_atx_data
