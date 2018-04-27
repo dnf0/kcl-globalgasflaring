@@ -15,16 +15,16 @@ import src.config.filepaths as fp
 def main():
 
     df_list = []
-    cols = ['frp', 'swir_radiances', 'mwir_radiances', 'mwir_bg',
+    cols = ['frp', 'swir_radiances', 'swir_radiances_22',
              'pixel_size', 'lats', 'lons', 'lats_arcmin',
             'lons_arcmin', 'year', 'month', 'day', 'hhmm', 'sensor',
-            'frp_coeff', 'cloud_cover', 'hotspot_bg_pc', 'inval_pixels_bg_pc', 'bg_size_used',
+            'frp_coeff', 'cloud_cover', 
             'sza', 'vza']
-    dtypes = {'frp': float, 'swir_radiances': float, 'mwir_radiances': float, 'mwir_bg': float,
+    dtypes = {'frp': float, 'swir_radiances': float, 
              'pixel_size': float, 'lats': float, 'lons': float, 'lats_arcmin': int,
             'lons_arcmin': int, 'year': int, 'month': int, 'day': int, 'hhmm': int, 'sensor': str,
-            'se_dist': float, 'frp_coeff': float, 'cloud_cover': float, 'hotspot_bg_pc': float,
-            'inval_pixels_bg_pc': float, 'bg_size_used': int, 'sza': float, 'vza': float}
+            'se_dist': float, 'frp_coeff': float, 'cloud_cover': float,
+             'sza': float, 'vza': float}
 
     csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_flares.csv')
     for f in csv_filepaths:
