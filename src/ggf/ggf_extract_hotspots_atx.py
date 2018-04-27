@@ -37,10 +37,33 @@ def make_night_mask(ats_product):
     return solar_zenith_angle >= proc_const.day_night_angle
 
 
-def detect_hotspots(ats_product):
+def detect_hotspots_fixed(swir):
+    return swir > proc_const.swir_thresh_ats
+
+
+def detect_hotspots_adaptive(ats_product):
+
     swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
-    nan_mask = np.isnan(swir)  # get rid of SWIR nans also
-    return (swir > proc_const.swir_thresh_ats) & ~nan_mask
+
+    # set up the masks
+    sza_mask = make_night_mask(ats_product)
+    valid_data_mask = ~np.isnan(swir)
+    not_hotspot_mask = swir <= 0.1
+
+    # get mean absolute difference
+    useable_data = swir[sza_mask & valid_data_mask & not_hotspot_mask]
+    useable_data_mean = np.mean(useable_data)
+    useable_data_abs_diff = np.abs(useable_data - useable_data_mean)
+    useable_data_mad = np.mean(useable_data_abs_diff)
+
+    # get threshold
+    thresh = np.mean(swir[sza_mask & valid_data_mask]) + 4 * useable_data_mad
+
+    # get all data above threshold
+    above_thresh = swir > thresh
+
+    # find flares
+    return sza_mask & above_thresh
 
 
 def flare_data(product, hotspot_mask):
@@ -69,13 +92,8 @@ def main():
     atsr_data = read_atsr(path_to_data)
     sensor = define_sensor(path_to_data)
 
-    # get day/night mask first, we can use this to get only the part of the water mask
-    # that we are interested in.  This should massively speed processing.
-    night_mask = make_night_mask(atsr_data)
-
     # get nighttime flare mask
-    potential_hotspot_mask = detect_hotspots(atsr_data)
-    hotspot_mask = potential_hotspot_mask & night_mask
+    hotspot_mask = detect_hotspots_adaptive(atsr_data)
 
     # get nighttime flare radiances and frp and write out with meta data
     df = flare_data(atsr_data, hotspot_mask)

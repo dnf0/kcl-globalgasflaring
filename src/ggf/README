@@ -1,0 +1,80 @@
+
+ ATX Processing chain:
+
+    1 . Hotspot Extraction
+
+        The first step in the processing chain is to iterate over all orbits in the
+        dataset and extract any points which have raised radiances.  This is done
+        using a specific script called by the bactch processor.
+
+        a. Change line 196 of ggf_batch.py to 'ggf_extract_hotspots_atx.py '
+        b. Run ggf_batch.py
+
+    2. Hotspot aggregation
+
+        Following detection, the hotspots are aggregated to a monthly dataset.
+
+        a. Run data/flare_detection/atx/hotspot_orbits_to_hotspot_months.py
+
+    3. Persistent hotspot detections
+
+        Once aggregated to monthly files we check for hotspot persistence by
+        looking for detections over 12 sample timeseries.  This generates a map
+        of hotspots.
+
+        a. Run data/flare_detecttion/atx/hotspot_months_to_flare_locations.py
+
+    4.  Extract persistent hotspots and thier sampling information
+
+        Use the map generated in step 3 to extract information in any orbit on
+        the persistent hotspot locations.
+
+        a. Change line 196 of ggf_batch.py to 'ggf_extract_flares_and_samples_atx.py '
+        b. Run ggf_batch.py
+
+    5. Generate persistent hotspot dataframe
+
+        Aggregate all persistent hotspots into a dataframe
+
+        a. Run data/flare_detection/atx/flare_orbits_to_flare_csv.py
+
+    6. Generate persistent sampling dataframe
+
+        Aggregate all sampling into into a dataframe
+
+        a. Run data/sample_detection/atx/sample_orbits_to_sample_csv.py
+
+
+ SLSTR Processing chain:
+
+    Same as ats with different file names (sls in place of atx).
+    Also need to run sls file remover
+
+
+
+
+  Old Notes:
+
+  Running Order:
+
+  1. ggf/ggf_extract_hotspots.py (using ggf/ggf_batch.py)
+  2. data/flare_detection/hotspot_orbits_to_hotspot_months.py
+  3. data/flare_detection/hotspot_months_to_flare_locations.py
+  4. ggf/ggf_extract_flares_and_samples.py (using ggf/ggf_batch.py)
+
+
+    ggf_extract_hotposts.py processes all ATSR orbits and detects the presence of pixels with radiances >0.1.
+    It records the lat/lon position of these hotspots in a csv file "..._hotspots.csv" with the prefix being
+    the ATSR filename.
+
+    hotspot_orbits_to_hotspot_months.py iterates over all the hotspot.csv files and merges the individual orbits into monthly
+    products.  It records all unique monthly hotspots into a single .csv file with the name 'MM.csv' where MM is
+    the month.  It also adds two new columns lat_arcmin and lon_arcmin, which are the lat and lon locations
+    represented as arcminutes in the decimals.
+
+    hotspot_months_to_flare_locations.py reduces the month files to a set of all flares across the entire atsr time series
+    providing a map of flaring activity across the planet from 1991-2012
+
+    ggf_extract_flares_and_samples.py using the flare map, reprocesses all the orbits and checks whether any flare seen in the
+    map are contined in the given orbit.  Also records all overpasses of a given flaring site
+
