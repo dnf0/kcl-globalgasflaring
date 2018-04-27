@@ -49,8 +49,8 @@ if __name__ == "__main__":
 
     print 'MWIR ratio 1400K', ratio_mwir[1400]
     print 'MWIR ratio 3500K', ratio_mwir[3500]
-    print 'LWIR ratio 1400K', ratio_swir[1400]
-    print 'LWIR ratio 3500K', ratio_swir[3500]
+    print 'SWIR ratio 1400K', ratio_swir[1400]
+    print 'SWIR ratio 2500K', ratio_swir[2500]
 
 
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     ax.set_xlabel("Temperature (K)", fontsize=16)
     ax.set_ylabel("$L_{1.6} / L_{3.7}$", fontsize=16)
-    #plt.show()
+    plt.show()
 
-    fp ='/Users/danielfisher/Dropbox/working_documents/papers/swir-frp/RSE_submission/figures/round_2/ratio_figure.png'
-    plt.savefig(fp, bbox_inches='tight', dpi=600)
+    #fp ='/Users/danielfisher/Dropbox/working_documents/papers/swir-frp/RSE_submission/figures/round_2/ratio_figure.png'
+    #plt.savefig(fp, bbox_inches='tight', dpi=600)

@@ -3,10 +3,8 @@
 import os
 import sys
 import logging
-from datetime import datetime
 import zipfile
 import shutil
-import time
 
 from netCDF4 import Dataset
 import numpy as np
@@ -14,20 +12,22 @@ import pandas as pd
 import scipy.ndimage as ndimage
 from scipy.interpolate import RectBivariateSpline
 
-
 import src.config.constants as proc_const
 import src.config.filepaths as fp
 
 
-def merge_flare_dataframes(ats_flare_df, sls_flare_df):
-    ats_flare_df['sensor'] = 1
-    sls_flare_df['sensor'] = -1
-    appended_df = ats_flare_df.append(sls_flare_df)
-    flare_df = appended_df.groupby(['lats_arcmin', 'lons_arcmin'], as_index=False).agg({'sensor': np.sum})
-    flare_df.sensor.loc[flare_df.sensor == 1] = 'atx'
-    flare_df.sensor.loc[flare_df.sensor == -1] = 'sls'
-    flare_df.sensor.loc[flare_df.sensor == 0] = 'both'
-    return flare_df
+def merge_hotspot_dataframes(ats_hotspot_df, sls_hotspot_df):
+    ats_hotspot_df['sensor'] = 1
+    sls_hotspot_df['sensor'] = -1
+    appended_df = ats_hotspot_df.append(sls_hotspot_df)
+    hotspot_df = appended_df.groupby(['lats_arcmin', 'lons_arcmin'], as_index=False).agg({'sensor': np.sum})
+
+    # the below information is not used here but we can use this
+    # idea to update the sensor information during the post processing
+    hotspot_df.sensor.loc[hotspot_df.sensor == 1] = 'atx'
+    hotspot_df.sensor.loc[hotspot_df.sensor == -1] = 'sls'
+    hotspot_df.sensor.loc[hotspot_df.sensor == 0] = 'both'
+    return hotspot_df
 
 
 def extract_zip(input_zip, path_to_temp):
@@ -268,7 +268,7 @@ def main():
     sls_flare_df = pd.read_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flare_locations_sls.csv'))
 
     # merge dataframe
-    flare_df = merge_flare_dataframes(ats_flare_df, sls_flare_df)
+    flare_df = merge_hotspot_dataframes(ats_flare_df, sls_flare_df)
 
     # read in the atsr product
     path_to_data = sys.argv[1]
