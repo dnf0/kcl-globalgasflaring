@@ -23,7 +23,7 @@ import src.config.constants as proc_const
 
 def extract_zip(input_zip, path_to_temp):
     data_dict = {}
-    to_extract = ["S5_radiance_an.nc",
+    to_extract = ["S5_radiance_an.nc", "S6_radiance_an.nc",
                   "geodetic_an.nc", "geometry_tn.nc",
                   "cartesian_an.nc", "cartesian_tx.nc",
                   "indices_an.nc", "flags_an.nc"]

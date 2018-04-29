@@ -92,10 +92,10 @@ def submit_atx(root, f):
     # check year, month and sensor to see if we are going to process
     ymd = f[14:22]
     if not check_atx_year(ymd):
-        print 'Did not submit job for file:', f
+        #print 'Did not submit job for file:', f
         return
-    else:
-        print 'Submitting file job for file:', f
+    #else:
+        #print 'Submitting file job for file:', f
 
     # construct ouptut path
     out_dir = make_outpath_atx(f, ymd)
@@ -136,9 +136,9 @@ def submit_sls(root, f):
 
     if '.zip' not in f:
         return
-    print 'Submitting file job for file:', f
+    #print 'Submitting file job for file:', f
 
-    # ymd = f[16:24]
+    ymd = f[16:24]
     # if int(ymd[0:4]) == 2016:
     #     return
     # if (int(ymd[0:4]) == 2017) & (int(ymd[4:6]) < 6):
@@ -193,7 +193,7 @@ batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 
 # define python script to run
-python_exe = 'ggf_extract_hotspots_atx.py '
+python_exe = 'ggf_extract_hotspots_sls.py '
 
 if 'atx' in python_exe:
     paths = filepaths.paths_to_atx_data
