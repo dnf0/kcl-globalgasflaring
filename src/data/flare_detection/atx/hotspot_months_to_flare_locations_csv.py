@@ -30,7 +30,6 @@ def construct_annual_df(root, year_month_subset):
     for y, m in year_month_subset:
 
         csv_files = glob.glob(os.path.join(root, '*', str(y), str(m).zfill(2) + '.csv'))
-        print csv_files
 
         # sometimes we can have observations from AT1 and AT2 or AT2 and ATS, so might be two csv files.
         # Each sensor might have differing locations, so need to keep that in consideration and evaluate both.

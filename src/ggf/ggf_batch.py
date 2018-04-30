@@ -145,6 +145,7 @@ def submit_sls(root, f):
     output_fname = f.split('.')[0] + '_hotspots.csv'
     if os.path.isfile(os.path.join(out_dir, output_fname)):
         return
+    print 'sumitting', output_fname
 
     temp_dir = filepaths.path_to_temp
     if not os.path.exists(temp_dir):
@@ -203,6 +204,8 @@ else:
 for path_to_data in paths:
     years = os.listdir(path_to_data)
     for yr in years:
+        if yr != '2018':
+            continue
         if len(yr) > 4:
             continue
         path = os.path.join(path_to_data,  yr)

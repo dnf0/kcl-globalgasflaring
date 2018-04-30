@@ -160,6 +160,10 @@ def main():
     # get vza and sza masks
     sza, sza_mask = make_night_mask(s3_data)
     if sza_mask.max() == 0:  # all daytime data
+        output_fname = path_to_data.split('/')[-1].split('.')[0] + '_hotspots.csv'
+        csv_path = os.path.join(path_to_output, output_fname)
+        with open(csv_path, "w"):
+            pass
         return
     vza, vza_mask = make_vza_mask(s3_data)
 

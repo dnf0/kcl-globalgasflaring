@@ -13,10 +13,9 @@ def main():
     while True:
         try:
             for f in os.listdir(fp.path_to_temp):
-                #print 'removing', f
                 try:
-                    os.rmdir(f)
-                except:
+                    os.rmdir(os.path.join(fp.path_to_temp, f))
+                except Exception , e:
                     continue
         except:
             continue

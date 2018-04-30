@@ -11,6 +11,7 @@ cems_root = '/home/users/dnfisher/projects/kcl-globalgasflaring/'
 
 # path to ggf code
 ggf_dir = cems_root + 'src/ggf/'
+data_scripts_dir = cems_root + 'src/data/'
 
 # Paths to ATSR data on CEMS
 paths_to_atx_data = ['/neodc/aatsr_multimission/aatsr-v3/data/ats_toa_1p',

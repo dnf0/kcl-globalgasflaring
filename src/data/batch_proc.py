@@ -57,14 +57,14 @@ class BatchSystem:
 
 def submit_job():
 
-    temp_dir =
+    temp_dir = "/home/users/dnfisher/projects/kcl-globalgasflaring/src/data/"
 
     # for each ATSR file generate a bash script that calls ggf
     (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
                                          temp_dir, True)
     g = os.fdopen(gd, "w")
     g.write('export PYTHONPATH=$PYTHONPATH:/home/users/dnfisher/projects/kcl-globalgasflaring/\n')
-    g.write(filepaths.ggf_dir + python_exe + " \n")
+    g.write(filepaths.data_scripts_dir + python_exe + " \n")
     g.write("rm -f " + script_file + "\n")
     g.close()
     os.chmod(script_file, 0o755)
@@ -84,7 +84,7 @@ batch = BatchSystem('bsub',
                    'Job <(?P<ID>\d+)> is submitted to (?P<desc>\w*) queue '
                    '<(?P<queue>[\w\.-]+)>.',
                    '-w "done({})"', ') && done(',
-                   {'duration' : '-W {}'.format,
+                   {'duration' : '-W {}'.format(12),
                     'email'    : '-u {}'.format,
                     'err_file' : '-e {}'.format,
                     'job_name' : '-J {}'.format,
