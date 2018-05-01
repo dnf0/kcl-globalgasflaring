@@ -87,6 +87,7 @@ def main():
 
     # get nighttime flare mask
     hotspot_mask = detect_hotspots_adaptive(atsr_data)
+    logger.info(path_to_output)
     logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
 
     # get nighttime flare radiances and frp and write out with meta data
