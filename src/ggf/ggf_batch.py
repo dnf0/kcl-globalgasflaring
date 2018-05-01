@@ -92,7 +92,6 @@ def submit_atx(root, f):
     # check year, month and sensor to see if we are going to process
     ymd = f[14:22]
     if not check_atx_year(ymd):
-        print 'Did not submit job for file:', f
         return
 
     # construct ouptut path
@@ -148,7 +147,6 @@ def submit_sls(root, f):
     # check if we have already processed the file and skip if so
     output_fname = f.split('.')[0] + '_hotspots.csv'
     if os.path.isfile(os.path.join(out_dir, output_fname)):
-        print 'filed already processed'
         return
 
     temp_dir = filepaths.path_to_temp
@@ -208,13 +206,15 @@ else:
 for path_to_data in paths:
     years = os.listdir(path_to_data)
     for yr in years:
-        #if yr != '2018':
-        #    continue
+        if yr != '2007':
+            continue
         if len(yr) > 4:
             continue
         path = os.path.join(path_to_data,  yr)
         for root, dirs, files in os.walk(path, followlinks=True):
             for f in files:
+                if '0618' not in f:
+                    continue
                 if 'atx' in python_exe:
                     submit_atx(root, f)
                 else:
