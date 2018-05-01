@@ -96,16 +96,13 @@ def submit_atx(root, f):
         return
 
     # construct ouptut path
-    out_dir, sensor = make_outpath_atx(f, ymd)
+    out_dir = make_outpath_atx(f, ymd)
+    output_fname = f.split('.')[0] + '_hotspots.csv'
+    out_path = os.path.join(out_dir, output_fname)
 
     # check if we have already processed the file and skip if so
-    output_fname = f.split('.')[0] + '_hotspots.csv'
-    if sensor.upper() not in output_fname:
-        output_fname = output_fname.replace(output_fname[0:3], sensor.upper())
-    if os.path.isfile(os.path.join(out_dir, output_fname)):
-        print output_fname, 'already processed'
+    if os.path.isfile(out_path):
         return
-    print os.path.join(out_dir, output_fname)
 
     # for each ATSR file generate a bash script that calls ggf
     (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
@@ -114,7 +111,7 @@ def submit_atx(root, f):
     g.write('export PYTHONPATH=$PYTHONPATH:/home/users/dnfisher/projects/kcl-globalgasflaring/\n')
     g.write(filepaths.ggf_dir + python_exe +
             data_path + ' ' +
-            out_dir + " \n")
+            out_path + " \n")
     g.write("rm -f " + script_file + "\n")
     g.close()
     os.chmod(script_file, 0o755)

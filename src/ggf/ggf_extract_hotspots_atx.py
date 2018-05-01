@@ -84,7 +84,6 @@ def main():
     path_to_data = sys.argv[1]
     path_to_output = sys.argv[2]
     atsr_data = read_atsr(path_to_data)
-    sensor = define_sensor(path_to_data)
 
     # get nighttime flare mask
     hotspot_mask = detect_hotspots_adaptive(atsr_data)
@@ -94,11 +93,7 @@ def main():
     df = flare_data(atsr_data, hotspot_mask)
 
     # write out
-    output_fname = atsr_data.id_string.split('.')[0] + '_hotspots.csv'
-    if sensor.upper() not in output_fname:
-        output_fname = output_fname.replace(output_fname[0:3], sensor.upper())
-    csv_path = os.path.join(path_to_output, output_fname)
-    df.to_csv(csv_path, index=False)
+    df.to_csv(path_to_output, index=False)
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
