@@ -99,7 +99,7 @@ batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 # define python script to run
 stage = 'flare_detection'
-sensor = 'sls'
+sensor = 'atx'
 script = 'hotspot_months_to_flare_locations_csv.py '
 
 

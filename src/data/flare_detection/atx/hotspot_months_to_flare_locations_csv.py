@@ -81,7 +81,6 @@ def main():
     # using the monthly dataframes perform the flare detection
     all_flares_df = None
     for i in xrange(len(years_months[:-12])):
-	print i
         # read in the required dataframes
         annual_df = construct_annual_df(root, years_months[i:i+12])
 
@@ -99,7 +98,8 @@ def main():
             # keep only the unique flaring locations in all flares, giving a map
             # of all flare locations seen over the entire ATSR time series.
             all_flares_df.drop_duplicates(subset=['lats_arcmin', 'lons_arcmin'], inplace=True)
-    
+        print all_flares_df.shape
+   
     path_to_out = os.path.join(fp.path_to_cems_output_l3, 'all_sensors')
     if not os.path.exists(path_to_out):
         os.makedirs(path_to_out)
