@@ -79,7 +79,7 @@ def make_outpath_atx(f, ymd):
                            ymd[0:4], ymd[4:6], ymd[6:8])
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
-    return out_dir, sensor
+    return out_dir
 
 
 def submit_atx(root, f):
