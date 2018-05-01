@@ -1,3 +1,5 @@
+#!/home/users/dnfisher/soft/virtual_envs/ggf/bin/python2
+
 '''
 Take all the flare.csv files for the ATSR
 sensors and put them into a single csv file

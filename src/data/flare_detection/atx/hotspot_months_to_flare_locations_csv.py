@@ -1,3 +1,5 @@
+#!/home/users/dnfisher/soft/virtual_envs/ggf/bin/python2
+
 '''
 
 '''
@@ -79,7 +81,7 @@ def main():
     # using the monthly dataframes perform the flare detection
     all_flares_df = None
     for i in xrange(len(years_months[:-12])):
-
+	print i
         # read in the required dataframes
         annual_df = construct_annual_df(root, years_months[i:i+12])
 

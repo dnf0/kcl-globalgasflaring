@@ -70,7 +70,7 @@ def submit_job():
     os.chmod(script_file, 0o755)
 
     # generate bsub call using print_batch
-    cmd = batch.print_batch(batch_values, exe=script_file)
+    #cmd = batch.print_batch(batch_values, exe=script_file)
 
     # use subprocess to call the print batch command
     try:
@@ -84,7 +84,7 @@ batch = BatchSystem('bsub',
                    'Job <(?P<ID>\d+)> is submitted to (?P<desc>\w*) queue '
                    '<(?P<queue>[\w\.-]+)>.',
                    '-w "done({})"', ') && done(',
-                   {'duration' : '-W {}'.format(12),
+                   {'duration' : '-W {}'.format(18),
                     'email'    : '-u {}'.format,
                     'err_file' : '-e {}'.format,
                     'job_name' : '-J {}'.format,
@@ -99,8 +99,9 @@ batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 # define python script to run
 stage = 'flare_detection'
-sensor = 'atx'
-script = 'hotspot_months_to_flare_locations.py '
+sensor = 'sls'
+script = 'hotspot_months_to_flare_locations_csv.py '
+
 
 # submit job
 python_exe = os.path.join(stage, sensor, script)

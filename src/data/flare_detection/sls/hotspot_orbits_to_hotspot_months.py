@@ -1,3 +1,5 @@
+#!/home/users/dnfisher/soft/virtual_envs/ggf/bin/python2
+
 """
 Merge gas flare detections to monthly samples .
 The first step in the algorithm is to reduce the resolution of the data:
@@ -66,18 +68,16 @@ def generate_month_df(csv_files_for_month, resolution):
     month_flares = []
     for f in csv_files_for_month:
         try:
-            orbit_df = pd.read_csv(f, usecols=['lats', 'lons', 'rad'], dtype={'lats': float, 'lons': float, 'rad':float})
+            orbit_df = pd.read_csv(f, usecols=['lats', 'lons'], dtype={'lats': float, 'lons': float})
             orbit_df['lons_arcmin'] = get_arcmin(orbit_df['lons'].values)
             orbit_df['lats_arcmin'] = get_arcmin(orbit_df['lats'].values)
             orbit_df['lons'] = myround(orbit_df['lons'].values, base=resolution)
             orbit_df['lats'] = myround(orbit_df['lats'].values, base=resolution)
             # keep only unique flaring locations seen in the orbit
             orbit_df.drop_duplicates(subset=['lats_arcmin', 'lons_arcmin'], inplace=True)
-            orbit_df = orbit_df[orbit_df.rad > 0.12]
             month_flares.append(orbit_df)
         except Exception, e:
             logger.warning('Could not load csv ' + f + ' file with error: ' + str(e))
-            print orbit_df.head()
     return pd.concat(month_flares, ignore_index=True)
 
 
@@ -101,17 +101,17 @@ def main():
                 try:
                     month_df = generate_month_df(csv_files_for_month, resolution)
                     unique_month_locations(month_df)
-                    print month_df.head()
                     # dump to csv
                     path_to_out = os.path.join(fp.path_to_cems_output_l3, sensor, year)
                     if not os.path.exists(path_to_out):
                         os.makedirs(path_to_out)
                     month_df.to_csv(os.path.join(path_to_out, month + '.csv'), index=False)
-                except:
+                except Exception, e:
+                    print 'failed with error', e
                     continue
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_fmt)
+    logging.basicConfig(level=logging.ERROR, format=log_fmt)
     logger = logging.getLogger(__name__)
     main()

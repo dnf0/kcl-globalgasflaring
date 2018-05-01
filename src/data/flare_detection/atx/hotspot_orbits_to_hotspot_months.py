@@ -1,3 +1,6 @@
+#!/home/users/dnfisher/soft/virtual_envs/ggf/bin/python2
+
+
 """
 Merge gas flare detections to monthly samples .
 The first step in the algorithm is to reduce the resolution of the data:
