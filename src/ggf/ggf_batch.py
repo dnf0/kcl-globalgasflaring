@@ -100,6 +100,11 @@ def submit_atx(root, f):
     # construct ouptut path
     out_dir = make_outpath_atx(f, ymd)
 
+    # check if we have already processed the file and skip if so
+    output_fname = f.split('.')[0] + '_hotspots.csv'
+    if os.path.isfile(os.path.join(out_dir, output_fname)):
+        return
+
     # for each ATSR file generate a bash script that calls ggf
     (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
                                          out_dir, True)
@@ -145,7 +150,6 @@ def submit_sls(root, f):
     output_fname = f.split('.')[0] + '_hotspots.csv'
     if os.path.isfile(os.path.join(out_dir, output_fname)):
         return
-    print 'sumitting', output_fname
 
     temp_dir = filepaths.path_to_temp
     if not os.path.exists(temp_dir):
