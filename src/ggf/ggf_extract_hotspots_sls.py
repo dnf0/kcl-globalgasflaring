@@ -101,23 +101,14 @@ def detect_hotspots(s3_data):
     return s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0) > thresh
 
 
-def detect_hotspots_adaptive(ds, sza_mask, vza_mask, radiance_thresh):
+def detect_hotspots_adaptive(ds, sza_mask, vza_mask):
 
     # first get unillimunated central swath data
     valid_mask = ds != -999
-    ds_valid = ds[sza_mask & vza_mask & valid_mask]
-
-    # set mask for obvious hotspots
-    not_hotspot_mask = ds_valid < radiance_thresh
-
-    # get mean absolute difference
-    useable_data = ds_valid[not_hotspot_mask]
-    useable_data_mean = np.mean(useable_data)
-    useable_data_abs_diff = np.abs(useable_data - useable_data_mean)
-    useable_data_mad = np.mean(useable_data_abs_diff)
+    useable_data = ds[sza_mask & vza_mask & valid_mask]
 
     # get threshold
-    thresh = np.mean(ds_valid) + 4 * useable_data_mad
+    thresh = np.mean(useable_data) + 4 * np.std(useable_data)
 
     # get all data above threshold
     above_thresh = ds > thresh
@@ -168,9 +159,10 @@ def main():
     vza, vza_mask = make_vza_mask(s3_data)
 
     # get the hotspot data for both channels and then generate the mask
-    s5_hotspots = detect_hotspots_adaptive(s5_data, sza_mask, vza_mask, proc_const.s5_rad_thresh)
-    s6_hotspots = detect_hotspots_adaptive(s6_data, sza_mask, vza_mask, proc_const.s6_rad_thresh)
+    s5_hotspots = detect_hotspots_adaptive(s5_data, sza_mask, vza_mask)
+    s6_hotspots = detect_hotspots_adaptive(s6_data, sza_mask, vza_mask)
     hotspot_mask = s5_hotspots & s6_hotspots
+    logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
 
     df = flare_data(s3_data, sza, vza, hotspot_mask)
 
