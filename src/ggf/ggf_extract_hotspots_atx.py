@@ -48,22 +48,16 @@ def detect_hotspots_adaptive(ats_product):
     # set up the masks
     sza_mask = make_night_mask(ats_product)
     valid_data_mask = ~np.isnan(swir)
-    not_hotspot_mask = swir <= 0.1
-
-    # get mean absolute difference
-    useable_data = swir[sza_mask & valid_data_mask & not_hotspot_mask]
-    useable_data_mean = np.mean(useable_data)
-    useable_data_abs_diff = np.abs(useable_data - useable_data_mean)
-    useable_data_mad = np.mean(useable_data_abs_diff)
 
     # get threshold
-    thresh = np.mean(swir[sza_mask & valid_data_mask]) + 4 * useable_data_mad
+    useable_data = swir[sza_mask & valid_data_mask]
+    thresh = np.mean(useable_data) + 4 * np.std(useable_data)
 
     # get all data above threshold
     above_thresh = swir > thresh
 
     # find flares
-    return sza_mask & above_thresh
+    return sza_mask & valid_data_mask & above_thresh
 
 
 def flare_data(product, hotspot_mask):
@@ -94,6 +88,7 @@ def main():
 
     # get nighttime flare mask
     hotspot_mask = detect_hotspots_adaptive(atsr_data)
+    logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
 
     # get nighttime flare radiances and frp and write out with meta data
     df = flare_data(atsr_data, hotspot_mask)
