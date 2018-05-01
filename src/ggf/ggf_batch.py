@@ -79,7 +79,7 @@ def make_outpath_atx(f, ymd):
                            ymd[0:4], ymd[4:6], ymd[6:8])
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
-    return out_dir
+    return out_dir, sensor
 
 
 def submit_atx(root, f):
@@ -92,18 +92,20 @@ def submit_atx(root, f):
     # check year, month and sensor to see if we are going to process
     ymd = f[14:22]
     if not check_atx_year(ymd):
-        #print 'Did not submit job for file:', f
+        print 'Did not submit job for file:', f
         return
-    #else:
-        #print 'Submitting file job for file:', f
 
     # construct ouptut path
-    out_dir = make_outpath_atx(f, ymd)
+    out_dir, sensor = make_outpath_atx(f, ymd)
 
     # check if we have already processed the file and skip if so
     output_fname = f.split('.')[0] + '_hotspots.csv'
+    if sensor.upper() not in output_fname:
+        output_fname = output_fname.replace(output_fname[0:3], sensor.upper())
     if os.path.isfile(os.path.join(out_dir, output_fname)):
+        print output_fname, 'already processed'
         return
+    print os.path.join(out_dir, output_fname)
 
     # for each ATSR file generate a bash script that calls ggf
     (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
@@ -149,6 +151,7 @@ def submit_sls(root, f):
     # check if we have already processed the file and skip if so
     output_fname = f.split('.')[0] + '_hotspots.csv'
     if os.path.isfile(os.path.join(out_dir, output_fname)):
+        print 'filed already processed'
         return
 
     temp_dir = filepaths.path_to_temp
