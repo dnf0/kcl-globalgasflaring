@@ -98,10 +98,9 @@ def submit_atx(root, f):
     out_dir = make_outpath_atx(f, ymd)
     output_fname = f.split('.')[0] + '_hotspots.csv'
     out_path = os.path.join(out_dir, output_fname)
-
     # check if we have already processed the file and skip if so
     if os.path.isfile(out_path):
-        return
+       return
 
     # for each ATSR file generate a bash script that calls ggf
     (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
@@ -206,15 +205,14 @@ else:
 for path_to_data in paths:
     years = os.listdir(path_to_data)
     for yr in years:
-        if yr != '2007':
-            continue
         if len(yr) > 4:
             continue
+        if yr < '2006':
+            continue
+        print yr
         path = os.path.join(path_to_data,  yr)
         for root, dirs, files in os.walk(path, followlinks=True):
             for f in files:
-                if '0618' not in f:
-                    continue
                 if 'atx' in python_exe:
                     submit_atx(root, f)
                 else:
