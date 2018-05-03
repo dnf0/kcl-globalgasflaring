@@ -109,6 +109,8 @@ def detect_hotspots_adaptive(ds, sza_mask, vza_mask):
 
     # get threshold
     thresh = np.mean(useable_data) + 4 * np.std(useable_data)
+    logger.info('Threshold: ' + str(thresh))
+
 
     # get all data above threshold
     above_thresh = ds > thresh
@@ -167,6 +169,7 @@ def main():
     df = flare_data(s3_data, sza, vza, hotspot_mask)
 
     output_fname = path_to_data.split('/')[-1].split('.')[0] + '_hotspots.csv'
+    logger.info(output_fname)
     csv_path = os.path.join(path_to_output, output_fname)
     df.to_csv(csv_path, index=False)
 
