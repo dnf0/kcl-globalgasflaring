@@ -52,6 +52,7 @@ def detect_hotspots_adaptive(ats_product):
     # get threshold
     useable_data = swir[sza_mask & valid_data_mask]
     thresh = np.mean(useable_data) + 4 * np.std(useable_data)
+    logger.info('Threshold: ' + str(thresh)) 
 
     # get all data above threshold
     above_thresh = swir > thresh
