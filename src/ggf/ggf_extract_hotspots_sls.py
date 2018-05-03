@@ -161,7 +161,7 @@ def main():
     # get the hotspot data for both channels and then generate the mask
     s5_hotspots = detect_hotspots_adaptive(s5_data, sza_mask, vza_mask)
     s6_hotspots = detect_hotspots_adaptive(s6_data, sza_mask, vza_mask)
-    hotspot_mask = s5_hotspots & s6_hotspots
+    hotspot_mask = s5_hotspots # & s6_hotspots  # lets just use S5 mask
     logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
 
     df = flare_data(s3_data, sza, vza, hotspot_mask)
