@@ -116,9 +116,16 @@ def main():
     atsr_data = read_atsr(path_to_data)
 
     # get nighttime flare mask
-    hotspot_mask = detect_hotspots_non_parametric(atsr_data)
-    logger.info(path_to_output)
-    logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
+    try:
+        hotspot_mask = detect_hotspots_non_parametric(atsr_data)
+        logger.info(path_to_output)
+        logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
+    except:
+        # will fail if no hotspots but still record the processing of the file
+        logger.info('N flares detected: 0')
+        with open(path_to_output, "w"):
+            pass
+        return
 
     # get nighttime flare radiances and frp and write out with meta data
     df = flare_data(atsr_data, hotspot_mask)

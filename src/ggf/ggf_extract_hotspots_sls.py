@@ -169,6 +169,10 @@ def main():
     path_to_data = sys.argv[1]
     path_to_output = sys.argv[2]
     path_to_temp = sys.argv[3]
+
+    output_fname = path_to_data.split('/')[-1].split('.')[0] + '_hotspots.csv'
+    csv_path = os.path.join(path_to_output, output_fname)
+
     
     s3_data = extract_zip(path_to_data, path_to_temp)
 
@@ -178,22 +182,25 @@ def main():
     # get vza and sza masks
     sza, sza_mask = make_night_mask(s3_data)
     if sza_mask.max() == 0:  # all daytime data
-        output_fname = path_to_data.split('/')[-1].split('.')[0] + '_hotspots.csv'
-        csv_path = os.path.join(path_to_output, output_fname)
         with open(csv_path, "w"):
             pass
         return
     vza, vza_mask = make_vza_mask(s3_data)
 
     # get the hotspot data for both channels and then generate the mask
-    hotspot_mask = detect_hotspots_non_parametric(s5_data, sza_mask, vza_mask)
-    logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
+    try:
+        hotspot_mask = detect_hotspots_non_parametric(s5_data, sza_mask, vza_mask)
+        logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
+    except:
+        # will fail if no hotspots but still record the processing of the file
+        logger.info('N flares detected: 0')
+        with open(csv_path, "w"):
+            pass
+        return
 
     df = flare_data(s3_data, sza, vza, hotspot_mask)
 
-    output_fname = path_to_data.split('/')[-1].split('.')[0] + '_hotspots.csv'
     logger.info(output_fname)
-    csv_path = os.path.join(path_to_output, output_fname)
     df.to_csv(csv_path, index=False)
 
 
