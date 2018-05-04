@@ -30,7 +30,7 @@ def construct_annual_df(root, year_month_subset):
 
     # iterate over each month and read in csv files
     for y, m in year_month_subset:
-
+        print y, m
         csv_files = glob.glob(os.path.join(root, '*', str(y), str(m).zfill(2) + '.csv'))
 
         # sometimes we can have observations from AT1 and AT2 or AT2 and ATS, so might be two csv files.
@@ -57,6 +57,7 @@ def construct_annual_df(root, year_month_subset):
     # in some cases (at the start of the time series) the annual dataframe will have less than 12 observations
     # meaning that we wil miss some flaring locations.  As we will not have a full set of 12 months.  Just
     # need to make sure that this is made clear in any outputs.
+    print len(annual_df_list)
     annual_df = pd.concat(annual_df_list, ignore_index=True)
     annual_df['times_seen_in_annum'] = np.ones(annual_df.shape[0])
     return annual_df

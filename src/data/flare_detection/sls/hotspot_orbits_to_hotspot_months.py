@@ -78,6 +78,7 @@ def generate_month_df(csv_files_for_month, resolution):
             month_flares.append(orbit_df)
         except Exception, e:
             logger.warning('Could not load csv ' + f + ' file with error: ' + str(e))
+    print orbit_df.head()
     return pd.concat(month_flares, ignore_index=True)
 
 

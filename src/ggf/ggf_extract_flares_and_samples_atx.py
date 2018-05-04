@@ -294,7 +294,7 @@ def main():
     resolution = 60 / 3600.  # TODO MOVE TO CONSTANTS
 
     # load in the persistent flare location dataframe
-    flare_df = pd.read_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flare_locations.csv'))
+    flare_df = pd.read_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flare_locations_ats.csv'))
 
     # read in the atsr product
     path_to_data = sys.argv[1]
