@@ -82,6 +82,7 @@ def detect_hotspots_non_parametric(ats_product):
     diff = top_subset[1:] - top_subset[0:-1]
     diff_mask = diff > smallest_diff
     thresh = np.min(top_subset[1:][diff_mask])
+    logger.info('Threshold: ' + str(thresh))
 
     # get hotspots
     above_thresh = swir > thresh
