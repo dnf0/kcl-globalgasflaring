@@ -89,9 +89,6 @@ def detect_hotspots_non_parametric(ats_product):
     return sza_mask & valid_data_mask & above_thresh
 
 
-
-
-
 def flare_data(product, hotspot_mask):
 
     # first get data from sensor
@@ -123,15 +120,10 @@ def main():
     logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
 
     # get nighttime flare radiances and frp and write out with meta data
-    flare_count_limit = 5000  # should not be morethan this many flares in one orbit (gets rid of dodgy AT2 data)!
-    if np.sum(hotspot_mask) > flare_count_limit:
-        with open(path_to_output, "w"):
-            pass
-    else:
-        df = flare_data(atsr_data, hotspot_mask)
+    df = flare_data(atsr_data, hotspot_mask)
         
-        # write out
-        df.to_csv(path_to_output, index=False)
+    # write out
+    df.to_csv(path_to_output, index=False)
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
