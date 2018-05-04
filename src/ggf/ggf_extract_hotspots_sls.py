@@ -119,6 +119,31 @@ def detect_hotspots_adaptive(ds, sza_mask, vza_mask):
     return sza_mask & vza_mask & valid_mask & above_thresh
 
 
+def detect_hotspots_non_parametric(ds, sza_mask, vza_mask):
+
+    # first get unillimunated central swath data
+    valid_mask = ds != -999
+    useable_data = ds[sza_mask & vza_mask & valid_mask]
+
+    # find smallest interval between records for scene
+    unique_values = np.unique(useable_data)
+    unique_values.sort()
+    diff = unique_values[1:] - unique_values[0:-1]
+    smallest_diff = np.min(diff)
+
+    # find threshold for data
+    useable_data.sort()
+    top_subset = useable_data[-1000:]
+    diff = top_subset[1:] - top_subset[0:-1]
+    diff_mask = diff > smallest_diff
+    thresh = np.min(top_subset[1:][diff_mask])
+
+    # get hotspots
+    above_thresh = ds > thresh
+
+    return sza_mask & vza_mask & valid_mask & above_thresh
+
+
 def flare_data(s3_data, sza, vza, hotspot_mask):
 
     lines, samples = np.where(hotspot_mask)
@@ -148,7 +173,6 @@ def main():
 
     # load in S5 and S6 channels
     s5_data = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(-999)
-    s6_data = s3_data['S6_radiance_an']['S6_radiance_an'][:].filled(-999)
 
     # get vza and sza masks
     sza, sza_mask = make_night_mask(s3_data)
@@ -161,9 +185,7 @@ def main():
     vza, vza_mask = make_vza_mask(s3_data)
 
     # get the hotspot data for both channels and then generate the mask
-    s5_hotspots = detect_hotspots_adaptive(s5_data, sza_mask, vza_mask)
-    s6_hotspots = detect_hotspots_adaptive(s6_data, sza_mask, vza_mask)
-    hotspot_mask = s5_hotspots # & s6_hotspots  # lets just use S5 mask
+    hotspot_mask = detect_hotspots_non_parametric(s5_data, sza_mask, vza_mask)
     logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
 
     df = flare_data(s3_data, sza, vza, hotspot_mask)
