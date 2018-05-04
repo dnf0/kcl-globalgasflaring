@@ -61,6 +61,37 @@ def detect_hotspots_adaptive(ats_product):
     return sza_mask & valid_data_mask & above_thresh
 
 
+def detect_hotspots_non_parametric(ats_product):
+
+    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
+
+    # get useful data
+    sza_mask = make_night_mask(ats_product)
+    valid_data_mask = ~np.isnan(swir)
+    useable_data = swir[sza_mask & valid_data_mask]
+
+    # find smallest interval between records for scene
+    unique_values = np.unique(useable_data)
+    unique_values.sort()
+    diff = unique_values[1:] - unique_values[0:-1]
+    smallest_diff = np.min(diff)
+
+    # find threshold for data
+    useable_data.sort()
+    top_subset = useable_data[-5000:]
+    diff = top_subset[1:] - top_subset[0:-1]
+    diff_mask = diff > smallest_diff
+    thresh = np.min(top_subset[1:][diff_mask])
+
+    # get hotspots
+    above_thresh = swir > thresh
+
+    return sza_mask & valid_data_mask & above_thresh
+
+
+
+
+
 def flare_data(product, hotspot_mask):
 
     # first get data from sensor
@@ -87,7 +118,7 @@ def main():
     atsr_data = read_atsr(path_to_data)
 
     # get nighttime flare mask
-    hotspot_mask = detect_hotspots_adaptive(atsr_data)
+    hotspot_mask = detect_hotspots_non_parametric(atsr_data)
     logger.info(path_to_output)
     logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
 
