@@ -153,7 +153,8 @@ def detect_hotspots_non_parametric(ds, sza_mask, vza_mask):
     alt_diff_mask = diff > smallest_alt_diff
     alt_thresh = np.min(top_subset[1:][alt_diff_mask])
 
-    logger.info('smallest diff 1k subset: ' + str(alt_diff))
+    logger.info('1k unique values: ' + str(unique_subset))
+    logger.info('smallest diff 1k subset: ' + str(smallest_alt_diff))
     logger.info('Threshold using 1k smallest diff: ' + str(alt_thresh))
 
     # get hotspots
