@@ -215,6 +215,7 @@ def main():
 
         # if no valid hotspots then return none
         if hotspot_mask is None:
+            logger.info('N flares detected: 0 - not enough difference between max and min pixel values')
             with open(csv_path, "w"):
                 pass
             return
