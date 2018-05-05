@@ -131,13 +131,23 @@ def detect_hotspots_non_parametric(ds, sza_mask, vza_mask):
     diff = unique_values[1:] - unique_values[0:-1]
     smallest_diff = np.min(diff)
 
+    logger.info('smallest diff scene: ' + str(smallest_diff))
+
+
     # find threshold for data
     useable_data.sort()
     top_subset = useable_data[-1000:]
     diff = top_subset[1:] - top_subset[0:-1]
     diff_mask = diff > smallest_diff
     thresh = np.min(top_subset[1:][diff_mask])
-    logger.info('Threshold: ' + str(thresh))
+
+    logger.info('Threshold using scene smallest diff: ' + str(thresh))
+
+    diff_mask = diff > np.min(diff)
+    alt_thresh = np.min(top_subset[1:][diff_mask])
+
+    logger.info('smallest diff 1k subset: ' + str(np.min(diff)))
+    logger.info('Threshold using 1k smallest diff: ' + str(alt_thresh))
 
     # get hotspots
     above_thresh = ds > thresh
