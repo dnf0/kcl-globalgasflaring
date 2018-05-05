@@ -150,8 +150,8 @@ def detect_hotspots_non_parametric(ds, sza_mask, vza_mask):
     max_diff_top = np.max(diff_top)
     max_diff_bottom = np.max(diff_bottom)
 
-    logger.info('Max diff top 1k: ' + str())
-    logger.info('Max diff bottom 1k: ' + str())
+    logger.info('Max diff top 1k: ' + str(max_diff_top))
+    logger.info('Max diff bottom 1k: ' + str(max_diff_bottom))
 
     if max_diff_top <= 5*max_diff_bottom:
         return None
