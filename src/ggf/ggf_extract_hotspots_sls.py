@@ -141,10 +141,22 @@ def detect_hotspots_non_parametric(ds, sza_mask, vza_mask):
     diff_top = top_subset[1:] - top_subset[0:-1]
     diff_bottom = bottom_subset[1:] - bottom_subset[0:-1]
 
-    logger.info('Max diff top 1k: ' + str(np.max(diff_top)))
-    logger.info('Max diff bottom 1k: ' + str(np.max(diff_bottom)))
+    # check the max differences for both top and bottom 1k radiances
+    # if they are similar - within 5 DNs, then assume no flares.  This
+    # is reasonable as flares increase as step functions (with changes likely
+    # to be greater than a couple of DN points).  This helps remove scenes
+    # with no flaring activity in them.  Otherwise, get hundreds of invalid
+    # datapoints
+    max_diff_top = np.max(diff_top)
+    max_diff_bottom = np.max(diff_bottom)
 
-    diff_mask = diff > smallest_diff
+    logger.info('Max diff top 1k: ' + str())
+    logger.info('Max diff bottom 1k: ' + str())
+
+    if max_diff_top <= 5*max_diff_bottom:
+        return None
+
+    diff_mask = diff_top > smallest_diff
     thresh = np.min(top_subset[1:][diff_mask])
 
     logger.info('Threshold using scene smallest diff: ' + str(thresh))
@@ -200,6 +212,12 @@ def main():
     # get the hotspot data for both channels and then generate the mask
     try:
         hotspot_mask = detect_hotspots_non_parametric(s5_data, sza_mask, vza_mask)
+
+        # if no valid hotspots then return none
+        if hotspot_mask is None:
+            with open(csv_path, "w"):
+                pass
+            return
         logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
     except:
         # will fail if no hotspots but still record the processing of the file
