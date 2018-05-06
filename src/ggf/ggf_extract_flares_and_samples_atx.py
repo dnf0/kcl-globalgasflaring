@@ -37,10 +37,33 @@ def make_night_mask(ats_product):
     return solar_zenith_angle >= proc_const.day_night_angle
 
 
-def detect_hotspots(ats_product):
+def detect_hotspots_non_parametric(ats_product):
+
     swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
-    nan_mask = np.isnan(swir)  # get rid of SWIR nans also
-    return (swir > proc_const.swir_thresh_ats) & ~nan_mask
+
+    # get useful data
+    sza_mask = make_night_mask(ats_product)
+    valid_data_mask = ~np.isnan(swir)
+    useable_data = swir[sza_mask & valid_data_mask]
+
+    # find smallest interval between records for scene
+    unique_values = np.unique(useable_data)
+    unique_values.sort()
+    diff = unique_values[1:] - unique_values[0:-1]
+    smallest_diff = np.min(diff)
+
+    # find threshold for data
+    useable_data.sort()
+    top_subset = useable_data[-5000:]
+    diff = top_subset[1:] - top_subset[0:-1]
+    diff_mask = diff > smallest_diff
+    thresh = np.min(top_subset[1:][diff_mask])
+    logger.info('Threshold: ' + str(thresh))
+
+    # get hotspots
+    above_thresh = swir > thresh
+
+    return sza_mask & valid_data_mask & above_thresh
 
 
 def make_cloud_mask(ats_product):
@@ -307,7 +330,7 @@ def main():
     night_mask = make_night_mask(atsr_data)
 
     is_not_cloud_mask = make_cloud_mask(atsr_data)
-    potential_hotspot_mask = detect_hotspots(atsr_data)
+    potential_hotspot_mask = detect_hotspots_non_parametric(atsr_data)
 
     hotspot_mask = night_mask & potential_hotspot_mask
     cloud_mask = night_mask & ~potential_hotspot_mask & ~is_not_cloud_mask
