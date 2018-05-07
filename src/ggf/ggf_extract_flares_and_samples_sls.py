@@ -104,10 +104,34 @@ def make_vza_mask(s3_data):
     return view_zenith_angles, view_zenith_angles.filled(100) <= 22
 
 
-def detect_hotspots(s3_data):
-    # fill nan's with zero.  Solar constant comes from SLSTR viscal product
-    thresh = proc_const.swir_thresh_sls / (100 * np.pi) * 254.23103333  # convert ref threhsold to rad
-    return s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0) > thresh
+def detect_hotspots_non_parametric(ds, sza_mask, vza_mask):
+
+    # first get unillimunated central swath data
+    valid_mask = ds != -999
+    useable_data = ds[sza_mask & vza_mask & valid_mask]
+
+    # find threshold for data
+    useable_data.sort()
+    top_subset = useable_data[-1000:]
+    bottom_subset = useable_data[:1000]
+
+    diff_top = top_subset[1:] - top_subset[0:-1]
+
+    # now get the smallest non-zero difference for the top 1k values
+    not_zero = diff_top != 0
+    smallest_diff = np.min(diff_top[not_zero])
+
+    logger.info('smallest diff for top 1k : ' + str(smallest_diff))
+
+    diff_mask = diff_top > smallest_diff
+    thresh = np.min(top_subset[1:][diff_mask])
+
+    logger.info('Threshold using scene smallest diff: ' + str(thresh))
+
+    # get hotspots
+    above_thresh = ds > thresh
+
+    return valid_mask & above_thresh
 
 
 def make_cloud_mask(s3_data):
@@ -285,13 +309,16 @@ def main():
 
     s3_data = extract_zip(path_to_data, path_to_temp)
 
+    # load in S5 and S6 channels
+    s5_data = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(-999)
+
     sza, night_mask = make_night_mask(s3_data)
     if night_mask.max() == 0:
         return
 
     vza, vza_mask = make_vza_mask(s3_data)
 
-    potential_hotspot_mask = detect_hotspots(s3_data)
+    potential_hotspot_mask = detect_hotspots_non_parametric(s5_data, night_mask, vza_mask)
     is_not_cloud_mask = make_cloud_mask(s3_data)
 
     valid_mask = night_mask & vza_mask
