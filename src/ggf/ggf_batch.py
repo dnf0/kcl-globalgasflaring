@@ -151,8 +151,16 @@ def submit_sls(root, f):
 
     # check if we have already processed the file and skip if so
     output_fname = f.split('.')[0] + '_hotspots.csv'
-    if os.path.isfile(os.path.join(out_dir, output_fname)):
-        return
+    if 'extract_hotspots' in python_exe:
+        out_path = os.path.join(out_dir, output_fname)
+        # check if we have already processed the file and skip if so
+        if os.path.isfile(out_path):
+            return
+    elif 'flares_and_samples' in python_exe:
+        out_path = os.path.join(out_dir, f.split('.')[0] + '_sampling.csv')
+        # check if we have already processed the file and skip if so
+        if os.path.isfile(out_path):
+            return
 
     temp_dir = filepaths.path_to_temp
     if not os.path.exists(temp_dir):
