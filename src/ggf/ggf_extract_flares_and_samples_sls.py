@@ -338,7 +338,6 @@ def main():
     grouped_sample_df = group_sample_df(sample_df)
     extend_df(grouped_sample_df, ymdhm)
     sample_output_fname = path_to_data.split('/')[-1].split('.')[0] + '_sampling.csv'
-    sample_csv_path = os.path.join(path_to_output, sample_output_fname)
     grouped_sample_df.to_csv(sample_csv_path, index=False)
 
     # do the processing for persistent hotspots

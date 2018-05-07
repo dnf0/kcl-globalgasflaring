@@ -347,9 +347,9 @@ def main():
     sample_df = construct_sample_df(flare_df, atsr_data, cloud_cover, night_mask)
     grouped_sample_df = group_sample_df(sample_df)
     extend_df(grouped_sample_df, sensor, atsr_data.id_string)
-    sample_output_fname = atsr_data.id_string.split('.')[0] + '_sampling.csv'
-    sample_output_fname = sample_output_fname.replace(sample_output_fname[0:3], sensor.upper())
-    sample_csv_path = os.path.join(path_to_output, sample_output_fname)
+
+    sample_csv_path = path_to_output.replace('hotspots.csv', 'sampling.csv')
+    logger.info(sample_csv_path)
     grouped_sample_df.to_csv(sample_csv_path, index=False)
 
     # do the processing for flares
@@ -360,9 +360,9 @@ def main():
                                             atsr_data, resolution, sensor)
     grouped_hotspot_df = group_hotspot_df(flare_hotspot_df)
     extend_df(grouped_hotspot_df, sensor, atsr_data.id_string, hotspot_df=True)
-    flare_output_fname = atsr_data.id_string.split('.')[0] + '_flares.csv'
-    flare_output_fname = flare_output_fname.replace(flare_output_fname[0:3], sensor.upper())
-    flare_csv_path = os.path.join(path_to_output, flare_output_fname)
+
+    flare_csv_path = path_to_output.replace('hotspots.csv', 'flares.csv')
+    logger.info(flare_csv_path)
     grouped_hotspot_df.to_csv(flare_csv_path, index=False)
 
 if __name__ == "__main__":
