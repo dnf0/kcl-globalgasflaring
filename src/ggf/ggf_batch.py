@@ -97,10 +97,16 @@ def submit_atx(root, f):
     # construct ouptut path
     out_dir = make_outpath_atx(f, ymd)
     output_fname = f.split('.')[0] + '_hotspots.csv'
-    out_path = os.path.join(out_dir, output_fname)
-    # check if we have already processed the file and skip if so
-    if os.path.isfile(out_path):
-       return
+    if 'extract_hotspots' in python_exe:
+        out_path = os.path.join(out_dir, output_fname)
+        # check if we have already processed the file and skip if so
+        if os.path.isfile(out_path):
+            return
+    elif 'flares_and_samples' in python_exe:
+        out_path = os.path.join(out_dir, f.split('.')[0] + '_sampling.csv')
+        # check if we have already processed the file and skip if so
+        if os.path.isfile(out_path):
+            return
 
     # for each ATSR file generate a bash script that calls ggf
     (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',
@@ -194,7 +200,7 @@ batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 
 # define python script to run
-python_exe = 'ggf_extract_hotspots_sls.py '
+python_exe = 'ggf_extract_flares_and_samples_atx.py '
 
 if 'atx' in python_exe:
     paths = filepaths.paths_to_atx_data

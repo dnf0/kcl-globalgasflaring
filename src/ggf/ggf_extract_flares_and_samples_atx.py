@@ -320,8 +320,10 @@ def main():
     flare_df = pd.read_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flare_locations_ats.csv'))
 
     # read in the atsr product
-    path_to_data = sys.argv[1]
+    path_to_data =  sys.argv[1]
     path_to_output = sys.argv[2]
+    logger.info(path_to_data)
+    logger.info(path_to_output)
 
     atsr_data = read_atsr(path_to_data)
     sensor = define_sensor(path_to_data)
@@ -339,9 +341,9 @@ def main():
     # get cloud cover map from cloud mask
     bg_size = 2*8 + 1  # TODO MOVE TO CONFIG
     k = np.ones([bg_size, bg_size])
-    sum = ndimage.convolve(cloud_mask.astype(int), k, mode='constant', cval=0.0)
+    s = ndimage.convolve(cloud_mask.astype(int), k, mode='constant', cval=0.0)
     count = ndimage.convolve(np.ones(cloud_mask.shape), k, mode='constant', cval=0.0)
-    cloud_cover = sum/count
+    cloud_cover = s/count
 
     # do the processing for samples, where we just get the cloud cover for each location
     sample_df = construct_sample_df(flare_df, atsr_data, cloud_cover, night_mask)

@@ -31,6 +31,7 @@ def main():
     for f in csv_filepaths:
         if 'S3A' in f:
             continue
+        print f
         df_list.append(pd.read_csv(f, usecols=cols, dtype=dtypes))
 
     df = pd.concat(df_list, ignore_index=True)
