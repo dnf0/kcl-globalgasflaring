@@ -103,9 +103,8 @@ def submit_atx(root, f):
         if os.path.isfile(out_path):
             return
     elif 'flares_and_samples' in python_exe:
-        out_path = os.path.join(out_dir, f.split('.')[0] + '_sampling.csv')
         # check if we have already processed the file and skip if so
-        if os.path.isfile(out_path):
+        if os.path.isfile(os.path.join(out_dir, f.split('.')[0] + '_sampling.csv')):
             return
 
     # for each ATSR file generate a bash script that calls ggf
@@ -157,9 +156,8 @@ def submit_sls(root, f):
         if os.path.isfile(out_path):
             return
     elif 'flares_and_samples' in python_exe:
-        out_path = os.path.join(out_dir, f.split('.')[0] + '_sampling.csv')
         # check if we have already processed the file and skip if so
-        if os.path.isfile(out_path):
+        if os.path.isfile(os.path.join(out_dir, f.split('.')[0] + '_sampling.csv')):
             return
 
     temp_dir = filepaths.path_to_temp
