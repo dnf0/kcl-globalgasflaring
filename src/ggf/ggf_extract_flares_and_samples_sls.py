@@ -337,7 +337,9 @@ def main():
     sample_df = construct_sample_df(flare_df, s3_data, cloud_cover, valid_mask)
     grouped_sample_df = group_sample_df(sample_df)
     extend_df(grouped_sample_df, ymdhm)
-    sample_output_fname = path_to_data.split('/')[-1].split('.')[0] + '_sampling.csv'
+
+    sample_csv_path = path_to_output.replace('hotspots.csv', 'sampling.csv')
+    logger.info(sample_csv_path)
     grouped_sample_df.to_csv(sample_csv_path, index=False)
 
     # do the processing for persistent hotspots
@@ -353,8 +355,9 @@ def main():
                                                      'sls')
         grouped_persistent_hotspot_df = group_hotspot_df(persistent_hotspot_df)
         extend_df(grouped_persistent_hotspot_df, ymdhm, hotspot_df=True)
-        flare_output_fname = path_to_data.split('/')[-1].split('.')[0] + '_flares.csv'
-        flare_csv_path = os.path.join(path_to_output, flare_output_fname)
+
+        flare_csv_path = path_to_output.replace('hotspots.csv', 'flares.csv')
+        logger.info(flare_csv_path)
         grouped_persistent_hotspot_df.to_csv(flare_csv_path, index=False)
     return
 
