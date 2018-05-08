@@ -170,7 +170,7 @@ def submit_sls(root, f):
     g.write('export PYTHONPATH=$PYTHONPATH:/home/users/dnfisher/projects/kcl-globalgasflaring/\n')
     g.write(filepaths.ggf_dir + python_exe +
             path_to_data + ' ' +
-            out_dir + ' ' +
+            out_path + ' ' +
             temp_dir + " \n")
     g.write("rm -f " + script_file + "\n")
 

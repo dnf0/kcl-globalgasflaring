@@ -190,10 +190,6 @@ def main():
     path_to_output = sys.argv[2]
     path_to_temp = sys.argv[3]
 
-    output_fname = path_to_data.split('/')[-1].split('.')[0] + '_hotspots.csv'
-    csv_path = os.path.join(path_to_output, output_fname)
-
-    
     s3_data = extract_zip(path_to_data, path_to_temp)
 
     # load in S5 and S6 channels
@@ -202,7 +198,7 @@ def main():
     # get vza and sza masks
     sza, sza_mask = make_night_mask(s3_data)
     if sza_mask.max() == 0:  # all daytime data
-        with open(csv_path, "w"):
+        with open(path_to_output, "w"):
             pass
         return
     vza, vza_mask = make_vza_mask(s3_data)
@@ -214,21 +210,21 @@ def main():
         # if no valid hotspots then return none
         if hotspot_mask is None:
             logger.info('N flares detected: 0 - not enough difference between max and min pixel values')
-            with open(csv_path, "w"):
+            with open(path_to_output, "w"):
                 pass
             return
         logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
     except:
         # will fail if no hotspots but still record the processing of the file
         logger.info('N flares detected: 0')
-        with open(csv_path, "w"):
+        with open(path_to_output, "w"):
             pass
         return
 
     df = flare_data(s3_data, sza, vza, hotspot_mask)
 
     logger.info(output_fname)
-    df.to_csv(csv_path, index=False)
+    df.to_csv(path_to_output, index=False)
 
 
 if __name__ == "__main__":
