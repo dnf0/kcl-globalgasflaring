@@ -97,8 +97,8 @@ def submit_atx(root, f):
     # construct ouptut path
     out_dir = make_outpath_atx(f, ymd)
     output_fname = f.split('.')[0] + '_hotspots.csv'
+    out_path = os.path.join(out_dir, output_fname)
     if 'extract_hotspots' in python_exe:
-        out_path = os.path.join(out_dir, output_fname)
         # check if we have already processed the file and skip if so
         if os.path.isfile(out_path):
             return
@@ -150,8 +150,8 @@ def submit_sls(root, f):
 
     # check if we have already processed the file and skip if so
     output_fname = f.split('.')[0] + '_hotspots.csv'
+    out_path = os.path.join(out_dir, output_fname)
     if 'extract_hotspots' in python_exe:
-        out_path = os.path.join(out_dir, output_fname)
         # check if we have already processed the file and skip if so
         if os.path.isfile(out_path):
             return
@@ -206,7 +206,7 @@ batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 
 # define python script to run
-python_exe = 'ggf_extract_flares_and_samples_atx.py '
+python_exe = 'ggf_extract_flares_and_samples_sls.py '
 
 if 'atx' in python_exe:
     paths = filepaths.paths_to_atx_data
@@ -219,7 +219,7 @@ for path_to_data in paths:
     for yr in years:
         if len(yr) > 4:
             continue
-        #if yr != '1995':
+        #if yr > '2002':
         #    continue
         print yr
         path = os.path.join(path_to_data,  yr)
