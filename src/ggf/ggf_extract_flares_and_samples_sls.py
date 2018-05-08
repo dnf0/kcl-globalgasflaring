@@ -304,62 +304,70 @@ def main():
     #path_to_output = fp.path_to_temp
     #path_to_temp = fp.path_to_temp
 
-    # get ymd
-    ymdhm = path_to_data.split('/')[-1][16:29]
+    try:
+        # get ymd
+        ymdhm = path_to_data.split('/')[-1][16:29]
 
-    s3_data = extract_zip(path_to_data, path_to_temp)
+        s3_data = extract_zip(path_to_data, path_to_temp)
 
-    # load in S5 and S6 channels
-    s5_data = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(-999)
+        # load in S5 and S6 channels
+        s5_data = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(-999)
 
-    sza, night_mask = make_night_mask(s3_data)
-    if night_mask.max() == 0:
-        return
+        sza, night_mask = make_night_mask(s3_data)
+        if night_mask.max() == 0:
+            return
 
-    vza, vza_mask = make_vza_mask(s3_data)
+        vza, vza_mask = make_vza_mask(s3_data)
 
-    potential_hotspot_mask = detect_hotspots_non_parametric(s5_data, night_mask, vza_mask)
-    is_not_cloud_mask = make_cloud_mask(s3_data)
+        potential_hotspot_mask = detect_hotspots_non_parametric(s5_data, night_mask, vza_mask)
+        is_not_cloud_mask = make_cloud_mask(s3_data)
 
-    valid_mask = night_mask & vza_mask
+        valid_mask = night_mask & vza_mask
 
-    hotspot_mask = valid_mask & potential_hotspot_mask
-    cloud_mask = valid_mask & ~potential_hotspot_mask & ~is_not_cloud_mask
+        hotspot_mask = valid_mask & potential_hotspot_mask
+        cloud_mask = valid_mask & ~potential_hotspot_mask & ~is_not_cloud_mask
 
-    # get cloud cover map from cloud mask
-    bg_size = 2*16 + 1  #  16 as 500m resolution TODO MOVE TO CONFIG
-    k = np.ones([bg_size, bg_size])
-    s = ndimage.convolve(cloud_mask.astype(int), k, mode='constant', cval=0.0)
-    count = ndimage.convolve(np.ones(cloud_mask.shape), k, mode='constant', cval=0.0)
-    cloud_cover = s/count
+        # get cloud cover map from cloud mask
+        bg_size = 2*16 + 1  #  16 as 500m resolution TODO MOVE TO CONFIG
+        k = np.ones([bg_size, bg_size])
+        s = ndimage.convolve(cloud_mask.astype(int), k, mode='constant', cval=0.0)
+        count = ndimage.convolve(np.ones(cloud_mask.shape), k, mode='constant', cval=0.0)
+        cloud_cover = s/count
 
-    # do the processing for samples, where we just get the cloud cover for each location
-    sample_df = construct_sample_df(flare_df, s3_data, cloud_cover, valid_mask)
-    grouped_sample_df = group_sample_df(sample_df)
-    extend_df(grouped_sample_df, ymdhm)
+        # do the processing for samples, where we just get the cloud cover for each location
+        sample_df = construct_sample_df(flare_df, s3_data, cloud_cover, valid_mask)
+        grouped_sample_df = group_sample_df(sample_df)
+        extend_df(grouped_sample_df, ymdhm)
 
-    sample_csv_path = path_to_output.replace('hotspots.csv', 'sampling.csv')
-    logger.info(sample_csv_path)
-    grouped_sample_df.to_csv(sample_csv_path, index=False)
+        sample_csv_path = path_to_output.replace('hotspots.csv', 'sampling.csv')
+        logger.info(sample_csv_path)
+        grouped_sample_df.to_csv(sample_csv_path, index=False)
 
-    # do the processing for persistent hotspots
-    if np.sum(hotspot_mask):
-        hotspot_line_sample_df = construct_hotspot_line_sample_df(s3_data, hotspot_mask)
-        persistent_hotspot_line_sample_df = pd.merge(flare_df, hotspot_line_sample_df, on=['lats_arcmin', 'lons_arcmin'])
-        persistent_hotspot_df = construct_hotspot_df(persistent_hotspot_line_sample_df,
-                                                     cloud_cover,
-                                                     s3_data,
-                                                     resolution,
-                                                     sza,
-                                                     vza,
-                                                     'sls')
-        grouped_persistent_hotspot_df = group_hotspot_df(persistent_hotspot_df)
-        extend_df(grouped_persistent_hotspot_df, ymdhm, hotspot_df=True)
+        # do the processing for persistent hotspots
+        if np.sum(hotspot_mask):
+            hotspot_line_sample_df = construct_hotspot_line_sample_df(s3_data, hotspot_mask)
+            persistent_hotspot_line_sample_df = pd.merge(flare_df, hotspot_line_sample_df, on=['lats_arcmin', 'lons_arcmin'])
+            persistent_hotspot_df = construct_hotspot_df(persistent_hotspot_line_sample_df,
+                                                         cloud_cover,
+                                                         s3_data,
+                                                         resolution,
+                                                         sza,
+                                                         vza,
+                                                         'sls')
+            grouped_persistent_hotspot_df = group_hotspot_df(persistent_hotspot_df)
+            extend_df(grouped_persistent_hotspot_df, ymdhm, hotspot_df=True)
 
-        flare_csv_path = path_to_output.replace('hotspots.csv', 'flares.csv')
-        logger.info(flare_csv_path)
-        grouped_persistent_hotspot_df.to_csv(flare_csv_path, index=False)
-    return
+            flare_csv_path = path_to_output.replace('hotspots.csv', 'flares.csv')
+            logger.info(flare_csv_path)
+            grouped_persistent_hotspot_df.to_csv(flare_csv_path, index=False)
+
+    except Exception, e:
+        logger.warning('Flare and sample generation failed with error: ' + str(e))
+        # dump the csvs even if we fail
+        with open(path_to_output.replace('hotspots.csv', 'flares.csv'), "w"):
+            pass
+        with open(path_to_output.replace('hotspots.csv', 'sampling.csv'), "w"):
+            pass
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

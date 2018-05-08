@@ -325,47 +325,57 @@ def main():
     logger.info(path_to_data)
     logger.info(path_to_output)
 
-    atsr_data = read_atsr(path_to_data)
-    sensor = define_sensor(path_to_data)
+    try:
+        atsr_data = read_atsr(path_to_data)
+        sensor = define_sensor(path_to_data)
 
-    # set up various data masks
-    night_mask = make_night_mask(atsr_data)
+        # set up various data masks
+        night_mask = make_night_mask(atsr_data)
 
-    is_not_cloud_mask = make_cloud_mask(atsr_data)
-    potential_hotspot_mask = detect_hotspots_non_parametric(atsr_data)
+        is_not_cloud_mask = make_cloud_mask(atsr_data)
+        potential_hotspot_mask = detect_hotspots_non_parametric(atsr_data)
 
-    hotspot_mask = night_mask & potential_hotspot_mask
-    cloud_mask = night_mask & ~potential_hotspot_mask & ~is_not_cloud_mask
-    background_mask = night_mask & ~potential_hotspot_mask & is_not_cloud_mask
+        hotspot_mask = night_mask & potential_hotspot_mask
+        cloud_mask = night_mask & ~potential_hotspot_mask & ~is_not_cloud_mask
+        background_mask = night_mask & ~potential_hotspot_mask & is_not_cloud_mask
 
-    # get cloud cover map from cloud mask
-    bg_size = 2*8 + 1  # TODO MOVE TO CONFIG
-    k = np.ones([bg_size, bg_size])
-    s = ndimage.convolve(cloud_mask.astype(int), k, mode='constant', cval=0.0)
-    count = ndimage.convolve(np.ones(cloud_mask.shape), k, mode='constant', cval=0.0)
-    cloud_cover = s/count
+        # get cloud cover map from cloud mask
+        bg_size = 2*8 + 1  # TODO MOVE TO CONFIG
+        k = np.ones([bg_size, bg_size])
+        s = ndimage.convolve(cloud_mask.astype(int), k, mode='constant', cval=0.0)
+        count = ndimage.convolve(np.ones(cloud_mask.shape), k, mode='constant', cval=0.0)
+        cloud_cover = s/count
 
-    # do the processing for samples, where we just get the cloud cover for each location
-    sample_df = construct_sample_df(flare_df, atsr_data, cloud_cover, night_mask)
-    grouped_sample_df = group_sample_df(sample_df)
-    extend_df(grouped_sample_df, sensor, atsr_data.id_string)
+        # do the processing for samples, where we just get the cloud cover for each location
+        sample_df = construct_sample_df(flare_df, atsr_data, cloud_cover, night_mask)
+        grouped_sample_df = group_sample_df(sample_df)
+        extend_df(grouped_sample_df, sensor, atsr_data.id_string)
 
-    sample_csv_path = path_to_output.replace('hotspots.csv', 'sampling.csv')
-    logger.info(sample_csv_path)
-    grouped_sample_df.to_csv(sample_csv_path, index=False)
+        sample_csv_path = path_to_output.replace('hotspots.csv', 'sampling.csv')
+        logger.info(sample_csv_path)
+        grouped_sample_df.to_csv(sample_csv_path, index=False)
 
-    # do the processing for flares
-    hotspot_line_sample_df = construct_hotspot_line_sample_df(atsr_data, hotspot_mask)
-    flare_line_sample_df = pd.merge(flare_df, hotspot_line_sample_df, on=['lats_arcmin', 'lons_arcmin'])
-    flare_hotspot_df = construct_hotspot_df(flare_line_sample_df, hotspot_mask,
-                                            cloud_cover, background_mask,
-                                            atsr_data, resolution, sensor)
-    grouped_hotspot_df = group_hotspot_df(flare_hotspot_df)
-    extend_df(grouped_hotspot_df, sensor, atsr_data.id_string, hotspot_df=True)
+        # do the processing for flares
+        hotspot_line_sample_df = construct_hotspot_line_sample_df(atsr_data, hotspot_mask)
+        flare_line_sample_df = pd.merge(flare_df, hotspot_line_sample_df, on=['lats_arcmin', 'lons_arcmin'])
+        flare_hotspot_df = construct_hotspot_df(flare_line_sample_df, hotspot_mask,
+                                                cloud_cover, background_mask,
+                                                atsr_data, resolution, sensor)
+        grouped_hotspot_df = group_hotspot_df(flare_hotspot_df)
+        extend_df(grouped_hotspot_df, sensor, atsr_data.id_string, hotspot_df=True)
 
-    flare_csv_path = path_to_output.replace('hotspots.csv', 'flares.csv')
-    logger.info(flare_csv_path)
-    grouped_hotspot_df.to_csv(flare_csv_path, index=False)
+        flare_csv_path = path_to_output.replace('hotspots.csv', 'flares.csv')
+        logger.info(flare_csv_path)
+        grouped_hotspot_df.to_csv(flare_csv_path, index=False)
+
+    except Exception, e:
+        logger.warning('Flare and sample generation failed with error: ' + str(e))
+        # dump the csvs even if we fail
+        with open(path_to_output.replace('hotspots.csv', 'flares.csv'), "w"):
+            pass
+        with open(path_to_output.replace('hotspots.csv', 'sampling.csv'), "w"):
+            pass
+
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
