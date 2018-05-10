@@ -100,7 +100,7 @@ def detect_hotspots_min_method(ats_product):
     useable_data = swir[sza_mask & valid_data_mask]
 
     # if data find minimum
-    if useable_data:
+    if useable_data.size:
 
         min_value = np.min(useable_data)
         thresh = np.abs(min_value)
