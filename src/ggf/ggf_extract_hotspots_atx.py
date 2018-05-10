@@ -90,6 +90,28 @@ def detect_hotspots_non_parametric(ats_product):
     return sza_mask & valid_data_mask & above_thresh
 
 
+def detect_hotspots_min_method(ats_product):
+
+    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
+
+    # get useful data
+    sza_mask = make_night_mask(ats_product)
+    valid_data_mask = ~np.isnan(swir)
+    useable_data = swir[sza_mask & valid_data_mask]
+
+    # if data find minimum
+    if useable_data:
+
+        min_value = np.min(useable_data)
+        thresh = np.abs(min_value)
+        logger.info('Threshold: ' + str(thresh))
+        above_thresh = swir > thresh
+
+        return sza_mask & valid_data_mask & above_thresh
+    else:
+        logger.info('Threshold not defined - no useable data ')
+        return None
+
 def flare_data(product, hotspot_mask):
 
     # first get data from sensor
@@ -116,22 +138,24 @@ def main():
     atsr_data = read_atsr(path_to_data)
 
     # get nighttime flare mask
-    try:
-        hotspot_mask = detect_hotspots_non_parametric(atsr_data)
+    hotspot_mask = detect_hotspots_min_method(atsr_data)
+
+    if hotspot_mask is not None:
         logger.info(path_to_output)
         logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
-    except:
+        df = flare_data(atsr_data, hotspot_mask)
+
+        # write out
+        df.to_csv(path_to_output, index=False)
+
+    else:
         # will fail if no hotspots but still record the processing of the file
-        logger.info('N flares detected: 0')
+        logger.info('No mask, No flares')
         with open(path_to_output, "w"):
             pass
         return
 
-    # get nighttime flare radiances and frp and write out with meta data
-    df = flare_data(atsr_data, hotspot_mask)
-        
-    # write out
-    df.to_csv(path_to_output, index=False)
+
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
