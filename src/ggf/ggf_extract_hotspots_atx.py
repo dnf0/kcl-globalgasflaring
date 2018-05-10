@@ -90,7 +90,7 @@ def detect_hotspots_non_parametric(ats_product):
     return sza_mask & valid_data_mask & above_thresh
 
 
-def detect_hotspots_min_method(ats_product):
+def detect_hotspots_min_method(ats_product, sensor='ats'):
 
     swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
 
@@ -102,10 +102,15 @@ def detect_hotspots_min_method(ats_product):
     # if data find minimum
     if useable_data.size:
 
-        min_value = np.min(useable_data)
-        thresh = np.abs(min_value)
-        logger.info('Threshold: ' + str(thresh))
-        above_thresh = swir > thresh
+        if sensor == 'ats':
+
+            min_value = np.min(useable_data)
+            thresh = np.abs(min_value)
+            logger.info('Threshold: ' + str(thresh))
+            above_thresh = swir > thresh
+
+        else:
+            above_thresh = swir > 0.06  # assume this is the typical value using AATSR values
 
         return sza_mask & valid_data_mask & above_thresh
     else:
@@ -137,8 +142,11 @@ def main():
     path_to_output = sys.argv[2]
     atsr_data = read_atsr(path_to_data)
 
+    # determine sensor
+    sensor = define_sensor(path_to_data)
+
     # get nighttime flare mask
-    hotspot_mask = detect_hotspots_min_method(atsr_data)
+    hotspot_mask = detect_hotspots_min_method(atsr_data, sensor=sensor)
 
     if hotspot_mask is not None:
         logger.info(path_to_output)
