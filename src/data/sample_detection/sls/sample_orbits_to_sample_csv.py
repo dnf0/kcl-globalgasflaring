@@ -18,7 +18,11 @@ def main():
         if not 'S3A' in f:
             continue
         print f
-        df_list.append(pd.read_csv(f))
+        try:
+            df_list.append(pd.read_csv(f))
+        except Exception, e:
+            print 'could not load sample df with error', e
+            continue
 
     df = pd.concat(df_list, ignore_index=True)
 

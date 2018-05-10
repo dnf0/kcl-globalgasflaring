@@ -31,8 +31,11 @@ def main():
     for f in csv_filepaths:
         if 'S3A' in f:
             continue
-        print f
-        df_list.append(pd.read_csv(f, usecols=cols, dtype=dtypes))
+        try:
+            df_list.append(pd.read_csv(f, usecols=cols, dtype=dtypes))
+        except Exception, e:
+            print 'Could not load df with error', e
+            continue
 
     df = pd.concat(df_list, ignore_index=True)
 
