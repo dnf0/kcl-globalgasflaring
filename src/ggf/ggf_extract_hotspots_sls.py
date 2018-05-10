@@ -165,6 +165,27 @@ def detect_hotspots_non_parametric(ds, sza_mask, vza_mask):
     return sza_mask & vza_mask & valid_mask & above_thresh
 
 
+def detect_hotspots_min_method(ds, sza_mask, vza_mask):
+
+    # first get unillimunated central swath data
+    valid_mask = ds != -999
+    useable_data = ds[sza_mask & vza_mask & valid_mask]
+
+    # if data find minimum
+    if useable_data.size:
+
+        min_value = np.min(useable_data)
+        thresh = np.abs(min_value)
+        logger.info('Threshold: ' + str(thresh))
+        above_thresh = ds > thresh
+
+        return sza_mask & vza_mask & valid_mask & above_thresh
+    else:
+        logger.info('Threshold not defined - no useable data ')
+        return None
+
+
+
 def flare_data(s3_data, sza, vza, hotspot_mask):
 
     lines, samples = np.where(hotspot_mask)
@@ -196,36 +217,45 @@ def main():
     s5_data = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(-999)
 
     # get vza and sza masks
-    sza, sza_mask = make_night_mask(s3_data)
-    if sza_mask.max() == 0:  # all daytime data
+    try:
+        vza, vza_mask = make_vza_mask(s3_data)
+        sza, sza_mask = make_night_mask(s3_data)
+    except Exception, e:
+        logger.info('Could not generate angular data with error: ' + str(e))
         with open(path_to_output, "w"):
             pass
         return
-    vza, vza_mask = make_vza_mask(s3_data)
+
+    if sza_mask.max() == 0:  # all daytime data
+        logger.info('No flares detected: Illuminated scene')
+        with open(path_to_output, "w"):
+            pass
+        return
 
     # get the hotspot data for both channels and then generate the mask
     try:
-        hotspot_mask = detect_hotspots_non_parametric(s5_data, sza_mask, vza_mask)
-
-        # if no valid hotspots then return none
-        if hotspot_mask is None:
-            logger.info('N flares detected: 0 - not enough difference between max and min pixel values')
-            with open(path_to_output, "w"):
-                pass
-            return
-        logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
-    except:
-        # will fail if no hotspots but still record the processing of the file
-        logger.info('N flares detected: 0')
+        hotspot_mask = detect_hotspots_min_method(s5_data, sza_mask, vza_mask)
+    except Exception, e:
+        logger.warning('Could not genrate hotspot mask with error: ' + str(e))
         with open(path_to_output, "w"):
             pass
         return
 
-    df = flare_data(s3_data, sza, vza, hotspot_mask)
+    if hotspot_mask is not None:
+        logger.info(path_to_output)
+        logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
+        df = flare_data(s3_data, sza, vza, hotspot_mask)
 
-    logger.info(output_fname)
-    df.to_csv(path_to_output, index=False)
+        # write out
+        df.to_csv(path_to_output, index=False)
+        return
 
+    else:
+        # will fail if no hotspots but still record the processing of the file
+        logger.info('No mask, No flares')
+        with open(path_to_output, "w"):
+            pass
+        return
 
 if __name__ == "__main__":
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
