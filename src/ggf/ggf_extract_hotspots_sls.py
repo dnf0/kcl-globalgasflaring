@@ -177,6 +177,8 @@ def detect_hotspots_min_method(ds, sza_mask, vza_mask):
         min_value = np.min(useable_data)
         thresh = np.abs(min_value)
         logger.info('Threshold: ' + str(thresh))
+        logger.info('Max value: ' + str(np.max(useable_data)))
+
         above_thresh = ds > thresh
 
         return sza_mask & vza_mask & valid_mask & above_thresh
