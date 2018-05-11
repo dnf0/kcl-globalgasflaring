@@ -175,12 +175,13 @@ def detect_hotspots_min_method(ds, sza_mask, vza_mask):
     if useable_data.size:
 
         max_value = np.max(useable_data)
-        if max_value < 0.16:
+        if max_value <= 0.1:
             logger.info('Max value to low: ' + str(max_value) + ' not processing')
             return None
         else:
-            min_value = np.min(useable_data)
-            thresh = np.abs(min_value)
+            #min_value = np.min(useable_data)
+            #thresh = np.abs(min_value)
+            thresh = 0.1
             logger.info('Threshold: ' + str(thresh))
             logger.info('Max value: ' + str(max_value))
             above_thresh = ds > thresh

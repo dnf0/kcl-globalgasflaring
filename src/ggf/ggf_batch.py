@@ -206,7 +206,7 @@ batch_values = {'email'    : 'danielfisher0@gmail.com'}
 
 
 # define python script to run
-python_exe = 'ggf_extract_hotspots_atx.py '
+python_exe = 'ggf_extract_flares_and_samples_atx.py '
 
 if 'atx' in python_exe:
     paths = filepaths.paths_to_atx_data
@@ -219,8 +219,8 @@ for path_to_data in paths:
     for yr in years:
         if len(yr) > 4:
             continue
-        if yr <= '2003':
-            continue
+        #if (yr < '2000') | (yr > '2002'):
+        #    continue
         print yr
         path = os.path.join(path_to_data,  yr)
         for root, dirs, files in os.walk(path, followlinks=True):
