@@ -102,10 +102,10 @@ def submit_atx(root, f):
         # check if we have already processed the file and skip if so
         if os.path.isfile(out_path):
             return
-    elif 'flares_and_samples' in python_exe:
-        # check if we have already processed the file and skip if so
-        if os.path.isfile(os.path.join(out_dir, f.split('.')[0] + '_flares.csv')):
-            return
+    #elif 'flares_and_samples' in python_exe:
+    #    # check if we have already processed the file and skip if so
+    #    if os.path.isfile(os.path.join(out_dir, f.split('.')[0] + '_flares.csv')):
+    #        return
 
     # for each ATSR file generate a bash script that calls ggf
     (gd, script_file) = tempfile.mkstemp('.sh', 'ggf.',

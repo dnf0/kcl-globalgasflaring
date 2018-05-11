@@ -37,7 +37,7 @@ def make_night_mask(ats_product):
     return solar_zenith_angle >= proc_const.day_night_angle
 
 
-def detect_hotspots_non_parametric(ats_product):
+def detect_hotspots_nn_parametric(ats_product):
 
     swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
 
@@ -62,6 +62,20 @@ def detect_hotspots_non_parametric(ats_product):
 
     # get hotspots
     above_thresh = swir > thresh
+
+    return sza_mask & valid_data_mask & above_thresh
+
+
+def detect_hotspots_min_method(ats_product):
+
+    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
+
+    # get useful data
+    sza_mask = make_night_mask(ats_product)
+    valid_data_mask = ~np.isnan(swir)
+
+    # get hotspots using fixed value of 0.06
+    above_thresh = swir > 0.06
 
     return sza_mask & valid_data_mask & above_thresh
 
@@ -333,7 +347,7 @@ def main():
         night_mask = make_night_mask(atsr_data)
 
         is_not_cloud_mask = make_cloud_mask(atsr_data)
-        potential_hotspot_mask = detect_hotspots_non_parametric(atsr_data)
+        potential_hotspot_mask = detect_hotspots_min_method(atsr_data)
 
         hotspot_mask = night_mask & potential_hotspot_mask
         cloud_mask = night_mask & ~potential_hotspot_mask & ~is_not_cloud_mask
