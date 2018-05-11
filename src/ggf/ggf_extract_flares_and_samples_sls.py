@@ -104,7 +104,7 @@ def make_vza_mask(s3_data):
     return view_zenith_angles, view_zenith_angles.filled(100) <= 22
 
 
-def detect_hotspots_non_parametric(ds, sza_mask, vza_mask):
+def detect_hotspots_nn_parametric(ds, sza_mask, vza_mask):
 
     # first get unillimunated central swath data
     valid_mask = ds != -999
@@ -132,6 +132,18 @@ def detect_hotspots_non_parametric(ds, sza_mask, vza_mask):
     above_thresh = ds > thresh
 
     return valid_mask & above_thresh
+
+
+def detect_hotspots_min_method(ds):
+
+    # first get unillimunated central swath data
+    valid_mask = ds != -999
+
+    thresh = 0.1
+    above_thresh = ds > thresh
+
+    return valid_mask & above_thresh
+
 
 
 def make_cloud_mask(s3_data):
@@ -319,7 +331,7 @@ def main():
 
         vza, vza_mask = make_vza_mask(s3_data)
 
-        potential_hotspot_mask = detect_hotspots_non_parametric(s5_data, night_mask, vza_mask)
+        potential_hotspot_mask = detect_hotspots_min_method(s5_data)
         is_not_cloud_mask = make_cloud_mask(s3_data)
 
         valid_mask = night_mask & vza_mask
