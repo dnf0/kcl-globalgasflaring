@@ -104,31 +104,24 @@ def make_vza_mask(s3_data):
     return view_zenith_angles, view_zenith_angles.filled(100) <= 22
 
 
-def detect_hotspots_nn_parametric(ds, sza_mask, vza_mask):
+def detect_hotspots_adaptive(ds, sza_mask, vza_mask):
 
     # first get unillimunated central swath data
     valid_mask = ds != -999
     useable_data = ds[sza_mask & vza_mask & valid_mask]
 
-    # find threshold for data
-    useable_data.sort()
-    top_subset = useable_data[-1000:]
-    bottom_subset = useable_data[:1000]
+    # get noise
+    # get scene minimum
+    scene_min = np.min(useable_data)
+    logger.info('Scene min: ' + str(scene_min))
 
-    diff_top = top_subset[1:] - top_subset[0:-1]
+    # get noise
+    noise_data = useable_data[useable_data < np.abs(scene_min)]
 
-    # now get the smallest non-zero difference for the top 1k values
-    not_zero = diff_top != 0
-    smallest_diff = np.min(diff_top[not_zero])
+    # get threshold
+    thresh = np.mean(noise_data) + 6 * np.std(noise_data)
+    logger.info('Threshold: ' + str(thresh))
 
-    logger.info('smallest diff for top 1k : ' + str(smallest_diff))
-
-    diff_mask = diff_top > smallest_diff
-    thresh = np.min(top_subset[1:][diff_mask])
-
-    logger.info('Threshold using scene smallest diff: ' + str(thresh))
-
-    # get hotspots
     above_thresh = ds > thresh
 
     return valid_mask & above_thresh
@@ -331,7 +324,7 @@ def main():
 
         vza, vza_mask = make_vza_mask(s3_data)
 
-        potential_hotspot_mask = detect_hotspots_min_method(s5_data)
+        potential_hotspot_mask = detect_hotspots_adaptive(s5_data, night_mask, vza_mask)
         is_not_cloud_mask = make_cloud_mask(s3_data)
 
         valid_mask = night_mask & vza_mask
