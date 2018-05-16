@@ -247,7 +247,7 @@ def main():
 
     # get the hotspot data for both channels and then generate the mask
     try:
-        hotspot_mask = detect_hotspots_min_method(s5_data, sza_mask, vza_mask)
+        hotspot_mask = detect_hotspots_adaptive(s5_data, sza_mask, vza_mask)
     except Exception, e:
         logger.warning('Could not genrate hotspot mask with error: ' + str(e))
         with open(path_to_output, "w"):
