@@ -227,7 +227,7 @@ def main():
     s3_data = extract_zip(path_to_data, path_to_temp)
 
     # load in S5 and S6 channels
-    s5_data = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(-999)
+    #s5_data = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(-999)
 
     # get vza and sza masks
     try:
@@ -247,7 +247,7 @@ def main():
 
     # get the hotspot data for both channels and then generate the mask
     try:
-        hotspot_mask = detect_hotspots_adaptive(s5_data, sza_mask, vza_mask)
+        hotspot_mask = detect_hotspots(s3_data)
     except Exception, e:
         logger.warning('Could not genrate hotspot mask with error: ' + str(e))
         with open(path_to_output, "w"):

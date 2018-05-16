@@ -12,10 +12,10 @@ day_night_angle = 101  # solar zenith angles must be > 101 deg VIIRS night-time 
 
 # flare detection limit.  We do not use the upper threshold of 3% as this removes a number of
 # significant flares pixels.  E.g. over Iraq.  TODO make a visualisation to show this!
-swir_thresh_ats = 0.1  # from Casadio et al. 2012 paper
+swir_thresh_ats = 0.06  # based on min value in ATS
 
 # set radiance thresholds
-swir_thresh_sls = 0.4  # pixel are factor of four smaller, so increase by factor of 4 to make similar
+swir_thresh_sls = 4 * swir_thresh_ats  # pixel are factor of four smaller, so increase by factor of 4 to make similar
 s5_rad_thresh = swir_thresh_sls / (100 * np.pi) * 254.23103333
 s6_rad_thresh = swir_thresh_sls / (100 * np.pi) * 80.24474
 
