@@ -104,6 +104,12 @@ def make_vza_mask(s3_data):
     return view_zenith_angles, view_zenith_angles.filled(100) <= 22
 
 
+def detect_hotspots(s3_data):
+    # fill nan's with zero.  Solar constant comes from SLSTR viscal product
+    thresh = proc_const.swir_thresh_sls / (100 * np.pi) * 254.23103333  # convert ref threhsold to rad
+    return s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0) > thresh
+
+
 def detect_hotspots_adaptive(ds, sza_mask, vza_mask):
 
     # first get unillimunated central swath data
@@ -316,7 +322,7 @@ def main():
         s3_data = extract_zip(path_to_data, path_to_temp)
 
         # load in S5 and S6 channels
-        s5_data = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(-999)
+        #s5_data = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(-999)
 
         sza, night_mask = make_night_mask(s3_data)
         if night_mask.max() == 0:
@@ -324,7 +330,7 @@ def main():
 
         vza, vza_mask = make_vza_mask(s3_data)
 
-        potential_hotspot_mask = detect_hotspots_adaptive(s5_data, night_mask, vza_mask)
+        potential_hotspot_mask = detect_hotspots(s3_data)
         is_not_cloud_mask = make_cloud_mask(s3_data)
 
         valid_mask = night_mask & vza_mask

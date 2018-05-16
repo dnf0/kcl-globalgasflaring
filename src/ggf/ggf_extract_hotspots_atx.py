@@ -146,7 +146,7 @@ def main():
     sensor = define_sensor(path_to_data)
 
     # get nighttime flare mask
-    hotspot_mask = detect_hotspots_min_method(atsr_data, sensor=sensor)
+    hotspot_mask = detect_hotspots_fixed(atsr_data, sensor=sensor)
 
     if hotspot_mask is not None:
         logger.info(path_to_output)
