@@ -145,8 +145,13 @@ def main():
     # determine sensor
     sensor = define_sensor(path_to_data)
 
+    # get day/night mask first, we can use this to get only the part of the water mask
+    # that we are interested in.  This should massively speed processing.
+    night_mask = make_night_mask(atsr_data)
+
     # get nighttime flare mask
-    hotspot_mask = detect_hotspots_fixed(atsr_data, sensor=sensor)
+    potential_hotspot_mask = detect_hotspots(atsr_data)
+    hotspot_mask = potential_hotspot_mask & night_mask
 
     if hotspot_mask is not None:
         logger.info(path_to_output)
