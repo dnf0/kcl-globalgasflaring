@@ -15,6 +15,8 @@ def main():
 
     csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_sampling.csv')
     for f in csv_filepaths:
+        if 'SVL' in f:  # get rid of Svalbard NRT data
+            continue
         if not 'S3A' in f:
             continue
         print f

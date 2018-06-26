@@ -105,7 +105,7 @@ def get_sdrs(p):
 
 def get_geo(p, sdr_file):
     for f in os.listdir(p):
-        if f[10:30] == sdr_file[10:30]:
+        if (f[10:30] == sdr_file[10:30]) & ('SVM' not in f):
             return f
     return None
 
@@ -126,9 +126,15 @@ def read_sdr(p):
 
 def read_geo(p):
     ds = h5py.File(p)
-    lats = ds["All_Data"]['VIIRS-MOD-GEO-TC_All']['Latitude'][:]
-    lons = ds["All_Data"]['VIIRS-MOD-GEO-TC_All']['Longitude'][:]
-    sza = ds["All_Data"]['VIIRS-MOD-GEO-TC_All']['SatelliteZenithAngle'][:]
+    try:
+        lats = ds["All_Data"]['VIIRS-MOD-GEO-TC_All']['Latitude'][:]
+        lons = ds["All_Data"]['VIIRS-MOD-GEO-TC_All']['Longitude'][:]
+        sza = ds["All_Data"]['VIIRS-MOD-GEO-TC_All']['SatelliteZenithAngle'][:]
+    except:
+        lats = ds["All_Data"]['VIIRS-MOD-GEO_All']['Latitude'][:]
+        lons = ds["All_Data"]['VIIRS-MOD-GEO_All']['Longitude'][:]
+        sza = ds["All_Data"]['VIIRS-MOD-GEO_All']['SatelliteZenithAngle'][:]
+
     return lats, lons, sza
 
 
@@ -146,8 +152,13 @@ def characterise_hotspots():
 def main():
 
     # get viirs files
-    path_to_data = '/Volumes/INTENSO/globalgasflaring/viirs'
-    path_to_output = '/Volumes/INTENSO/globalgasflaring/viirs_hotspot_iraq.csv'
+    #path_to_data = '/Volumes/INTENSO/globalgasflaring/viirs'
+    #path_to_output = '/Volumes/INTENSO/globalgasflaring/viirs_hotspot_iraq.csv'
+    #viirs_sdrs = get_sdrs(path_to_data)
+
+
+    path_to_data = '/Users/danielfisher/Desktop/viirs_dl/libya'
+    path_to_output = '/Users/danielfisher/Desktop/viirs_dl/libya/libya.csv'
     viirs_sdrs = get_sdrs(path_to_data)
 
     # set up output dataframe

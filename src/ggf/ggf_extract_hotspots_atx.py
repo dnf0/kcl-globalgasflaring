@@ -150,7 +150,7 @@ def main():
     night_mask = make_night_mask(atsr_data)
 
     # get nighttime flare mask
-    potential_hotspot_mask = detect_hotspots(atsr_data)
+    potential_hotspot_mask = detect_hotspots_fixed(atsr_data)
     hotspot_mask = potential_hotspot_mask & night_mask
 
     if hotspot_mask is not None:
