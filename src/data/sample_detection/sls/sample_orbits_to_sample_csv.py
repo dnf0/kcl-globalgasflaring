@@ -12,11 +12,14 @@ import src.config.filepaths as fp
 def main():
 
     df_list = []
+    proc_list = []
 
     csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_sampling.csv')
     for f in csv_filepaths:
-        if 'SVL' in f:  # get rid of Svalbard NRT data
+        if f[0:60] in proc_list:  # don't process duplicate data
             continue
+        else:
+            proc_list.append(f[0:60])
         if not 'S3A' in f:
             continue
         print f
