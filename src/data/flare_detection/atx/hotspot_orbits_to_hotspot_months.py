@@ -92,7 +92,8 @@ def main():
     # aggregation resolution
     resolution = 60. / 3600  # arseconds ~2km
 
-    for sensor in ['ats', 'at1', 'at2']:
+    #for sensor in ['ats', 'at1', 'at2']:
+    for sensor in ['at1']:
         year_dir = os.path.join(fp.path_to_cems_output_l2, sensor)
         years = os.listdir(year_dir)
         for year in years:
