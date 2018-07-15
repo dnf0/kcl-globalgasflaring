@@ -374,8 +374,8 @@ def main():
         # do the processing for samples, where we just get the cloud cover for each location
         sample_df = construct_sample_df(flare_df, atsr_data, cloud_cover, night_mask)
         grouped_sample_df = group_sample_df(sample_df)
+        logger.info('Sampled hotspot locations: ' + str(grouped_sample_df.shape))
         extend_df(grouped_sample_df, sensor, atsr_data.id_string)
-
         sample_csv_path = path_to_output.replace('hotspots.csv', 'sampling.csv')
         logger.info(sample_csv_path)
         grouped_sample_df.to_csv(sample_csv_path, index=False)
@@ -383,6 +383,7 @@ def main():
         # do the processing for flares
         hotspot_line_sample_df = construct_hotspot_line_sample_df(atsr_data, hotspot_mask)
         flare_line_sample_df = pd.merge(flare_df, hotspot_line_sample_df, on=['lats_arcmin', 'lons_arcmin'])
+        logger.info('Sampled hotspot locations with raised signal: ' + str(flare_line_sample_df.shape))
         flare_hotspot_df = construct_hotspot_df(flare_line_sample_df, hotspot_mask,
                                                 cloud_cover, background_mask,
                                                 atsr_data, resolution, sensor)
