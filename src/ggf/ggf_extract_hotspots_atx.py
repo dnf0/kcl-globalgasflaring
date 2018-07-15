@@ -168,7 +168,11 @@ def main():
     max_flares_in_orbit = 20000
     n_flares_detected = np.sum(hotspot_mask)
     if n_flares_detected > max_flares_in_orbit:
-        logger.info('Too many flares')
+        logger.info('Too many flares', n_flares_detected)
+        with open(path_to_output, "w"):
+            pass
+        return
+
 
 
 
