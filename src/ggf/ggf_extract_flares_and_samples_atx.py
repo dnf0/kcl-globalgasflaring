@@ -393,6 +393,8 @@ def main():
 
         # do the processing for flares
         hotspot_line_sample_df = construct_hotspot_line_sample_df(atsr_data, hotspot_mask)
+        logger.info('Hotspot df head')
+        logger.info(hotspot_line_sample_df.head())
         flare_line_sample_df = pd.merge(flare_df, hotspot_line_sample_df, on=['lats_arcmin', 'lons_arcmin'])
         logger.info('Sampled hotspot locations with raised signal: ' + str(flare_line_sample_df.shape))
         flare_hotspot_df = construct_hotspot_df(flare_line_sample_df, hotspot_mask,
