@@ -153,28 +153,26 @@ def main():
     path_to_output = sys.argv[2]
     atsr_data = read_atsr(path_to_data)
 
-    # determine sensor
-    sensor = define_sensor(path_to_data)
-
-    # get day/night mask first, we can use this to get only the part of the water mask
-    # that we are interested in.  This should massively speed processing.
+    # get day/night mask first
     night_mask = make_night_mask(atsr_data)
+    logger.info('Night mask samples' + str(np.sum(night_mask)))
 
     # get nighttime flare mask
     potential_hotspot_mask = detect_hotspots_fixed(atsr_data)
+    logger.info('potential_hotspot_mask samples' + str(np.sum(potential_hotspot_mask)))
     hotspot_mask = potential_hotspot_mask & night_mask
+    logger.info('hotspot_mask samples' + str(np.sum(hotspot_mask)))
 
-    # if we exceed this, then likely something wrong with orbit and reject
-    max_flares_in_orbit = 20000
+
+    # if we exceed this number of flares, then likely
+    # something wrong with orbit and reject
+    max_flares_in_an_orbit = 20000
     n_flares_detected = np.sum(hotspot_mask)
-    if n_flares_detected > max_flares_in_orbit:
-        logger.info('Too many flares: ' + str(n_flares_detected))
+    if n_flares_detected > max_flares_in_an_orbit:
+        logger.info('Too many flares' + str(n_flares_detected))
         with open(path_to_output, "w"):
             pass
         return
-
-
-
 
     if hotspot_mask is not None:
         logger.info(path_to_output)
@@ -190,7 +188,6 @@ def main():
         with open(path_to_output, "w"):
             pass
         return
-
 
 
 if __name__ == "__main__":
