@@ -278,6 +278,8 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_cover, background_mask,
         flare_df['inval_pixels_bg_pc'] = -999
         flare_df['bg_size_used'] = -999
 
+    logger.info('Flare dataframe shape: ' + str(flare_df.shape))
+
     return flare_df
 
 
@@ -359,6 +361,8 @@ def main():
         hotspot_mask = night_mask & potential_hotspot_mask
         cloud_mask = night_mask & ~potential_hotspot_mask & ~is_not_cloud_mask
         background_mask = night_mask & ~potential_hotspot_mask & is_not_cloud_mask
+        logger.info('total hotspots detected: ' + str(np.sum(hotspot_mask)))
+
 
         # get cloud cover map from cloud mask
         bg_size = 2*8 + 1  # TODO MOVE TO CONFIG
