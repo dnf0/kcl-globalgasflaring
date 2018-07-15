@@ -156,12 +156,15 @@ def main():
     # get day/night mask first
     night_mask = make_night_mask(atsr_data)
     logger.info('Night mask samples ' + str(np.sum(night_mask)))
+    logger.info('Night mask shape ' + str(night_mask.shape))
 
     # get nighttime flare mask
     potential_hotspot_mask = detect_hotspots_fixed(atsr_data)
     logger.info('potential_hotspot_mask samples ' + str(np.sum(potential_hotspot_mask)))
+    logger.info('potential_hotspot_mask shape ' + str(potential_hotspot_mask.shape))
     hotspot_mask = potential_hotspot_mask & night_mask
     logger.info('hotspot_mask samples ' + str(np.sum(hotspot_mask)))
+    logger.info('hotspot_mask shape ' + str(hotspot_mask.shape))
 
 
     # if we exceed this number of flares, then likely
