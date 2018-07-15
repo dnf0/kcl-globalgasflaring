@@ -225,7 +225,7 @@ for path_to_data in paths:
         path = os.path.join(path_to_data,  yr)
         for root, dirs, files in os.walk(path, followlinks=True):
             for f in files:
-                print f
+                print root, f
                 if 'atx' in python_exe:
                     submit_atx(root, f)
                 else:
