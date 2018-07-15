@@ -32,12 +32,15 @@ def main():
 
     csv_filepaths = glob.glob(fp.path_to_cems_output_l2 + '*/*/*/*/*_flares.csv')
     for f in csv_filepaths:
-        if f[0:60] in proc_list:  # don't process duplicate data
+        if 'S3A' not in f:
+            continue
+
+        fname = f.split('/')[-1]
+        if fname[0:40] in proc_list:  # don't process duplicate data
+            print fname
             continue
         else:
-            proc_list.append(f[0:60])
-        if not 'S3A' in f:
-            continue
+            proc_list.append(fname[0:40])
         try:
             df_list.append(pd.read_csv(f, usecols=cols, dtype=dtypes))
         except Exception, e:
