@@ -219,7 +219,7 @@ for path_to_data in paths:
     for yr in years:
         if len(yr) > 4:
             continue
-        if (int(yr) > 1992):
+        if (int(yr) > 1991):
             continue
         print yr
         path = os.path.join(path_to_data,  yr)
