@@ -44,7 +44,6 @@ def make_night_mask(ats_product):
     logger.info('Min nighttime SWIR: ' + str(np.min(night_swir)))
     logger.info('SD nighttime SWIR: ' + str(np.std(night_swir)))
 
-
     return night_mask
 
 

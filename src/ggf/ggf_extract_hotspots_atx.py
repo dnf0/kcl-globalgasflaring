@@ -34,7 +34,18 @@ def define_sensor(path_to_data):
 def make_night_mask(ats_product):
     solar_elev_angle = np.deg2rad(ats_product.get_band('sun_elev_nadir').read_as_array())
     solar_zenith_angle = np.rad2deg(np.arccos(np.sin(solar_elev_angle)))
-    return solar_zenith_angle >= proc_const.day_night_angle
+    night_mask = solar_zenith_angle >= proc_const.day_night_angle
+
+    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
+    night_swir = swir[night_mask]
+
+    logger.info('Mean nighttime SWIR: ' + str(np.mean(night_swir)))
+    logger.info('Median nighttime SWIR: ' + str(np.median(night_swir)))
+    logger.info('Max nighttime SWIR: ' + str(np.max(night_swir)))
+    logger.info('Min nighttime SWIR: ' + str(np.min(night_swir)))
+    logger.info('SD nighttime SWIR: ' + str(np.std(night_swir)))
+
+    return night_mask
 
 
 def detect_hotspots_fixed(swir):
@@ -153,9 +164,17 @@ def main():
     potential_hotspot_mask = detect_hotspots_fixed(atsr_data)
     hotspot_mask = potential_hotspot_mask & night_mask
 
+    # if we exceed this, then likely something wrong with orbit and reject
+    max_flares_in_orbit = 20000
+    n_flares_detected = np.sum(hotspot_mask)
+    if n_flares_detected > max_flares_in_orbit:
+        logger.info('Too many flares')
+
+
+
     if hotspot_mask is not None:
         logger.info(path_to_output)
-        logger.info('N flares detected: ' + str(np.sum(hotspot_mask)))
+        logger.info('N flares detected: ' + str(n_flares_detected))
         df = flare_data(atsr_data, hotspot_mask)
 
         # write out
