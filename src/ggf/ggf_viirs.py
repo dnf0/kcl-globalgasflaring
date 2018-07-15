@@ -157,8 +157,8 @@ def main():
     #viirs_sdrs = get_sdrs(path_to_data)
 
 
-    path_to_data = '/Users/danielfisher/Desktop/viirs_dl/libya'
-    path_to_output = '/Users/danielfisher/Desktop/viirs_dl/libya/libya.csv'
+    path_to_data = '/Users/danielfisher/Desktop/viirs_dl/oman'
+    path_to_output = '/Users/danielfisher/Desktop/viirs_dl/oman/oman.csv'
     viirs_sdrs = get_sdrs(path_to_data)
 
     # set up output dataframe
