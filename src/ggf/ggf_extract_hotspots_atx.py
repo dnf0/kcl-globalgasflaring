@@ -155,13 +155,13 @@ def main():
 
     # get day/night mask first
     night_mask = make_night_mask(atsr_data)
-    logger.info('Night mask samples' + str(np.sum(night_mask)))
+    logger.info('Night mask samples ' + str(np.sum(night_mask)))
 
     # get nighttime flare mask
     potential_hotspot_mask = detect_hotspots_fixed(atsr_data)
-    logger.info('potential_hotspot_mask samples' + str(np.sum(potential_hotspot_mask)))
+    logger.info('potential_hotspot_mask samples ' + str(np.sum(potential_hotspot_mask)))
     hotspot_mask = potential_hotspot_mask & night_mask
-    logger.info('hotspot_mask samples' + str(np.sum(hotspot_mask)))
+    logger.info('hotspot_mask samples ' + str(np.sum(hotspot_mask)))
 
 
     # if we exceed this number of flares, then likely
@@ -169,7 +169,7 @@ def main():
     max_flares_in_an_orbit = 20000
     n_flares_detected = np.sum(hotspot_mask)
     if n_flares_detected > max_flares_in_an_orbit:
-        logger.info('Too many flares' + str(n_flares_detected))
+        logger.info('Too many flares ' + str(n_flares_detected))
         with open(path_to_output, "w"):
             pass
         return
