@@ -48,8 +48,10 @@ def make_night_mask(ats_product):
     return night_mask
 
 
-def detect_hotspots_fixed(swir):
-    return swir > proc_const.swir_thresh_ats
+def detect_hotspots_fixed(ats_product):
+    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
+    nan_mask = np.isnan(swir)  # get rid of SWIR nans also
+    return (swir > proc_const.swir_thresh_ats) & ~nan_mask
 
 
 def detect_hotspots_adaptive(ats_product):
