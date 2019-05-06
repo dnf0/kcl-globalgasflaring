@@ -5,12 +5,16 @@ Script to process VIIRS data to extract flaring
 
 import logging
 import os
+import re
 
 import h5py
 import numpy as np
 import pandas as pd
 import scipy.constants as constants
 import matplotlib.pyplot as plt
+from pyhdf.SD import SD, SDC
+from datetime import datetime
+
 
 
 def compute_viirs_pixel_size(viirs_shape):
@@ -98,7 +102,7 @@ def compute_swir_power(df):
 def get_sdrs(p):
     file_list = []
     for f in os.listdir(p):
-        if 'SVM' in f:
+        if 'VMAES' in f:
             file_list.append(f)
     return file_list
 
@@ -111,31 +115,27 @@ def get_geo(p, sdr_file):
 
 
 def read_sdr(p):
-    ds = h5py.File(p)
-    rad = ds['All_Data']['VIIRS-M10-SDR_All']['Radiance'][:]
+    ds = SD(p, SDC.READ)
 
-    rad_factors = ds['All_Data']['VIIRS-M10-SDR_All']['RadianceFactors'][:]
-    slope = rad_factors[0]
-    offset = rad_factors[1]
+    # get the radiance
+    sds_obj = ds.select('Radiance_M10') # select sds
+    for key, value in sds_obj.attributes().iteritems():
+        print key, value
+        if key == 'Offset':
+            offset = value
+        if key == 'Scale':
+            scale = value
 
-    mask = rad != 65533
-    rad = rad * slope + offset
+    data = sds_obj.get()
+    mask = data < 65528
+    rad = data * scale + offset
 
-    return rad, mask
+    # get the geo and sza
+    lats = ds.select('Latitude').get()
+    lons = ds.select('Longitude').get()
+    sza = ds.select('SatelliteZenithAngle').get()
 
-
-def read_geo(p):
-    ds = h5py.File(p)
-    try:
-        lats = ds["All_Data"]['VIIRS-MOD-GEO-TC_All']['Latitude'][:]
-        lons = ds["All_Data"]['VIIRS-MOD-GEO-TC_All']['Longitude'][:]
-        sza = ds["All_Data"]['VIIRS-MOD-GEO-TC_All']['SatelliteZenithAngle'][:]
-    except:
-        lats = ds["All_Data"]['VIIRS-MOD-GEO_All']['Latitude'][:]
-        lons = ds["All_Data"]['VIIRS-MOD-GEO_All']['Longitude'][:]
-        sza = ds["All_Data"]['VIIRS-MOD-GEO_All']['SatelliteZenithAngle'][:]
-
-    return lats, lons, sza
+    return rad, lats, lons, sza, mask
 
 
 def detect_hotspots(rad, mask):
@@ -157,32 +157,26 @@ def main():
     #viirs_sdrs = get_sdrs(path_to_data)
 
 
-    path_to_data = '/Users/danielfisher/Desktop/viirs_dl/oman'
-    path_to_output = '/Users/danielfisher/Desktop/viirs_dl/oman/oman.csv'
-    viirs_sdrs = get_sdrs(path_to_data)
+    path_to_data = '/Users/danielfisher/Desktop/viirs_dl/'
+    path_to_output = '/Users/danielfisher/Desktop/viirs_dl/iraq.csv'
+    viirs_files = get_sdrs(path_to_data)
 
     # set up output dataframe
     df_list = []
 
     # iterate over viirs files
-    for sdr_file in viirs_sdrs:
-
-        # get get file
-        geo_file = get_geo(path_to_data, sdr_file)
-        if geo_file is None:
-            continue
+    for viirs_file in viirs_files:
 
         # get data
         try:
-            rad, rad_mask = read_sdr(os.path.join(path_to_data, sdr_file))
-            lats, lons, sza = read_geo(os.path.join(path_to_data, geo_file))
+            rad, lats, lons, sza, rad_mask = read_sdr(os.path.join(path_to_data, viirs_file))
             areas, scan_angles = compute_viirs_pixel_size(rad.shape)
         except Exception, e:
-            print 'Could not process', sdr_file, 'with error:', e
+            print 'Could not process', viirs_file, 'with error:', e
             continue
 
         if np.min(lats) < -90:
-            print 'Could not process', sdr_file, 'due to files errors'
+            print 'Could not process', viirs_file, 'due to files errors'
             continue
 
         # now build the masks
@@ -192,6 +186,10 @@ def main():
         # extract hotspots
         hotspots = detect_hotspots(rad, valid_mask)
 
+        # strip time from filename
+        dt = re.findall(r'A[0-9]+\.[0-9]+', viirs_file)[0]
+        dt = datetime.strptime(dt, "A%Y%j.%H%M")
+
         # make the dataframe
         df = pd.DataFrame()
         df['swir'] = rad[hotspots]
@@ -199,10 +197,9 @@ def main():
         df['frp'] = ((df['area'] * 7.3199070488) * df['swir']) / 1000000
         df['lat'] = lats[hotspots]
         df['lon'] = lons[hotspots]
-        df['year'] = sdr_file[11:15]
-        df['month'] = sdr_file[15:17]
-        df['day'] = sdr_file[17:19]
-        df['hhmm'] = sdr_file[21:25]
+        df['year'] = dt.year
+        df['month'] = dt.month
+        df['day'] = dt.day
         df['sensor'] = 'viirs'
 
         df_list.append(df)
