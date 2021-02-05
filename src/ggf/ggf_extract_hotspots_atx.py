@@ -1,4 +1,4 @@
-#!/home/users/dnfisher/soft/virtual_envs/ggf/bin/python2
+#!/apps/contrib/jaspy/miniconda_envs/jaspy2.7/m2-4.6.14/envs/jaspy2.7-m2-4.6.14-r20190715/bin/python2.7
 
 '''
 Detects hotspot locations in a given file.  Used later
