@@ -73,8 +73,8 @@ def submit_atx(root, f):
     os.chmod(script_file, 0o755)
 
     # generate slurm call
-    info = '/group_workspaces/jasmin2/nceo_aerosolfire/data/temp/slurm_logs/info/%j.out '
-    error = '/group_workspaces/jasmin2/nceo_aerosolfire/data/temp/slurm_logs/error/%j.out '
+    info = '-o /group_workspaces/jasmin2/nceo_aerosolfire/data/temp/slurm_logs/info/%j.out '
+    error = '-e /group_workspaces/jasmin2/nceo_aerosolfire/data/temp/slurm_logs/error/%j.out '
 
     cmd = 'sbatch -p short-serial ' + info + error + script_file
 
@@ -106,6 +106,7 @@ def submit_sls(root, f):
     # check if we have already processed the file and skip if so
     output_fname = f.split('.')[0] + '_hotspots.csv'
     out_path = os.path.join(out_dir, output_fname)
+    print(out_path)
     if 'extract_hotspots' in python_exe:
         # check if we have already processed the file and skip if so
         if os.path.isfile(out_path):
@@ -134,11 +135,12 @@ def submit_sls(root, f):
     os.chmod(script_file, 0o755)
 
     # generate slurm call
-    info = '/group_workspaces/jasmin2/nceo_aerosolfire/data/temp/slurm_logs/info/%j.out '
-    error = '/group_workspaces/jasmin2/nceo_aerosolfire/data/temp/slurm_logs/error/%j.out '
+ 
+    info = '-o /group_workspaces/jasmin2/nceo_aerosolfire/data/temp/slurm_logs/info/%j.out '
+    error = '-e /group_workspaces/jasmin2/nceo_aerosolfire/data/temp/slurm_logs/error/%j.out '
 
     cmd = 'sbatch -p short-serial ' + info + error + script_file
-
+    print(cmd)
     # use subprocess to call the print batch command
     try:
         subprocess.call(cmd.split(' '))
@@ -147,7 +149,7 @@ def submit_sls(root, f):
 
 
 # define python script to run
-python_exe = 'ggf_extract_hotspots_atx.py '
+python_exe = 'ggf_extract_hotspots_sls.py '
 
 if 'atx' in python_exe:
     paths = filepaths.paths_to_atx_data
@@ -171,4 +173,3 @@ for path_to_data in paths:
                     submit_atx(root, f)
                 else:
                     submit_sls(root, f)
-
