@@ -49,7 +49,7 @@ def make_night_mask(ats_product):
     return night_mask
 
 
-def detect_hotspots_fixed(ats_product):
+def detect_hotspots(ats_product):
     swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
     nan_mask = np.isnan(swir)  # get rid of SWIR nans also
     return (swir > proc_const.swir_thresh_ats) & ~nan_mask
@@ -83,7 +83,7 @@ def run(path_to_data, path_to_output):
     logger.info('Night mask shape ' + str(night_mask.shape))
 
     # get nighttime flare mask
-    potential_hotspot_mask = detect_hotspots_fixed(atsr_data)
+    potential_hotspot_mask = detect_hotspots(atsr_data)
     logger.info('potential_hotspot_mask samples ' + str(np.sum(potential_hotspot_mask)))
     logger.info('potential_hotspot_mask shape ' + str(potential_hotspot_mask.shape))
     hotspot_mask = potential_hotspot_mask & night_mask
