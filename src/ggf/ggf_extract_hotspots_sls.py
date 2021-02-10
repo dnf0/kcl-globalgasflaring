@@ -20,6 +20,10 @@ from scipy.interpolate import RectBivariateSpline
 
 import src.config.constants as proc_const
 
+log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+logging.basicConfig(level=logging.INFO, format=log_fmt)
+logger = logging.getLogger(__name__)
+
 
 def extract_zip(input_zip, path_to_temp):
     data_dict = {}
@@ -100,105 +104,6 @@ def detect_hotspots(s3_data):
     thresh = proc_const.swir_thresh_sls / (100 * np.pi) * 254.23103333  # convert ref threhsold to rad
     return s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0) > thresh
 
-
-def detect_hotspots_adaptive(ds, sza_mask, vza_mask):
-
-    # first get unillimunated central swath data
-    valid_mask = ds != -999
-    useable_data = ds[sza_mask & vza_mask & valid_mask]
-
-    # get scene minimum
-    scene_min = np.min(useable_data)
-    logger.info('Scene min: ' + str(scene_min))
-
-    # get noise
-    noise_data = useable_data[useable_data < np.abs(scene_min)]
-
-    # get threshold
-    thresh = np.mean(noise_data) + 6 * np.std(noise_data)
-    logger.info('Threshold: ' + str(thresh))
-
-    # get all data above threshold
-    above_thresh = ds > thresh
-
-    # find flares
-    return sza_mask & vza_mask & valid_mask & above_thresh
-
-
-def detect_hotspots_non_parametric(ds, sza_mask, vza_mask):
-
-    # first get unillimunated central swath data
-    valid_mask = ds != -999
-    useable_data = ds[sza_mask & vza_mask & valid_mask]
-
-    # find threshold for data
-    useable_data.sort()
-    top_subset = useable_data[-1000:]
-    bottom_subset = useable_data[:1000]
-
-    diff_top = top_subset[1:] - top_subset[0:-1]
-    diff_bottom = bottom_subset[1:] - bottom_subset[0:-1]
-
-    # check the max differences for both top and bottom 1k radiances
-    # if they are similar - within 5 DNs, then assume no flares.  This
-    # is reasonable as flares increase as step functions (with changes likely
-    # to be greater than a couple of DN points).  This helps remove scenes
-    # with no flaring activity in them.  Otherwise, get hundreds of invalid
-    # datapoints
-    max_diff_top = np.max(diff_top)
-    max_diff_bottom = np.max(diff_bottom)
-
-    logger.info('Max diff top 1k: ' + str(max_diff_top))
-    logger.info('Max diff bottom 1k: ' + str(max_diff_bottom))
-
-    if max_diff_top <= 5*max_diff_bottom:
-        return None
-
-    # now get the smallest non-zero difference for the top 1k values
-    not_zero = diff_top != 0
-    smallest_diff = np.min(diff_top[not_zero])
-
-    logger.info('smallest diff for top 1k : ' + str(smallest_diff))
-
-    diff_mask = diff_top > smallest_diff
-    thresh = np.min(top_subset[1:][diff_mask])
-
-    logger.info('Threshold using scene smallest diff: ' + str(thresh))
-
-    # get hotspots
-    above_thresh = ds > thresh
-
-    return sza_mask & vza_mask & valid_mask & above_thresh
-
-
-def detect_hotspots_min_method(ds, sza_mask, vza_mask):
-
-    # first get unillimunated central swath data
-    valid_mask = ds != -999
-    useable_data = ds[sza_mask & vza_mask & valid_mask]
-
-    # if data find minimum
-    if useable_data.size:
-
-        max_value = np.max(useable_data)
-        if max_value <= 0.1:
-            logger.info('Max value to low: ' + str(max_value) + ' not processing')
-            return None
-        else:
-            #min_value = np.min(useable_data)
-            #thresh = np.abs(min_value)
-            thresh = 0.1
-            logger.info('Threshold: ' + str(thresh))
-            logger.info('Max value: ' + str(max_value))
-            above_thresh = ds > thresh
-
-        return sza_mask & vza_mask & valid_mask & above_thresh
-    else:
-        logger.info('Threshold not defined - no useable data ')
-        return None
-
-
-
 def flare_data(s3_data, sza, vza, hotspot_mask):
 
     lines, samples = np.where(hotspot_mask)
@@ -217,17 +122,10 @@ def flare_data(s3_data, sza, vza, hotspot_mask):
 
     return df
 
+def run(path_to_data, path_to_temp, path_to_output):
 
-def main():
-
-    path_to_data = sys.argv[1]
-    path_to_output = sys.argv[2]
-    path_to_temp = sys.argv[3]
-
+    # load in sentinel data
     s3_data = extract_zip(path_to_data, path_to_temp)
-
-    # load in S5 and S6 channels
-    #s5_data = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(-999)
 
     # get vza and sza masks
     try:
@@ -271,8 +169,15 @@ def main():
             pass
         return
 
+
+def main():
+
+    path_to_data = sys.argv[1]
+    path_to_output = sys.argv[2]
+    path_to_temp = sys.argv[3]
+    run(path_to_data, path_to_output, path_to_temp)
+
+
+
 if __name__ == "__main__":
-    log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_fmt)
-    logger = logging.getLogger(__name__)
     main()

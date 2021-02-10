@@ -150,7 +150,7 @@ def flare_data(product, hotspot_mask):
 
 def main():
 
-    # read in the atsr prodcut and land water
+    # read in the atsr product
     path_to_data = sys.argv[1]
     path_to_output = sys.argv[2]
     atsr_data = read_atsr(path_to_data)

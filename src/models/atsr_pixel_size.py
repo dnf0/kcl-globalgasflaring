@@ -130,6 +130,10 @@ def compute(forward=False):
 
 
 def main():
+    """
+    Functions to calculate ATSR pixel size as the scane angle varies
+    :return: None
+    """
     sizes = compute()
     print sizes[[1,20,45,366, 511]]
 

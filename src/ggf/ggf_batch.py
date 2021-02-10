@@ -1,9 +1,8 @@
 import os
 import tempfile
+import subprocess
 
 import src.config.filepaths as filepaths
-import src.config.constants as proc_const
-import subprocess
 
 
 def check_atx_year(ymd):
