@@ -5,8 +5,6 @@ Detects hotspot locations in a given file.  Used later
 to detect flares based on hotspot persistency.
 '''
 
-
-import os
 import sys
 import logging
 
@@ -16,6 +14,9 @@ import pandas as pd
 
 import src.config.constants as proc_const
 
+log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+logging.basicConfig(level=logging.INFO, format=log_fmt)
+logger = logging.getLogger(__name__)
 
 def read_atsr(path_to_ats_data):
     return epr.Product(path_to_ats_data)
@@ -54,82 +55,6 @@ def detect_hotspots_fixed(ats_product):
     return (swir > proc_const.swir_thresh_ats) & ~nan_mask
 
 
-def detect_hotspots_adaptive(ats_product):
-
-    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
-
-    # set up the masks
-    sza_mask = make_night_mask(ats_product)
-    valid_data_mask = ~np.isnan(swir)
-
-    # get threshold
-    useable_data = swir[sza_mask & valid_data_mask]
-    thresh = np.mean(useable_data) + 4 * np.std(useable_data)
-    logger.info('Threshold: ' + str(thresh)) 
-
-    # get all data above threshold
-    above_thresh = swir > thresh
-
-    # find flares
-    return sza_mask & valid_data_mask & above_thresh
-
-
-def detect_hotspots_non_parametric(ats_product):
-
-    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
-
-    # get useful data
-    sza_mask = make_night_mask(ats_product)
-    valid_data_mask = ~np.isnan(swir)
-    useable_data = swir[sza_mask & valid_data_mask]
-
-    # find smallest interval between records for scene
-    unique_values = np.unique(useable_data)
-    unique_values.sort()
-    diff = unique_values[1:] - unique_values[0:-1]
-    smallest_diff = np.min(diff)
-
-    # find threshold for data
-    useable_data.sort()
-    top_subset = useable_data[-5000:]
-    diff = top_subset[1:] - top_subset[0:-1]
-    diff_mask = diff > smallest_diff
-    thresh = np.min(top_subset[1:][diff_mask])
-    logger.info('Threshold: ' + str(thresh))
-
-    # get hotspots
-    above_thresh = swir > thresh
-
-    return sza_mask & valid_data_mask & above_thresh
-
-
-def detect_hotspots_min_method(ats_product, sensor='ats'):
-
-    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
-
-    # get useful data
-    sza_mask = make_night_mask(ats_product)
-    valid_data_mask = ~np.isnan(swir)
-    useable_data = swir[sza_mask & valid_data_mask]
-
-    # if data find minimum
-    if useable_data.size:
-
-        if sensor == 'ats':
-
-            min_value = np.min(useable_data)
-            thresh = np.abs(min_value)
-            logger.info('Threshold: ' + str(thresh))
-            above_thresh = swir > thresh
-
-        else:
-            above_thresh = swir > 0.06  # assume this is the typical value using AATSR values
-
-        return sza_mask & valid_data_mask & above_thresh
-    else:
-        logger.info('Threshold not defined - no useable data ')
-        return None
-
 def flare_data(product, hotspot_mask):
 
     # first get data from sensor
@@ -148,11 +73,8 @@ def flare_data(product, hotspot_mask):
     return df
 
 
-def main():
+def run(path_to_data, path_to_output):
 
-    # read in the atsr product
-    path_to_data = sys.argv[1]
-    path_to_output = sys.argv[2]
     atsr_data = read_atsr(path_to_data)
 
     # get day/night mask first
@@ -168,10 +90,9 @@ def main():
     logger.info('hotspot_mask samples ' + str(np.sum(hotspot_mask)))
     logger.info('hotspot_mask shape ' + str(hotspot_mask.shape))
 
-
     # if we exceed this number of flares, then likely
     # something wrong with orbit and reject
-    max_flares_in_an_orbit = 20000
+    max_flares_in_an_orbit = 20000  # todo add to constants
     n_flares_detected = np.sum(hotspot_mask)
     if n_flares_detected > max_flares_in_an_orbit:
         logger.info('Too many flares ' + str(n_flares_detected))
@@ -195,8 +116,12 @@ def main():
         return
 
 
+def main():
+    # read in the atsr product
+    path_to_data = sys.argv[1]
+    path_to_output = sys.argv[2]
+    run(path_to_data, path_to_output)
+
+
 if __name__ == "__main__":
-    log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_fmt)
-    logger = logging.getLogger(__name__)
     main()

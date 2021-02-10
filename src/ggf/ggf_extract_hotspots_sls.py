@@ -11,7 +11,6 @@ import os
 import logging
 import zipfile
 import shutil
-import glob
 
 import numpy as np
 from netCDF4 import Dataset
