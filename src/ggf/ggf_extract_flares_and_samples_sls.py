@@ -242,7 +242,7 @@ def main():
             logger.info(flare_csv_path)
             grouped_persistent_hotspot_df.to_csv(flare_csv_path, index=False)
 
-    except Exception, e:
+    except Exception as e:
         logger.warning('Flare and sample generation failed with error: ' + str(e))
         # dump the csvs even if we fail
         with open(path_to_output.replace('hotspots.csv', 'flares.csv'), "w"):

@@ -36,7 +36,7 @@ class BatchSystem:
         """Returns the queuing shell command. 'exe' is the thing to run."""
         arguments = [self.command]
         arguments.extend([ self.args[key](values[key])
-                           for key in values.keys() if values[key] ])
+                           for key in list(values.keys()) if values[key] ])
         if type(exe) in [list, tuple]:
             arguments.extend(exe)
         elif exe:
@@ -76,8 +76,8 @@ def submit_job():
     try:
         out = subprocess.check_output(cmd.split(' '))
         jid = batch.parse_out(out, 'ID')
-    except Exception, e:
-        print 'Subprocess failed with error:', str(e)
+    except Exception as e:
+        print('Subprocess failed with error:', str(e))
 
 # setup the batch running class
 batch = BatchSystem('bsub',

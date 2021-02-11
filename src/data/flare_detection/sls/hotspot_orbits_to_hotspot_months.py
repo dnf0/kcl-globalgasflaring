@@ -76,9 +76,9 @@ def generate_month_df(csv_files_for_month, resolution):
             # keep only unique flaring locations seen in the orbit
             orbit_df.drop_duplicates(subset=['lats_arcmin', 'lons_arcmin'], inplace=True)
             month_flares.append(orbit_df)
-        except Exception, e:
+        except Exception as e:
             logger.warning('Could not load csv ' + f + ' file with error: ' + str(e))
-    print orbit_df.head()
+    print(orbit_df.head())
     return pd.concat(month_flares, ignore_index=True)
 
 
@@ -107,8 +107,8 @@ def main():
                     if not os.path.exists(path_to_out):
                         os.makedirs(path_to_out)
                     month_df.to_csv(os.path.join(path_to_out, month + '.csv'), index=False)
-                except Exception, e:
-                    print 'failed with error', e
+                except Exception as e:
+                    print('failed with error', e)
                     continue
 
 if __name__ == '__main__':

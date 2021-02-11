@@ -80,8 +80,8 @@ def submit_atx(root, f):
     # use subprocess to call the print batch command
     try:
         subprocess.call(cmd.split(' '))
-    except Exception, e:
-        print 'Subprocess failed with error:', str(e)
+    except Exception as e:
+        print('Subprocess failed with error:', str(e))
 
 
 def make_outpath_sls(f, ymd):
@@ -143,8 +143,8 @@ def submit_sls(root, f):
     # use subprocess to call the print batch command
     try:
         subprocess.call(cmd.split(' '))
-    except Exception, e:
-        print 'Subprocess failed with error:', str(e)
+    except Exception as e:
+        print('Subprocess failed with error:', str(e))
 
 
 # define python script to run
@@ -163,11 +163,11 @@ for path_to_data in paths:
             continue
         if (int(yr) < 2020):
            continue
-        print yr
+        print(yr)
         path = os.path.join(path_to_data,  yr)
         for root, dirs, files in os.walk(path, followlinks=True):
             for f in files:
-                print root, f
+                print(root, f)
                 if 'atx' in python_exe:
                     submit_atx(root, f)
                 else:

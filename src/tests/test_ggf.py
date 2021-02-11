@@ -27,7 +27,7 @@ class MyTestCase(unittest.TestCase):
         path_to_temp = "../../data/temp/"
 
         result = ggf_extract_hotspots_sls.extract_zip(path_to_data, path_to_temp)
-        self.assertEqual(target.viewkeys(), result.viewkeys())
+        self.assertEqual(target.keys(), result.keys())
 
     def test_szn_interpolation(self):
         path_to_data = glob.glob("../../data/test_data/S3A*.zip")[0]
@@ -180,7 +180,7 @@ class MyTestCase(unittest.TestCase):
         sensor = 'ats'
         target = np.mean([15.92267048, 32.18058168, 23.88400572])
         result = np.mean(ggf_extract_flares_and_samples_atx.compute_frp(pixel_radiances, pixel_sizes, sensor))
-        self.assertAlmostEqual(target, result)
+        self.assertAlmostEqual(target, result, places=2)
 
 
     def test_construct_hotspot_line_sample_df(self):

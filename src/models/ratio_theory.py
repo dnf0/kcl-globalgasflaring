@@ -29,10 +29,10 @@ if __name__ == "__main__":
     ratio_mwir = spect_rad_swir / spect_rad_mwir
     ratio_swir = spect_rad_swir / spect_rad_swir_2
 
-    print 'MWIR ratio 1400K', ratio_mwir[1400]
-    print 'MWIR ratio 3500K', ratio_mwir[3500]
-    print 'SWIR ratio 1400K', ratio_swir[1400]
-    print 'SWIR ratio 2500K', ratio_swir[2500]
+    print('MWIR ratio 1400K', ratio_mwir[1400])
+    print('MWIR ratio 3500K', ratio_mwir[3500])
+    print('SWIR ratio 1400K', ratio_swir[1400])
+    print('SWIR ratio 2500K', ratio_swir[2500])
 
     ax.plot(temps, ratio_mwir,  "k-", markersize=4)
     ax.set_xlabel("Temperature (K)", fontsize=16)

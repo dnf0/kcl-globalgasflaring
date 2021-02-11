@@ -33,8 +33,8 @@ def main():
             continue
         try:
             df_list.append(pd.read_csv(f, usecols=cols, dtype=dtypes))
-        except Exception, e:
-            print 'Could not load df with error', e
+        except Exception as e:
+            print('Could not load df with error', e)
             continue
 
     df = pd.concat(df_list, ignore_index=True)

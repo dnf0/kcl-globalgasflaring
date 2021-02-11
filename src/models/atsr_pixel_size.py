@@ -135,7 +135,7 @@ def main():
     :return: None
     """
     sizes = compute()
-    print sizes[[1,20,45,366, 511]]
+    print(sizes[[1,20,45,366, 511]])
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

@@ -130,7 +130,7 @@ def run(path_to_data, path_to_temp, path_to_output):
     try:
         vza, vza_mask = make_vza_mask(s3_data)
         sza, sza_mask = make_night_mask(s3_data)
-    except Exception, e:
+    except Exception as e:
         logger.info('Could not generate angular data with error: ' + str(e))
         with open(path_to_output, "w"):
             pass
@@ -146,7 +146,7 @@ def run(path_to_data, path_to_temp, path_to_output):
     try:
         potential_hotspot_mask = detect_hotspots(s3_data)
         hotspot_mask = potential_hotspot_mask & sza_mask & vza_mask
-    except Exception, e:
+    except Exception as e:
         logger.warning('Could not genrate hotspot mask with error: ' + str(e))
         with open(path_to_output, "w"):
             pass

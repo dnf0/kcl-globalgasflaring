@@ -113,7 +113,7 @@ def main():
 
         opt_param = a[0, optimised_index]
 
-        print 'Optimised frp parameter for', sensor, ':', str(opt_param), 'at temp of:', str(temp)
+        print('Optimised frp parameter for', sensor, ':', str(opt_param), 'at temp of:', str(temp))
 
 
 if __name__ == '__main__':
