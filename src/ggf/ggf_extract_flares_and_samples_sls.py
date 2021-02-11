@@ -3,17 +3,19 @@
 import os
 import sys
 import logging
-import zipfile
-import shutil
 
-from netCDF4 import Dataset
 import numpy as np
 import pandas as pd
 import scipy.ndimage as ndimage
-from scipy.interpolate import RectBivariateSpline
 
 import src.config.constants as proc_const
 import src.config.filepaths as fp
+import src.ggf.ggf_extract_hotspots_sls as ggf_extract_hotspots_sls
+import src.ggf.ggf_extract_flares_and_samples_atx as ggf_extract_flares_and_samples_atx
+
+log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+logging.basicConfig(level=logging.INFO, format=log_fmt)
+logger = logging.getLogger(__name__)
 
 
 def merge_hotspot_dataframes(ats_hotspot_df, sls_hotspot_df):
@@ -30,127 +32,7 @@ def merge_hotspot_dataframes(ats_hotspot_df, sls_hotspot_df):
     return hotspot_df
 
 
-def extract_zip(input_zip, path_to_temp):
-    data_dict = {}
-    to_extract = ["S5_radiance_an.nc", "S6_radiance_an.nc",
-                  "geodetic_an.nc", "geometry_tn.nc",
-                  "cartesian_an.nc", "cartesian_tx.nc",
-                  "indices_an.nc", "flags_an.nc"]
-    with zipfile.ZipFile(input_zip) as input:
-        for name in input.namelist():
-            split_name = name.split('/')[-1]
-            if split_name in to_extract:
-                var_name = split_name.split('.')[0]
-                source = Dataset(input.extract(name, path_to_temp))
-                data_dict[var_name] = source
-
-    # remove the unzip files
-    dir_to_remove = os.path.join(path_to_temp, input_zip.split('/')[-1].replace('zip', 'SEN3'))
-    if os.path.isdir(dir_to_remove):  # test if the path points to a directory
-        shutil.rmtree(dir_to_remove, ignore_errors=True)
-    else:  # normal file
-        os.remove(dir_to_remove)
-
-    return data_dict
-
-
-def interpolate_szn(s3_data):
-    szn = s3_data['geometry_tn']['solar_zenith_tn'][:]
-
-    tx_x_var = s3_data['cartesian_tx']['x_tx'][0, :]
-    tx_y_var = s3_data['cartesian_tx']['y_tx'][:, 0]
-
-    an_x_var = s3_data['cartesian_an']['x_an'][:]
-    an_y_var = s3_data['cartesian_an']['y_an'][:]
-
-    spl = RectBivariateSpline(tx_y_var, tx_x_var[::-1], szn[:, ::-1].filled(0))
-    interpolated = spl.ev(an_y_var.compressed(),
-                          an_x_var.compressed())
-    interpolated = np.ma.masked_invalid(interpolated, copy=False)
-    szn = np.ma.empty(an_y_var.shape,
-                      dtype=szn.dtype)
-    szn[np.logical_not(np.ma.getmaskarray(an_y_var))] = interpolated
-    szn.mask = an_y_var.mask
-    return szn
-
-
-def make_night_mask(s3_data):
-    solar_zenith_angle = interpolate_szn(s3_data)
-    return solar_zenith_angle, solar_zenith_angle.filled(0) >= proc_const.day_night_angle
-
-
-def interpolate_vza(s3_data):
-    sat_zn = s3_data['geometry_tn']['sat_zenith_tn'][:]
-
-    tx_x_var = s3_data['cartesian_tx']['x_tx'][0, :]
-    tx_y_var = s3_data['cartesian_tx']['y_tx'][:, 0]
-
-    an_x_var = s3_data['cartesian_an']['x_an'][:]
-    an_y_var = s3_data['cartesian_an']['y_an'][:]
-
-    spl = RectBivariateSpline(tx_y_var, tx_x_var[::-1], sat_zn[:, ::-1].filled(0))
-    interpolated = spl.ev(an_y_var.compressed(),
-                          an_x_var.compressed())
-    interpolated = np.ma.masked_invalid(interpolated, copy=False)
-    sat_zn = np.ma.empty(an_y_var.shape,
-                      dtype=sat_zn.dtype)
-    sat_zn[np.logical_not(np.ma.getmaskarray(an_y_var))] = interpolated
-    sat_zn.mask = an_y_var.mask
-    return sat_zn
-
-
-def make_vza_mask(s3_data):
-    view_zenith_angles = interpolate_vza(s3_data)
-    return view_zenith_angles, view_zenith_angles.filled(100) <= 22
-
-
-def detect_hotspots(s3_data):
-    # fill nan's with zero.  Solar constant comes from SLSTR viscal product
-    thresh = proc_const.swir_thresh_sls / (100 * np.pi) * 254.23103333  # convert ref threhsold to rad
-    return s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0) > thresh
-
-
-def detect_hotspots_adaptive(ds, sza_mask, vza_mask):
-
-    # first get unillimunated central swath data
-    valid_mask = ds != -999
-    useable_data = ds[sza_mask & vza_mask & valid_mask]
-
-    # get noise
-    # get scene minimum
-    scene_min = np.min(useable_data)
-    logger.info('Scene min: ' + str(scene_min))
-
-    # get noise
-    noise_data = useable_data[useable_data < np.abs(scene_min)]
-
-    # get threshold
-    thresh = np.mean(noise_data) + 6 * np.std(noise_data)
-    logger.info('Threshold: ' + str(thresh))
-
-    above_thresh = ds > thresh
-
-    return valid_mask & above_thresh
-
-
-def detect_hotspots_min_method(ds):
-
-    # first get unillimunated central swath data
-    valid_mask = ds != -999
-
-    thresh = 0.1
-    above_thresh = ds > thresh
-
-    return valid_mask & above_thresh
-
-
-
-def make_cloud_mask(s3_data):
-    # over land or water and cloud free (i.e. bit 0 is set (cloud free land)  or unset(cloud free water))
-    return s3_data['flags_an']['cloud_an'][:] == 0
-
-
-def get_arcmin(x):
+def get_arcmin_int(x):
     '''
     rounds the data decimal fraction of a degree
     to the nearest arc minute
@@ -179,7 +61,7 @@ def get_arcmin(x):
     return floor_x
 
 
-def myround(x, dec=20, base=60. / 3600):
+def round_to_arcmin(x, dec=20, base=60. / 3600):
     return np.round(base * np.round(x / base), dec)
 
 
@@ -189,18 +71,14 @@ def compute_pixel_size(samples):
     return pix_sizes[samples]
 
 
-def compute_frp(pixel_radiances, pixel_sizes, sensor):
-    return pixel_sizes * proc_const.frp_coeff[sensor] * pixel_radiances / 1000000  # in MW
-
-
 def construct_hotspot_line_sample_df(s3_data, hotspot_mask):
     lines, samples = np.where(hotspot_mask)
     lats = s3_data['geodetic_an']['latitude_an'][:][hotspot_mask]
     lons = s3_data['geodetic_an']['longitude_an'][:][hotspot_mask]
 
     # round geographic data to desired reoslution
-    lats_arcmin = get_arcmin(lats)
-    lons_arcmin = get_arcmin(lons)
+    lats_arcmin = get_arcmin_int(lats)
+    lons_arcmin = get_arcmin_int(lons)
 
     df = pd.DataFrame()
     datasets = [lats_arcmin, lons_arcmin, lines, samples]
@@ -218,8 +96,8 @@ def construct_hotspot_df(flare_df, cloud_cover,
     lons = s3_data['geodetic_an']['longitude_an'][:][coords]
 
     # round geographic data to desired reoslution
-    rounded_lats = myround(lats, base=resolution)
-    rounded_lons = myround(lons, base=resolution)
+    rounded_lats = round_to_arcmin(lats, base=resolution)
+    rounded_lons = round_to_arcmin(lons, base=resolution)
 
     swir_radiances = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(0)[coords]
     swir_reflectances = swir_radiances / 254.23103333 * np.pi * 100
@@ -227,7 +105,7 @@ def construct_hotspot_df(flare_df, cloud_cover,
     swir_radiances_22 = s3_data['S6_radiance_an']['S6_radiance_an'][:].filled(0)[coords]
 
     pixel_size = compute_pixel_size(flare_df.samples.values)
-    frp = compute_frp(swir_radiances, pixel_size, sensor)
+    frp = ggf_extract_flares_and_samples_atx.compute_frp(swir_radiances, pixel_size, sensor)
 
     sza_subset = sza[coords]
     vza_subset = vza[coords]
@@ -251,8 +129,8 @@ def construct_sample_df(flare_df, s3_data, cloud_cover, night_mask):
     # get geographic coordinates
     lats = s3_data['geodetic_an']['latitude_an'][:]
     lons = s3_data['geodetic_an']['longitude_an'][:]
-    lats_arcmin = get_arcmin(lats)
-    lons_arcmin = get_arcmin(lons)
+    lats_arcmin = get_arcmin_int(lats)
+    lons_arcmin = get_arcmin_int(lons)
 
     # set up df for merging
     orbit_df = pd.DataFrame()
@@ -310,28 +188,20 @@ def main():
     path_to_output = sys.argv[2]
     path_to_temp = sys.argv[3]
 
-    #data = 'S3A_SL_1_RBT____20180104T185242_20180104T185542_20180105T224332_0179_026_213_6419_LN2_O_NT_002.zip'
-    #path_to_data = os.path.join('/neodc/sentinel3a/data/SLSTR/L1_RBT/2018/01/04', data)
-    #path_to_output = fp.path_to_temp
-    #path_to_temp = fp.path_to_temp
-
     try:
         # get ymd
         ymdhm = path_to_data.split('/')[-1][16:29]
 
-        s3_data = extract_zip(path_to_data, path_to_temp)
+        s3_data = ggf_extract_hotspots_sls.extract_zip(path_to_data, path_to_temp)
 
-        # load in S5 and S6 channels
-        #s5_data = s3_data['S5_radiance_an']['S5_radiance_an'][:].filled(-999)
-
-        sza, night_mask = make_night_mask(s3_data)
+        sza, night_mask = ggf_extract_hotspots_sls.make_night_mask(s3_data)
         if night_mask.max() == 0:
             return
 
-        vza, vza_mask = make_vza_mask(s3_data)
+        vza, vza_mask = ggf_extract_hotspots_sls.make_vza_mask(s3_data)
 
-        potential_hotspot_mask = detect_hotspots(s3_data)
-        is_not_cloud_mask = make_cloud_mask(s3_data)
+        potential_hotspot_mask = ggf_extract_hotspots_sls.detect_hotspots(s3_data)
+        is_not_cloud_mask = ggf_extract_hotspots_sls.make_cloud_mask(s3_data)
 
         valid_mask = night_mask & vza_mask
 
@@ -381,7 +251,4 @@ def main():
             pass
 
 if __name__ == "__main__":
-    log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_fmt)
-    logger = logging.getLogger(__name__)
     main()
