@@ -21,15 +21,15 @@ def main():
        
         fname = f.split('/')[-1]
         if fname[0:40] in proc_list:  # don't process duplicate data
-            print fname
+            print(fname)
             continue
         else:
             proc_list.append(fname[0:40])
 
         try:
             df_list.append(pd.read_csv(f))
-        except Exception, e:
-            print 'could not load sample df with error', e
+        except Exception as e:
+            print('could not load sample df with error', e)
             continue
 
     df = pd.concat(df_list, ignore_index=True)

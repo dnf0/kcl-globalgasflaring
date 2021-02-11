@@ -46,7 +46,7 @@ def main():
 
         # compute in band solar irradiance
         inband_sol_rad = inband_rad(cropped_sol_rad, interp_spectral_responses)
-        print sensor, 'in band solar irradiance:', inband_sol_rad
+        print(sensor, 'in band solar irradiance:', inband_sol_rad)
 
 
 if __name__ == '__main__':

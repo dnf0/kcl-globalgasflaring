@@ -19,14 +19,14 @@ def main():
     for f in csv_filepaths:
         if 'S3A' in f:
             continue
-        print f
+        print(f)
         try:
             df_list.append(pd.read_csv(f))
-        except Exception, e:
+        except Exception as e:
             continue
              
         if sensor not in f:
-            print 'writing out for sensor: ', sensor 
+            print('writing out for sensor: ', sensor) 
             df = pd.concat(df_list, ignore_index=True)
 
             path_to_out = os.path.join(fp.path_to_cems_output_l3, 'all_sensors')

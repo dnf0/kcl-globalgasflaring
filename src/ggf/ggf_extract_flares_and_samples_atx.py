@@ -13,88 +13,7 @@ import scipy.ndimage as ndimage
 import src.config.constants as proc_const
 import src.models.atsr_pixel_size as atsr_pixel_size
 import src.config.filepaths as fp
-
-import matplotlib.pyplot as plt
-
-
-def read_atsr(path_to_ats_data):
-    return epr.Product(path_to_ats_data)
-
-
-def define_sensor(path_to_data):
-    if 'N1' in path_to_data:
-        sensor = 'ats'
-    if 'E2' in path_to_data:
-        sensor = 'at2'
-    if 'E1' in path_to_data:
-        sensor = 'at1'
-    return sensor
-
-
-def make_night_mask(ats_product):
-    solar_elev_angle = np.deg2rad(ats_product.get_band('sun_elev_nadir').read_as_array())
-    solar_zenith_angle = np.rad2deg(np.arccos(np.sin(solar_elev_angle)))
-    night_mask = solar_zenith_angle >= proc_const.day_night_angle
-
-    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
-    night_swir = swir[night_mask]
-    logger.info('Mean nighttime SWIR: ' + str(np.mean(night_swir)))
-    logger.info('Median nighttime SWIR: ' + str(np.median(night_swir)))
-    logger.info('Max nighttime SWIR: ' + str(np.max(night_swir)))
-    logger.info('Min nighttime SWIR: ' + str(np.min(night_swir)))
-    logger.info('SD nighttime SWIR: ' + str(np.std(night_swir)))
-
-    return night_mask
-
-
-def detect_hotspots_nn_parametric(ats_product):
-
-    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
-
-    # get useful data
-    sza_mask = make_night_mask(ats_product)
-    valid_data_mask = ~np.isnan(swir)
-    useable_data = swir[sza_mask & valid_data_mask]
-
-    # find smallest interval between records for scene
-    unique_values = np.unique(useable_data)
-    unique_values.sort()
-    diff = unique_values[1:] - unique_values[0:-1]
-    smallest_diff = np.min(diff)
-
-    # find threshold for data
-    useable_data.sort()
-    top_subset = useable_data[-5000:]
-    diff = top_subset[1:] - top_subset[0:-1]
-    diff_mask = diff > smallest_diff
-    thresh = np.min(top_subset[1:][diff_mask])
-    logger.info('Threshold: ' + str(thresh))
-
-    # get hotspots
-    above_thresh = swir > thresh
-
-    return sza_mask & valid_data_mask & above_thresh
-
-
-def detect_hotspots_min_method(ats_product):
-
-    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
-
-    # get useful data
-    sza_mask = make_night_mask(ats_product)
-    valid_data_mask = ~np.isnan(swir)
-
-    # get hotspots using fixed value of 0.06
-    above_thresh = swir > 0.06
-
-    return sza_mask & valid_data_mask & above_thresh
-
-
-def detect_hotspots(ats_product):
-    swir = ats_product.get_band('reflec_nadir_1600').read_as_array()
-    nan_mask = np.isnan(swir)  # get rid of SWIR nans also
-    return (swir > proc_const.swir_thresh_ats) & ~nan_mask
-
+import src.ggf.ggf_extract_hotspots_atx as ggf_extract_hotspots_atx
 
 
 def make_cloud_mask(ats_product):
@@ -103,7 +22,7 @@ def make_cloud_mask(ats_product):
     return cloud_mask <= 1
 
 
-def get_arcmin(x):
+def get_arcmin_int(x):
     '''
     rounds the data decimal fraction of a degree
     to the nearest arc minute
@@ -132,7 +51,10 @@ def get_arcmin(x):
     return floor_x
 
 
-def myround(x, dec=20, base=60. / 3600):
+def round_to_arcmin(x, dec=20, base=60. / 3600):
+    """
+    Approximates location of arcmin rounded coordinate
+    """
     return np.round(base * np.round(x / base), dec)
 
 
@@ -173,8 +95,8 @@ def construct_hotspot_line_sample_df(product, hotspot_mask):
     lons = product.get_band('longitude').read_as_array()[hotspot_mask]
 
     # round geographic data to desired reoslution
-    lats_arcmin = get_arcmin(lats)
-    lons_arcmin = get_arcmin(lons)
+    lats_arcmin = get_arcmin_int(lats)
+    lons_arcmin = get_arcmin_int(lons)
 
     df = pd.DataFrame()
     datasets = [lats_arcmin, lons_arcmin, lines, samples]
@@ -201,6 +123,7 @@ def determine_thermal_background_contribution(flare_line_sample_df, product, hot
     inval_pixels_bg_pc = []
     bg_size_used = []
     for i, row in cluster_df.iterrows():
+        print(i)
 
         # check for edges
         min_x = row.samples - bg_size if row.samples - bg_size > 0 else 0
@@ -246,8 +169,8 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_cover, background_mask,
     lons = product.get_band('longitude').read_as_array()[coords]
 
     # round geographic data to desired reoslution
-    rounded_lats = myround(lats, base=resolution)
-    rounded_lons = myround(lons, base=resolution)
+    rounded_lats = round_to_arcmin(lats, base=resolution)
+    rounded_lons = round_to_arcmin(lons, base=resolution)
 
     swir_reflectances = product.get_band('reflec_nadir_1600').read_as_array()[coords]
     swir_radiances = radiance_from_reflectance(swir_reflectances, product, sensor)
@@ -295,12 +218,11 @@ def construct_hotspot_df(flare_df, hotspot_mask, cloud_cover, background_mask,
 
 def construct_sample_df(flare_df, product, cloud_cover, night_mask):
 
-
     # get geographic coordinates
     lats = product.get_band('latitude').read_as_array()
     lons = product.get_band('longitude').read_as_array()
-    lats_arcmin = get_arcmin(lats)
-    lons_arcmin = get_arcmin(lons)
+    lats_arcmin = get_arcmin_int(lats)
+    lons_arcmin = get_arcmin_int(lons)
 
     # set up df for merging
     orbit_df = pd.DataFrame()
@@ -353,26 +275,25 @@ def main():
     flare_df = pd.read_csv(os.path.join(fp.path_to_cems_output_l3, 'all_sensors', 'all_flare_locations_ats.csv'))
 
     # read in the atsr product
-    path_to_data =  sys.argv[1]
+    path_to_data = sys.argv[1]
     path_to_output = sys.argv[2]
     logger.info(path_to_data)
     logger.info(path_to_output)
 
     try:
-        atsr_data = read_atsr(path_to_data)
-        sensor = define_sensor(path_to_data)
+        atsr_data = ggf_extract_hotspots_atx.read_atsr(path_to_data)
+        sensor = ggf_extract_hotspots_atx.define_sensor(path_to_data)
 
         # set up various data masks
-        night_mask = make_night_mask(atsr_data)
+        night_mask = ggf_extract_hotspots_atx.make_night_mask(atsr_data)
 
         is_not_cloud_mask = make_cloud_mask(atsr_data)
-        potential_hotspot_mask = detect_hotspots(atsr_data)
+        potential_hotspot_mask = ggf_extract_hotspots_atx.detect_hotspots(atsr_data)
 
         hotspot_mask = night_mask & potential_hotspot_mask
         cloud_mask = night_mask & ~potential_hotspot_mask & ~is_not_cloud_mask
         background_mask = night_mask & ~potential_hotspot_mask & is_not_cloud_mask
         logger.info('total hotspots detected: ' + str(np.sum(hotspot_mask)))
-
 
         # get cloud cover map from cloud mask
         bg_size = 2*8 + 1  # TODO MOVE TO CONFIG
@@ -406,7 +327,7 @@ def main():
         logger.info(flare_csv_path)
         grouped_hotspot_df.to_csv(flare_csv_path, index=False)
 
-    except Exception, e:
+    except Exception as e:
         logger.warning('Flare and sample generation failed with error: ' + str(e))
         # dump the csvs even if we fail
         with open(path_to_output.replace('hotspots.csv', 'flares.csv'), "w"):

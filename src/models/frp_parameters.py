@@ -5,25 +5,16 @@ import numpy as np
 import scipy.constants as const
 
 import src.config.filepaths as fp
-
-
-def planck_radiance(wvl, temp):
-    '''
-    wvl: wavelngth (microns)
-    temp: temperature (kelvin)
-    '''
-    c1 = 1.19e-16  # W m-2 sr-1
-    c2 = 1.44e-2  # mK
-    wt = (wvl*1.e-6) * temp # m K
-    d = (wvl*1.e-6)**5 * (np.exp(c2/wt)-1)
-    return c1 / d * 1.e-6  # W m-2 sr-1 um-1
+import src.utils as utils
 
 
 def spectral_responses(srf, temperatures):
-    '''
-    l: wavelngth
-    t: temperature
-    '''
+    """
+
+    :param srf: sensor spectral response function
+    :param temperatures: range of temperatures over which to evaluate
+    :return: spectral raidiances weighted by the response function over a temperature range
+    """
 
     # setup srf
     sensor_spectra = srf[:, 0]
@@ -36,7 +27,7 @@ def spectral_responses(srf, temperatures):
         # compute the spectral radiance at each wavelength
         # defined in the instrument spectral reponse
         # function.
-        spectral_radiances_at_sensor_spectra = [planck_radiance(ss, T) for ss in sensor_spectra]
+        spectral_radiances_at_sensor_spectra = [utils.planck_radiance(ss, T) for ss in sensor_spectra]
 
         # now integrate the srf weighted spectral
         # radiances over all wavelengths to get the
@@ -57,6 +48,15 @@ def spectral_responses(srf, temperatures):
 
 
 def opt_temp(temps, frp_assumed, frp_true):
+    """
+    Function to calculate optimal temperature to use in deriving
+    single channel FRP coefficient
+
+    :param temps: range of temperatures to evaluate
+    :param frp_assumed: range of assumed FRP values
+    :param frp_true: true FRP values associated with the above assumed FRPs
+    :return: The temperature that provides the optimal fit
+    """
 
     min_temp = 1600
     max_temp = 2150
@@ -72,7 +72,6 @@ def opt_temp(temps, frp_assumed, frp_true):
 
 
 def main():
-
     # experiment set up
     temp_min = 500
     temp_max = 3000
@@ -99,11 +98,11 @@ def main():
         # in the case of 500K to 2000K there are 1500 temperature samples, and 'a' has 1500
         # samples.  We can therefore populate estimated temps with 'a' using take, and subtracting
         # the min temp off of estimate temps (effectively making them an index from 0-1499).
-        temp_ind = estimate_temps-temp_min
+        temp_ind = estimate_temps - temp_min
         a = np.take(a, temp_ind)
 
         # same thing for spectral radiances
-        temp_ind = actual_temps-temp_min
+        temp_ind = actual_temps - temp_min
         l_true = np.take(l_true, temp_ind)
 
         # now calculate the assumed frp using a and l_true
@@ -114,7 +113,7 @@ def main():
 
         opt_param = a[0, optimised_index]
 
-        print 'Optimised frp parameter for', sensor, ':', str(opt_param), 'at temp of:', str(temp)
+        print('Optimised frp parameter for', sensor, ':', str(opt_param), 'at temp of:', str(temp))
 
 
 if __name__ == '__main__':
