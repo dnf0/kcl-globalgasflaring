@@ -15,7 +15,7 @@ def main():
             for f in os.listdir(fp.path_to_temp):
                 try:
                     os.rmdir(os.path.join(fp.path_to_temp, f))
-                except Exception , e:
+                except Exception as e:
                     continue
         except:
             continue
