@@ -19,6 +19,7 @@ swir_thresh_sls = 4 * swir_thresh_ats  # pixel are factor of four smaller, so in
 s5_rad_thresh = swir_thresh_sls / (100 * np.pi) * 254.23103333
 s6_rad_thresh = swir_thresh_sls / (100 * np.pi) * 80.24474
 
+
 frp_coeff = {'sls': const.sigma / 8.19919059044e-09,
              'ats': const.sigma / 8.29908189231e-09,
              'at2': const.sigma / 8.2215268253e-09,

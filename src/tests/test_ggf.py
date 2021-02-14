@@ -4,9 +4,12 @@ import numpy as np
 import glob
 import os
 
-import src.ggf.ggf_extract_hotspots_sls as ggf_extract_hotspots_sls
-import src.ggf.ggf_extract_hotspots_atx as ggf_extract_hotspots_atx
+# import src.ggf.ggf_extract_hotspots_sls as ggf_extract_hotspots_sls
+# import src.ggf.ggf_extract_hotspots_atx as ggf_extract_hotspots_atx
 import src.ggf.ggf_extract_flares_and_samples_atx as ggf_extract_flares_and_samples_atx
+import src.utils as utils
+import src.config.constants as proc_const
+from src.ggf.extract_hotspots import SLSHotspotDetector, ATXHotspotDetector
 
 
 class MyTestCase(unittest.TestCase):
@@ -26,7 +29,7 @@ class MyTestCase(unittest.TestCase):
         path_to_data = glob.glob("../../data/test_data/S3A*.zip")[0]
         path_to_temp = "../../data/temp/"
 
-        result = ggf_extract_hotspots_sls.extract_zip(path_to_data, path_to_temp)
+        result = utils.extract_zip(path_to_data, path_to_temp)
         self.assertEqual(target.keys(), result.keys())
 
     def test_szn_interpolation(self):
@@ -36,10 +39,13 @@ class MyTestCase(unittest.TestCase):
 
         target = np.load(path_to_target)
 
-        s3_data = ggf_extract_hotspots_sls.extract_zip(path_to_data, path_to_temp)
-        result = ggf_extract_hotspots_sls.interpolate_szn(s3_data)
+        product = utils.extract_zip(path_to_data, path_to_temp)
+        HotspotDetector = SLSHotspotDetector(proc_const.day_night_angle,
+                                             proc_const.s5_rad_thresh,
+                                             product)
+        HotspotDetector.run_detector()
 
-        self.assertEqual(True, (target == result).all())
+        self.assertEqual(True, (target == HotspotDetector.sza).all())
 
     def test_night_mask_sls(self):
         path_to_data = glob.glob("../../data/test_data/S3A*.zip")[0]
@@ -47,10 +53,13 @@ class MyTestCase(unittest.TestCase):
         path_to_temp = "../../data/temp/"
         target = np.load(path_to_target)
 
-        s3_data = ggf_extract_hotspots_sls.extract_zip(path_to_data, path_to_temp)
-        sza, result = ggf_extract_hotspots_sls.make_night_mask(s3_data)
+        product = utils.extract_zip(path_to_data, path_to_temp)
+        HotspotDetector = SLSHotspotDetector(proc_const.day_night_angle,
+                                             proc_const.s5_rad_thresh,
+                                             product)
+        HotspotDetector.run_detector()
 
-        self.assertEqual(True, (target == result).all())
+        self.assertEqual(True, (target == HotspotDetector.night_mask).all())
 
     def test_night_mask_atx(self):
         path_to_data = glob.glob("../../data/test_data/*.N1")[0]
@@ -59,12 +68,13 @@ class MyTestCase(unittest.TestCase):
 
         target_mean = np.mean(target)
 
-        atx_data = ggf_extract_hotspots_atx.read_atsr(path_to_data)
-        result = ggf_extract_hotspots_atx.make_night_mask(atx_data)
+        product = utils.read_atsr(path_to_data)
+        HotspotDetector = ATXHotspotDetector(proc_const.day_night_angle,
+                                             proc_const.swir_thresh_ats,
+                                             product)
+        HotspotDetector.run_detector()
 
-        result_mean = np.mean(result)
-
-        self.assertAlmostEqual(target_mean, result_mean)
+        self.assertAlmostEqual(target_mean, np.mean(HotspotDetector.night_mask))
 
     def test_vza_interpolation(self):
         path_to_data = glob.glob("../../data/test_data/S3A*.zip")[0]
@@ -73,10 +83,13 @@ class MyTestCase(unittest.TestCase):
 
         target = np.load(path_to_target)
 
-        s3_data = ggf_extract_hotspots_sls.extract_zip(path_to_data, path_to_temp)
-        result = ggf_extract_hotspots_sls.interpolate_vza(s3_data)
+        product = utils.extract_zip(path_to_data, path_to_temp)
+        HotspotDetector = SLSHotspotDetector(proc_const.day_night_angle,
+                                             proc_const.s5_rad_thresh,
+                                             product)
+        HotspotDetector.run_detector()
 
-        self.assertEqual(True, (target == result).all())
+        self.assertEqual(True, (target == HotspotDetector.vza).all())
 
     def test_vza_mask(self):
         path_to_data = glob.glob("../../data/test_data/S3A*.zip")[0]
@@ -85,10 +98,13 @@ class MyTestCase(unittest.TestCase):
 
         target = np.load(path_to_target)
 
-        s3_data = ggf_extract_hotspots_sls.extract_zip(path_to_data, path_to_temp)
-        vza, result = ggf_extract_hotspots_sls.make_vza_mask(s3_data)
+        product = utils.extract_zip(path_to_data, path_to_temp)
+        HotspotDetector = SLSHotspotDetector(proc_const.day_night_angle,
+                                             proc_const.s5_rad_thresh,
+                                             product)
+        HotspotDetector.run_detector()
 
-        self.assertEqual(True, (target == result).all())
+        self.assertEqual(True, (target == HotspotDetector.vza_mask).all())
 
     def test_detect_hotspots_sls(self):
         path_to_data = glob.glob("../../data/test_data/S3A*.zip")[0]
@@ -97,10 +113,13 @@ class MyTestCase(unittest.TestCase):
 
         target = np.load(path_to_target)
 
-        s3_data = ggf_extract_hotspots_sls.extract_zip(path_to_data, path_to_temp)
-        result = ggf_extract_hotspots_sls.detect_hotspots(s3_data)
+        product = utils.extract_zip(path_to_data, path_to_temp)
+        HotspotDetector = SLSHotspotDetector(proc_const.day_night_angle,
+                                             proc_const.s5_rad_thresh,
+                                             product)
+        HotspotDetector.run_detector()
 
-        self.assertEqual(True, (target == result).all())
+        self.assertEqual(True, (target == HotspotDetector.potential_hotspots).all())
 
     def test_detect_hotspots_atx(self):
         path_to_data = glob.glob("../../data/test_data/*.N1")[0]
@@ -108,10 +127,13 @@ class MyTestCase(unittest.TestCase):
 
         target = np.load(path_to_target)
 
-        atx_data = ggf_extract_hotspots_atx.read_atsr(path_to_data)
-        result = ggf_extract_hotspots_atx.detect_hotspots(atx_data)
+        product = utils.read_atsr(path_to_data)
+        HotspotDetector = ATXHotspotDetector(proc_const.day_night_angle,
+                                             proc_const.swir_thresh_ats,
+                                             product)
+        HotspotDetector.run_detector()
 
-        self.assertEqual(True, (target == result).all())
+        self.assertEqual(True, (target == HotspotDetector.potential_hotspots).all())
 
     def test_make_cloud_mask_atx(self):
 
