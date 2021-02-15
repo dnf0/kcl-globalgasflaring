@@ -4,12 +4,10 @@ import numpy as np
 import glob
 import os
 
-# import src.ggf.ggf_extract_hotspots_sls as ggf_extract_hotspots_sls
-# import src.ggf.ggf_extract_hotspots_atx as ggf_extract_hotspots_atx
 import src.ggf.ggf_extract_flares_and_samples_atx as ggf_extract_flares_and_samples_atx
 import src.utils as utils
 import src.config.constants as proc_const
-from src.ggf.extract_hotspots import SLSHotspotDetector, ATXHotspotDetector
+from src.ggf.detectors import SLSHotspotDetector, ATXHotspotDetector
 
 
 class MyTestCase(unittest.TestCase):

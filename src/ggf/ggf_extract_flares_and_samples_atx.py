@@ -15,11 +15,9 @@ import src.models.atsr_pixel_size as atsr_pixel_size
 import src.config.filepaths as fp
 import src.ggf.ggf_extract_hotspots_atx as ggf_extract_hotspots_atx
 
-
-def make_cloud_mask(ats_product):
-    cloud_mask = ats_product.get_band('cloud_flags_nadir').read_as_array()
-    # over land or water and cloud free (i.e. bit 0 is set (cloud free land)  or unset(cloud free water))
-    return cloud_mask <= 1
+log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+logging.basicConfig(level=logging.INFO, format=log_fmt)
+logger = logging.getLogger(__name__)
 
 
 def get_arcmin_int(x):
@@ -87,24 +85,6 @@ def compute_pixel_size(samples):
 
 def compute_frp(pixel_radiances, pixel_sizes, sensor):
     return pixel_sizes * proc_const.frp_coeff[sensor] * pixel_radiances / 1000000  # in MW
-
-
-def construct_hotspot_line_sample_df(product, hotspot_mask):
-    lines, samples = np.where(hotspot_mask)
-    lats = product.get_band('latitude').read_as_array()[hotspot_mask]
-    lons = product.get_band('longitude').read_as_array()[hotspot_mask]
-
-    # round geographic data to desired reoslution
-    lats_arcmin = get_arcmin_int(lats)
-    lons_arcmin = get_arcmin_int(lons)
-
-    df = pd.DataFrame()
-    datasets = [lats_arcmin, lons_arcmin, lines, samples]
-    names = ['lats_arcmin', 'lons_arcmin', 'lines', 'samples']
-    for k, v in zip(names, datasets):
-        df[k] = v
-    return df
-
 
 def determine_thermal_background_contribution(flare_line_sample_df, product, hotspot_mask, background_mask):
     # get MWIR and LWIR data
@@ -337,7 +317,4 @@ def main():
 
 
 if __name__ == "__main__":
-    log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_fmt)
-    logger = logging.getLogger(__name__)
     main()

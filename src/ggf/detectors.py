@@ -19,14 +19,47 @@ class BaseHotspotDetector(ABC):
     def _detect_potential_hotspots(self, swir: np.ndarray) -> None:
         self.potential_hotspots = swir > self.swir_thresh
 
-    def _build_dataframe(self, keys) -> pd.DataFrame:
+    def _build_dataframe(self, keys, mask, persistent_df=None) -> pd.DataFrame:
         df = pd.DataFrame()
         for k in keys:
-            df[k] = self.__dict__[k][self.hotspots]
-        lines, samples = np.where(self.hotspots)
-        df['lines'] = lines
-        df['samples'] = samples
+            df[k] = self.__dict__[k][mask]
+        lines, samples = np.where(mask)
+        df['line'] = lines
+        df['sample'] = samples
+        df['grid_x'] = self._find_arcmin_gridcell(df['latitude'])
+        df['grid_y'] = self._find_arcmin_gridcell(df['longitude'])
+
+        if persistent_df is not None:
+            df = pd.merge(persistent_df, df, on=['grid_x', 'grid_y'])
         return df
+
+    def _find_arcmin_gridcell(self, coordinates):
+        '''
+        rounds the data decimal fraction of a degree
+        to the nearest arc minute
+        '''
+        neg_values = coordinates < 0
+
+        abs_x = np.abs(coordinates)
+        floor_x = np.floor(abs_x)
+        decile = abs_x - floor_x
+        minute = np.around(decile * 60)  # round to nearest arcmin
+        minute_fraction = minute * 0.01  # convert to fractional value (ranges from 0 to 0.6)
+
+        max_minute = minute_fraction > 0.59
+
+        floor_x[neg_values] *= -1
+        floor_x[neg_values] -= minute_fraction[neg_values]
+        floor_x[~neg_values] += minute_fraction[~neg_values]
+
+        # deal with edge cases - just round them all up
+        if np.sum(max_minute) > 0:
+            floor_x[max_minute] = np.around(floor_x[max_minute])
+
+        # rescale
+        floor_x = (floor_x * 100).astype(int)
+
+        return floor_x
 
     @abstractmethod
     def _load_arrays(self) -> None:
@@ -62,9 +95,9 @@ class ATXHotspotDetector(BaseHotspotDetector):
         self._detect_potential_hotspots(self.swir_16)
         self.hotspots = self.potential_hotspots & self.night_mask
 
-    def to_dataframe(self) -> pd.DataFrame:
+    def to_dataframe(self, persistent_df=None) -> pd.DataFrame:
         keys = ['latitude', 'longitude', 'swir_16', 'sza']
-        return self._build_dataframe(keys)
+        return self._build_dataframe(keys, self.hotspots)
 
 
 class SLSHotspotDetector(BaseHotspotDetector):
@@ -111,7 +144,7 @@ class SLSHotspotDetector(BaseHotspotDetector):
         self._detect_potential_hotspots(self.swir_16)
         self.hotspots = self.potential_hotspots & self.night_mask & self.vza_mask
 
-    def to_dataframe(self) -> pd.DataFrame:
+    def to_dataframe(self, persistent_df=None) -> pd.DataFrame:
         keys = ['latitude', 'longitude', 'swir_16', 'swir_22', 'sza', 'vza']
-        return self._build_dataframe(keys)
+        return self._build_dataframe(keys, self.hotspots, persistent_df=None)
 
