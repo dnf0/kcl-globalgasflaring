@@ -4,6 +4,10 @@ This file contains some constants used in the processing
 import scipy.constants as const
 import numpy as np
 
+null_value = -999
+
+min_background_proportion = 0.6
+
 solar_irradiance = {'ats': 254.752,
                     'at2': 249.604,
                     'at1': 250.728}

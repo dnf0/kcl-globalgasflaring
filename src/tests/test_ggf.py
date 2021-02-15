@@ -7,7 +7,7 @@ import os
 import src.ggf.ggf_extract_flares_and_samples_atx as ggf_extract_flares_and_samples_atx
 import src.utils as utils
 import src.config.constants as proc_const
-from src.ggf.detectors import SLSHotspotDetector, ATXHotspotDetector
+from src.ggf.detectors import SLSDetector, ATXDetector
 
 
 class MyTestCase(unittest.TestCase):
@@ -38,9 +38,9 @@ class MyTestCase(unittest.TestCase):
         target = np.load(path_to_target)
 
         product = utils.extract_zip(path_to_data, path_to_temp)
-        HotspotDetector = SLSHotspotDetector(proc_const.day_night_angle,
-                                             proc_const.s5_rad_thresh,
-                                             product)
+        HotspotDetector = SLSDetector(proc_const.day_night_angle,
+                                      proc_const.s5_rad_thresh,
+                                      product)
         HotspotDetector.run_detector()
 
         self.assertEqual(True, (target == HotspotDetector.sza).all())
@@ -52,9 +52,9 @@ class MyTestCase(unittest.TestCase):
         target = np.load(path_to_target)
 
         product = utils.extract_zip(path_to_data, path_to_temp)
-        HotspotDetector = SLSHotspotDetector(proc_const.day_night_angle,
-                                             proc_const.s5_rad_thresh,
-                                             product)
+        HotspotDetector = SLSDetector(proc_const.day_night_angle,
+                                      proc_const.s5_rad_thresh,
+                                      product)
         HotspotDetector.run_detector()
 
         self.assertEqual(True, (target == HotspotDetector.night_mask).all())
@@ -67,9 +67,9 @@ class MyTestCase(unittest.TestCase):
         target_mean = np.mean(target)
 
         product = utils.read_atsr(path_to_data)
-        HotspotDetector = ATXHotspotDetector(proc_const.day_night_angle,
-                                             proc_const.swir_thresh_ats,
-                                             product)
+        HotspotDetector = ATXDetector(proc_const.day_night_angle,
+                                      proc_const.swir_thresh_ats,
+                                      product)
         HotspotDetector.run_detector()
 
         self.assertAlmostEqual(target_mean, np.mean(HotspotDetector.night_mask))
@@ -82,9 +82,9 @@ class MyTestCase(unittest.TestCase):
         target = np.load(path_to_target)
 
         product = utils.extract_zip(path_to_data, path_to_temp)
-        HotspotDetector = SLSHotspotDetector(proc_const.day_night_angle,
-                                             proc_const.s5_rad_thresh,
-                                             product)
+        HotspotDetector = SLSDetector(proc_const.day_night_angle,
+                                      proc_const.s5_rad_thresh,
+                                      product)
         HotspotDetector.run_detector()
 
         self.assertEqual(True, (target == HotspotDetector.vza).all())
@@ -97,9 +97,9 @@ class MyTestCase(unittest.TestCase):
         target = np.load(path_to_target)
 
         product = utils.extract_zip(path_to_data, path_to_temp)
-        HotspotDetector = SLSHotspotDetector(proc_const.day_night_angle,
-                                             proc_const.s5_rad_thresh,
-                                             product)
+        HotspotDetector = SLSDetector(proc_const.day_night_angle,
+                                      proc_const.s5_rad_thresh,
+                                      product)
         HotspotDetector.run_detector()
 
         self.assertEqual(True, (target == HotspotDetector.vza_mask).all())
@@ -112,9 +112,9 @@ class MyTestCase(unittest.TestCase):
         target = np.load(path_to_target)
 
         product = utils.extract_zip(path_to_data, path_to_temp)
-        HotspotDetector = SLSHotspotDetector(proc_const.day_night_angle,
-                                             proc_const.s5_rad_thresh,
-                                             product)
+        HotspotDetector = SLSDetector(proc_const.day_night_angle,
+                                      proc_const.s5_rad_thresh,
+                                      product)
         HotspotDetector.run_detector()
 
         self.assertEqual(True, (target == HotspotDetector.potential_hotspots).all())
@@ -126,9 +126,9 @@ class MyTestCase(unittest.TestCase):
         target = np.load(path_to_target)
 
         product = utils.read_atsr(path_to_data)
-        HotspotDetector = ATXHotspotDetector(proc_const.day_night_angle,
-                                             proc_const.swir_thresh_ats,
-                                             product)
+        HotspotDetector = ATXDetector(proc_const.day_night_angle,
+                                      proc_const.swir_thresh_ats,
+                                      product)
         HotspotDetector.run_detector()
 
         self.assertEqual(True, (target == HotspotDetector.potential_hotspots).all())
