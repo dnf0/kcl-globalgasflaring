@@ -95,8 +95,11 @@ class ATXHotspotDetector(BaseHotspotDetector):
         self._detect_potential_hotspots(self.swir_16)
         self.hotspots = self.potential_hotspots & self.night_mask
 
-    def to_dataframe(self, persistent_df=None) -> pd.DataFrame:
-        keys = ['latitude', 'longitude', 'swir_16', 'sza']
+    def to_dataframe(self,
+                     keys=['latitude', 'longitude'],
+                     persistent_df=None) -> pd.DataFrame:
+        if not('latitude' in keys and 'longitude' in keys):
+            raise KeyError('At a minimum latitude and longitude are required')
         return self._build_dataframe(keys, self.hotspots)
 
 
@@ -144,7 +147,10 @@ class SLSHotspotDetector(BaseHotspotDetector):
         self._detect_potential_hotspots(self.swir_16)
         self.hotspots = self.potential_hotspots & self.night_mask & self.vza_mask
 
-    def to_dataframe(self, persistent_df=None) -> pd.DataFrame:
-        keys = ['latitude', 'longitude', 'swir_16', 'swir_22', 'sza', 'vza']
+    def to_dataframe(self,
+                     keys=['latitude', 'longitude'],
+                     persistent_df=None) -> pd.DataFrame:
+        if not('latitude' in keys and 'longitude' in keys):
+            raise KeyError('At a minimum latitude and longitude are required')
         return self._build_dataframe(keys, self.hotspots, persistent_df=None)
 
