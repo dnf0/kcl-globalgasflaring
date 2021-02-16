@@ -4,6 +4,7 @@ import numpy as np
 from scipy.interpolate import RectBivariateSpline
 from skimage.filters import rank
 from skimage.morphology import square
+from scipy.ndimage import convolve
 from datetime import datetime
 
 import src.config.constants as proc_const
@@ -95,9 +96,9 @@ class BaseDetector(ABC):
         # count = convolve(np.ones(self.cloudy.shape), k, mode='constant', cval=0.0)
         # self.local_cloudiness = s/count
         selem = square(self.cloud_window_size)
-        self.local_cloudiness = rank.mean(self.cloudy, selem)
+        self.local_cloudiness = rank.mean(self.cloudy.astype(int), selem)
 
-    def _build_dataframe(self, keys, mask, joining_df=None) -> pd.DataFrame:
+    def _build_dataframe(self, keys, joining_df=None) -> pd.DataFrame:
         """
         A flexible dataframe builder that takes in a set of keys that
         correspond to data contained within the object.  For each item
@@ -107,7 +108,6 @@ class BaseDetector(ABC):
 
         Args:
             keys: The variables to be included in the dataframe (columns)
-            mask: The samples to be included in the dataframe (rows)
             joining_df: Used in reduced the dataframe through an Inner Join
 
         Returns:
@@ -120,13 +120,13 @@ class BaseDetector(ABC):
         # store data associated with product
         for k in keys:
             if k not in self.__dict__:
-                raise KeyError(k + ' not found in available product keys ' + self.__dict__)
+                raise KeyError(k + ' not found in available attributes')
             if self.__dict__[k] is None:
                 continue
-            df[k] = self.__dict__[k][mask]
+            df[k] = self.__dict__[k][self.hotspots]
 
         # store additional derived data
-        lines, samples = np.where(mask)
+        lines, samples = np.where(self.hotspots)
         df['line'] = lines
         df['sample'] = samples
         df['grid_x'] = self._find_arcmin_gridcell(df['latitude'])
@@ -299,9 +299,24 @@ class ATXDetector(BaseDetector):
         """
         selem = square(self.background_window_size)
         valid_background = self.background_mask & (self.mwir > 0)
-        valid_fraction = rank.mean(valid_background.astype(float), selem)
-        self.background_mwir = rank.mean(self.mwir, selem, mask=valid_background)
-        self.background_mwir[valid_fraction > proc_const.min_background_proportion] = proc_const.null_value
+
+        # custom mean using only valid pixels
+        mwir_copy = self.mwir
+        mwir_copy[~valid_background] = 0
+        kernel = np.ones([self.background_window_size, self.background_window_size])
+        valid_background_pixel_count = convolve(valid_background.astype(int),
+                                                kernel,
+                                                mode='constant',
+                                                cval=0)
+        summed_mwir = convolve(mwir_copy,
+                               kernel,
+                               mode='constant',
+                               cval=0)
+
+        # get proportion of valid background pixels in each window
+        valid_background_fraction = valid_background_pixel_count / float(kernel.sum())
+        self.background_mwir = np.nan_to_num(summed_mwir / valid_background_pixel_count)   # fill nans with zero
+        self.background_mwir[valid_background_fraction < proc_const.min_background_proportion] = proc_const.null_value
 
     def run_detector(self, flares_or_sampling=False) -> None:
         """
@@ -321,7 +336,7 @@ class ATXDetector(BaseDetector):
         self.hotspots = self.potential_hotspots & self.night_mask
 
         if flares_or_sampling:
-            self.background_mask = ~self.potential_hotspot_mask & self.cloud_free & self.night_mask
+            self.background_mask = ~self.potential_hotspots & self.cloud_free & self.night_mask
             self._compute_frp()
             self.cloudy = ~self.potential_hotspots & ~self.cloud_free & self.night_mask
             self._compute_local_cloudiness()
@@ -344,8 +359,8 @@ class ATXDetector(BaseDetector):
 
         """
         if not('latitude' in keys and 'longitude' in keys):
-            raise KeyError('At a minimum latitude and longitude are required')
-        return self._build_dataframe(keys, self.hotspots, joining_df=joining_df)
+            raise KeyError('At a minimum, latitude and longitude are required')
+        return self._build_dataframe(keys, joining_df=joining_df)
 
 
 class SLSDetector(BaseDetector):
@@ -467,8 +482,8 @@ class SLSDetector(BaseDetector):
 
         """
         if not('latitude' in keys and 'longitude' in keys):
-            raise KeyError('At a minimum latitude and longitude are required')
-        return self._build_dataframe(keys, self.hotspots, joining_df=joining_df)
+            raise KeyError('At a minimum, latitude and longitude are required')
+        return self._build_dataframe(keys, joining_df=joining_df)
 
 
 
