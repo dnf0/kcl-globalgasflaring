@@ -7,8 +7,8 @@ from skimage.morphology import square
 from datetime import datetime
 
 import src.config.constants as proc_const
-import src.config.filepaths as fp
 from src.models import atsr_pixel_size
+from src.models import slstr_pixel_size
 
 
 class BaseDetector(ABC):
@@ -217,11 +217,11 @@ class ATXDetector(BaseDetector):
             Sensor code string
 
         """
-        if 'N1' in self.product.id_string:
+        if 'ATS' in self.product.id_string:
             return 'ats'
-        if 'E2' in self.product.id_string:
+        if 'AT2' in self.product.id_string:
             return 'at2'
-        if 'E1' in self.product.id_string:
+        if 'AT1' in self.product.id_string:
             return 'at1'
 
     def _load_arrays(self) -> None:
@@ -233,7 +233,7 @@ class ATXDetector(BaseDetector):
         self.latitude = self.product.get_band('latitude').read_as_array()
         self.longitude = self.product.get_band('latitude').read_as_array()
         self.cloud_free = self.product.get_band('cloud_flags_nadir').read_as_array() <= 1
-        self.pixel_size = atsr_pixel_size() * 1000000  # convert from km^2 to m^2
+        self.pixel_size = atsr_pixel_size.compute() * 1000000  # convert from km^2 to m^2
         # TODO repeat pixel size to full array
 
         swir_reflectance = self.product.get_band('reflec_nadir_1600').read_as_array()
@@ -316,8 +316,8 @@ class ATXDetector(BaseDetector):
             None
         """
         self._load_arrays()
-        self._make_night_mask(self.sza)
-        self._detect_potential_hotspots(self.swir_16)
+        self._make_night_mask()
+        self._detect_potential_hotspots()
         self.hotspots = self.potential_hotspots & self.night_mask
 
         if flares_or_sampling:
@@ -382,7 +382,7 @@ class SLSDetector(BaseDetector):
         self.sza = self._interpolate_array('solar_zenith_tn').filled(0)
         self.vza = self._interpolate_array('sat_zenith_tn').filled(9999)
         self.cloud_free = self.product['flags_an']['cloud_an'][:] == 0
-        self.pixel_size = np.loadtxt(fp.path_to_sls_pix_sizes) * 1000000
+        self.pixel_size = np.array(slstr_pixel_size.pixel_size) * 1000000
 
     def _interpolate_array(self, target) -> np.array:
         """
@@ -414,7 +414,7 @@ class SLSDetector(BaseDetector):
         sat.mask = an_y_var.mask
         return sat
 
-    def _make_view_angle_mask(self, vza):
+    def _make_view_angle_mask(self):
         """
         Screen SLSTR data based on viewing zenith angle so
         that the data is limited to the max view angle (e.g.
@@ -425,7 +425,7 @@ class SLSDetector(BaseDetector):
         Returns:
             None
         """
-        self.vza_mask = vza <= self.max_view_angle
+        self.vza_mask = self.vza <= self.max_view_angle
 
     def run_detector(self, flares_or_sampling=False) -> None:
         """
@@ -440,9 +440,9 @@ class SLSDetector(BaseDetector):
             None
         """
         self._load_arrays()
-        self._make_night_mask(self.sza)
-        self._make_view_angle_mask(self.vza)
-        self._detect_potential_hotspots(self.swir_16)
+        self._make_night_mask()
+        self._make_view_angle_mask()
+        self._detect_potential_hotspots()
         self.hotspots = self.potential_hotspots & self.night_mask & self.vza_mask
 
         if flares_or_sampling:

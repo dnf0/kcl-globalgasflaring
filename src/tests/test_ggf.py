@@ -9,8 +9,11 @@ import src.utils as utils
 import src.config.constants as proc_const
 from src.ggf.detectors import SLSDetector, ATXDetector
 
+import matplotlib.pyplot as plt
+
 
 class MyTestCase(unittest.TestCase):
+
     # -----------------
     # unit tests
     # -----------------
@@ -38,9 +41,7 @@ class MyTestCase(unittest.TestCase):
         target = np.load(path_to_target)
 
         product = utils.extract_zip(path_to_data, path_to_temp)
-        HotspotDetector = SLSDetector(proc_const.day_night_angle,
-                                      proc_const.s5_rad_thresh,
-                                      product)
+        HotspotDetector = SLSDetector(product)
         HotspotDetector.run_detector()
 
         self.assertEqual(True, (target == HotspotDetector.sza).all())
@@ -52,9 +53,7 @@ class MyTestCase(unittest.TestCase):
         target = np.load(path_to_target)
 
         product = utils.extract_zip(path_to_data, path_to_temp)
-        HotspotDetector = SLSDetector(proc_const.day_night_angle,
-                                      proc_const.s5_rad_thresh,
-                                      product)
+        HotspotDetector = SLSDetector(product)
         HotspotDetector.run_detector()
 
         self.assertEqual(True, (target == HotspotDetector.night_mask).all())
@@ -67,9 +66,7 @@ class MyTestCase(unittest.TestCase):
         target_mean = np.mean(target)
 
         product = utils.read_atsr(path_to_data)
-        HotspotDetector = ATXDetector(proc_const.day_night_angle,
-                                      proc_const.swir_thresh_ats,
-                                      product)
+        HotspotDetector = ATXDetector(product)
         HotspotDetector.run_detector()
 
         self.assertAlmostEqual(target_mean, np.mean(HotspotDetector.night_mask))
@@ -82,9 +79,7 @@ class MyTestCase(unittest.TestCase):
         target = np.load(path_to_target)
 
         product = utils.extract_zip(path_to_data, path_to_temp)
-        HotspotDetector = SLSDetector(proc_const.day_night_angle,
-                                      proc_const.s5_rad_thresh,
-                                      product)
+        HotspotDetector = SLSDetector(product)
         HotspotDetector.run_detector()
 
         self.assertEqual(True, (target == HotspotDetector.vza).all())
@@ -97,9 +92,7 @@ class MyTestCase(unittest.TestCase):
         target = np.load(path_to_target)
 
         product = utils.extract_zip(path_to_data, path_to_temp)
-        HotspotDetector = SLSDetector(proc_const.day_night_angle,
-                                      proc_const.s5_rad_thresh,
-                                      product)
+        HotspotDetector = SLSDetector(product)
         HotspotDetector.run_detector()
 
         self.assertEqual(True, (target == HotspotDetector.vza_mask).all())
@@ -112,12 +105,10 @@ class MyTestCase(unittest.TestCase):
         target = np.load(path_to_target)
 
         product = utils.extract_zip(path_to_data, path_to_temp)
-        HotspotDetector = SLSDetector(proc_const.day_night_angle,
-                                      proc_const.s5_rad_thresh,
-                                      product)
+        HotspotDetector = SLSDetector(product)
         HotspotDetector.run_detector()
 
-        self.assertEqual(True, (target == HotspotDetector.potential_hotspots).all())
+        self.assertEqual(True, (target == HotspotDetector.hotspots).all())
 
     def test_detect_hotspots_atx(self):
         path_to_data = glob.glob("../../data/test_data/*.N1")[0]
@@ -126,12 +117,10 @@ class MyTestCase(unittest.TestCase):
         target = np.load(path_to_target)
 
         product = utils.read_atsr(path_to_data)
-        HotspotDetector = ATXDetector(proc_const.day_night_angle,
-                                      proc_const.swir_thresh_ats,
-                                      product)
+        HotspotDetector = ATXDetector(product)
         HotspotDetector.run_detector()
 
-        self.assertEqual(True, (target == HotspotDetector.potential_hotspots).all())
+        self.assertEqual(True, (target == HotspotDetector.hotspots).all())
 
     def test_make_cloud_mask_atx(self):
 
