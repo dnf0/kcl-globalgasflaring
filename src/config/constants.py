@@ -4,6 +4,10 @@ This file contains some constants used in the processing
 import scipy.constants as const
 import numpy as np
 
+null_value = -999
+
+min_background_proportion = 0.6
+
 solar_irradiance = {'ats': 254.752,
                     'at2': 249.604,
                     'at1': 250.728}
@@ -18,6 +22,7 @@ swir_thresh_ats = 0.06  # based on min value in ATS
 swir_thresh_sls = 4 * swir_thresh_ats  # pixel are factor of four smaller, so increase by factor of 4 to make similar
 s5_rad_thresh = swir_thresh_sls / (100 * np.pi) * 254.23103333
 s6_rad_thresh = swir_thresh_sls / (100 * np.pi) * 80.24474
+
 
 frp_coeff = {'sls': const.sigma / 8.19919059044e-09,
              'ats': const.sigma / 8.29908189231e-09,
