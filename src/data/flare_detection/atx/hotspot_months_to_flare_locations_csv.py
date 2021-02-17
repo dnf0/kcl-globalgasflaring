@@ -74,7 +74,7 @@ def detect_persistent_hotspots(grouped_annual_df):
 def main():
 
     # get all csv files for sensor
-    root = os.path.join(fp.path_to_cems_output_l3)
+    root = os.path.join(fp.output_l3)
 
     # make an iterator to loop over all years
     years_months = generate_years_months_iterator()
@@ -101,7 +101,7 @@ def main():
             all_flares_df.drop_duplicates(subset=['lats_arcmin', 'lons_arcmin'], inplace=True)
         print(all_flares_df.shape)
    
-    path_to_out = os.path.join(fp.path_to_cems_output_l3, 'all_sensors')
+    path_to_out = os.path.join(fp.output_l3, 'all_sensors')
     if not os.path.exists(path_to_out):
         os.makedirs(path_to_out)
     all_flares_df.to_csv(os.path.join(path_to_out, 'all_flare_locations_ats.csv'))

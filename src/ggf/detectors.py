@@ -98,7 +98,7 @@ class BaseDetector(ABC):
         selem = square(self.cloud_window_size)
         self.local_cloudiness = rank.mean(self.cloudy.astype(int), selem)
 
-    def _build_dataframe(self, keys, joining_df=None) -> pd.DataFrame:
+    def _build_dataframe(self, keys, sampling=False, joining_df=None) -> pd.DataFrame:
         """
         A flexible dataframe builder that takes in a set of keys that
         correspond to data contained within the object.  For each item
@@ -108,11 +108,12 @@ class BaseDetector(ABC):
 
         Args:
             keys: The variables to be included in the dataframe (columns)
-            joining_df: Used in reduced the dataframe through an Inner Join
+            sampling: Flag to determine if hotspot sampling is being evaluated
+            joining_df: Used to reduce the dataframe through an Inner Join
 
         Returns:
             Dataframe containing the requested data defined by the input
-            keys and mask and, if included, the reducing dataframe.
+            keys, flag, mask and, if included, the reducing dataframe.
 
         """
         df = pd.DataFrame()
@@ -123,12 +124,16 @@ class BaseDetector(ABC):
                 raise KeyError(k + ' not found in available attributes')
             if self.__dict__[k] is None:
                 continue
-            df[k] = self.__dict__[k][self.hotspots]
+            if sampling:
+                df[k] = self.__dict__[k]
+            else:
+                df[k] = self.__dict__[k][self.hotspots]
 
         # store additional derived data
-        lines, samples = np.where(self.hotspots)
-        df['line'] = lines
-        df['sample'] = samples
+        if not sampling:
+            lines, samples = np.where(self.hotspots)
+            df['line'] = lines
+            df['sample'] = samples
         df['grid_x'] = self._find_arcmin_gridcell(df['latitude'])
         df['grid_y'] = self._find_arcmin_gridcell(df['longitude'])
 
@@ -297,7 +302,6 @@ class ATXDetector(BaseDetector):
             None
 
         """
-        selem = square(self.background_window_size)
         valid_background = self.background_mask & (self.mwir > 0)
 
         # custom mean using only valid pixels
@@ -397,7 +401,8 @@ class SLSDetector(BaseDetector):
         self.sza = self._interpolate_array('solar_zenith_tn').filled(0)
         self.vza = self._interpolate_array('sat_zenith_tn').filled(9999)
         self.cloud_free = self.product['flags_an']['cloud_an'][:] == 0
-        self.pixel_size = np.array(slstr_pixel_size.pixel_size) * 1000000
+        self.pixel_size = np.tile(np.array(slstr_pixel_size.pixel_size), (self.vza.shape[0], 1)) * 1000000
+        assert self.vza.shape == self.pixel_size.shape
 
     def _interpolate_array(self, target) -> np.array:
         """
@@ -445,8 +450,8 @@ class SLSDetector(BaseDetector):
     def run_detector(self, flares_or_sampling=False) -> None:
         """
         Runs the detector methods on the input data.  If flares_or_sampling
-        flag is set then additional processing is performed on fire radiative power,
-        local cloud cover and background radiance statistics.
+        flag is set then additional processing is performed on fire radiative power
+        and local cloud cover statistics.
 
         Args:
             flares_or_sampling: flag to set processing level

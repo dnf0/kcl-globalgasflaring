@@ -2,6 +2,7 @@ import unittest
 import pandas as pd
 import numpy as np
 import glob
+import epr
 
 import src.utils as utils
 from src.ggf.detectors import SLSDetector, ATXDetector
@@ -46,7 +47,7 @@ class MyTestCase(unittest.TestCase):
 
         target_mean = np.mean(target)
 
-        product = utils.read_atsr(path_to_data)
+        product = epr.Product(path_to_data)
         HotspotDetector = ATXDetector(product)
         HotspotDetector.run_detector()
 
@@ -97,7 +98,7 @@ class MyTestCase(unittest.TestCase):
 
         target = np.load(path_to_target)
 
-        product = utils.read_atsr(path_to_data)
+        product = epr.Product(path_to_data)
         HotspotDetector = ATXDetector(product)
         HotspotDetector.run_detector()
 
@@ -110,7 +111,7 @@ class MyTestCase(unittest.TestCase):
 
         target = np.load(path_to_target)
 
-        product = utils.read_atsr(path_to_data)
+        product = epr.Product(path_to_data)
         HotspotDetector = ATXDetector(product)
         HotspotDetector.run_detector()
 
@@ -122,7 +123,7 @@ class MyTestCase(unittest.TestCase):
         target = np.array([-15032, -10008, -5012, 21, 5026, 10007, 15034])
 
         path_to_data = glob.glob("../../data/test_data/*.N1")[0]
-        product = utils.read_atsr(path_to_data)
+        product = epr.Product(path_to_data)
         HotspotDetector = ATXDetector(product)
 
         result = HotspotDetector._find_arcmin_gridcell(coords)
@@ -134,7 +135,7 @@ class MyTestCase(unittest.TestCase):
         target = np.load(path_to_target)
 
         path_to_data = glob.glob("../../data/test_data/*.N1")[0]
-        product = utils.read_atsr(path_to_data)
+        product = epr.Product(path_to_data)
         HotspotDetector = ATXDetector(product)
         reflectance = product.get_band('reflec_nadir_1600').read_as_array()
         result = HotspotDetector._rad_from_ref(reflectance)
@@ -144,7 +145,7 @@ class MyTestCase(unittest.TestCase):
     def test_radiance_from_BT(self):
 
         path_to_data = glob.glob("../../data/test_data/*.N1")[0]
-        product = utils.read_atsr(path_to_data)
+        product = epr.Product(path_to_data)
         HotspotDetector = ATXDetector(product)
 
         brightness_temp = 1500
@@ -155,7 +156,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_sun_earth_distance(self):
         path_to_data = glob.glob("../../data/test_data/*.N1")[0]
-        product = utils.read_atsr(path_to_data)
+        product = epr.Product(path_to_data)
         HotspotDetector = ATXDetector(product)
 
         target = 0.9877038273760421
@@ -164,7 +165,7 @@ class MyTestCase(unittest.TestCase):
 
     def test_compute_frp(self):
         path_to_data = glob.glob("../../data/test_data/*.N1")[0]
-        product = utils.read_atsr(path_to_data)
+        product = epr.Product(path_to_data)
         HotspotDetector = ATXDetector(product)
         HotspotDetector.run_detector(flares_or_sampling=True)
 
@@ -181,7 +182,7 @@ class MyTestCase(unittest.TestCase):
         target = pd.read_csv(glob.glob("../../data/test_data/ATS*.csv")[0])
         path_to_data = glob.glob("../../data/test_data/*.N1")[0]
 
-        product = utils.read_atsr(path_to_data)
+        product = epr.Product(path_to_data)
         HotspotDetector = ATXDetector(product)
         HotspotDetector.run_detector()
         result = HotspotDetector.to_dataframe(keys=['latitude', 'longitude'])

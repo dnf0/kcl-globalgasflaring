@@ -34,7 +34,7 @@ def main():
 
     df = pd.concat(df_list, ignore_index=True)
 
-    path_to_out = os.path.join(fp.path_to_cems_output_l3, 'all_sensors')
+    path_to_out = os.path.join(fp.output_l3, 'all_sensors')
     if not os.path.exists(path_to_out):
         os.makedirs(path_to_out)
     df.to_csv(os.path.join(path_to_out, 'all_sampling_sls_adaptive.csv'))
