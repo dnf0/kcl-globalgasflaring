@@ -1,9 +1,14 @@
-import numpy as np
-import zipfile
-from netCDF4 import Dataset
+
 import os
 import shutil
-import epr
+import zipfile
+
+
+import numpy as np
+from netCDF4 import Dataset
+
+
+import src.config.filepaths as fp
 
 
 def planck_radiance(wvl, temp):
@@ -44,15 +49,14 @@ def extract_zip(input_zip, path_to_temp):
     return data_dict
 
 
-def read_atsr(path_to_ats_data):
-    return epr.Product(path_to_ats_data)
+def build_outpath(sensor, f, stage):
+
+    # separate file from path
+    fname = f.split('/')[-1]
+    ymd = fname[16:24] if sensor == 'sls' else fname[14:22]
+    fname = fname.split('.')[0] + ''.join('_', stage, '.csv')
+    return os.path.join(fp.output_l2, sensor, ymd[0:4], ymd[4:6], ymd[6:8], fname)
 
 
-def define_sensor(path_to_data):
-    if 'N1' in path_to_data:
-        sensor = 'ats'
-    if 'E2' in path_to_data:
-        sensor = 'at2'
-    if 'E1' in path_to_data:
-        sensor = 'at1'
-    return sensor
+
+

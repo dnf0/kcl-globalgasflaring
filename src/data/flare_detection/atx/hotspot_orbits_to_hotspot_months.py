@@ -104,7 +104,7 @@ def main():
                 unique_month_locations(month_df)
                 print(month_df.head())
                 # dump to csv
-                path_to_out = os.path.join(fp.path_to_cems_output_l3, sensor, year)
+                path_to_out = os.path.join(fp.output_l3, sensor, year)
                 if not os.path.exists(path_to_out):
                     os.makedirs(path_to_out)
                 month_df.to_csv(os.path.join(path_to_out, month + '.csv'), index=False)
