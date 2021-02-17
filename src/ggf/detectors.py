@@ -348,6 +348,7 @@ class ATXDetector(BaseDetector):
 
     def to_dataframe(self,
                      keys=['latitude', 'longitude'],
+                     sampling=False,
                      joining_df=None) -> pd.DataFrame:
         """
         Used to return a dataframe containing all needed information
@@ -356,6 +357,7 @@ class ATXDetector(BaseDetector):
         using the joining_df keyword arg.
         Args:
             keys: The data required in the dataframe
+            sampling: Flag to determine if hotspot sampling is being evaluated
             joining_df: An optional  joining dataframe that can be used to reduce the hotspots.
 
         Returns:
@@ -364,7 +366,7 @@ class ATXDetector(BaseDetector):
         """
         if not('latitude' in keys and 'longitude' in keys):
             raise KeyError('At a minimum, latitude and longitude are required')
-        return self._build_dataframe(keys, joining_df=joining_df)
+        return self._build_dataframe(keys, sampling=sampling, joining_df=joining_df)
 
 
 class SLSDetector(BaseDetector):
@@ -472,6 +474,7 @@ class SLSDetector(BaseDetector):
 
     def to_dataframe(self,
                      keys=['latitude', 'longitude'],
+                     sampling=False,
                      joining_df=None) -> pd.DataFrame:
         """
         Used to return a dataframe containing all needed information
@@ -480,6 +483,7 @@ class SLSDetector(BaseDetector):
         using the joining_df keyword arg.
         Args:
             keys: The data required in the dataframe
+            sampling: Flag to determine if hotspot sampling is being evaluated
             joining_df: An optional  joining dataframe that can be used to reduce the hotspots.
 
         Returns:
@@ -488,7 +492,7 @@ class SLSDetector(BaseDetector):
         """
         if not('latitude' in keys and 'longitude' in keys):
             raise KeyError('At a minimum, latitude and longitude are required')
-        return self._build_dataframe(keys, joining_df=joining_df)
+        return self._build_dataframe(keys, sampling=sampling, joining_df=joining_df)
 
 
 
