@@ -68,7 +68,7 @@ def group_annual_df(annual_df):
 
 
 def detect_persistent_hotspots(grouped_annual_df):
-    return grouped_annual_df[grouped_annual_df['times_seen_in_annum'] >= 2]
+    return grouped_annual_df[grouped_annual_df['times_seen_in_annum'] >= 4]
 
 
 def main():
