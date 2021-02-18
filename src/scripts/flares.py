@@ -10,10 +10,6 @@ from src.ggf.detectors import ATXDetector, SLSDetector
 import src.utils as utils
 import src.config.filepaths as fp
 
-# TODO potentially need to extend dataframe with datetime information
-def extend_df():
-    pass
-
 
 def merge_hotspot_dataframes(atx_persistent_df, sls_persistent_df):
     atx_persistent_df['sensor'] = 1

@@ -255,8 +255,7 @@ class ATXDetector(BaseDetector):
         self.latitude = self.product.get_band('latitude').read_as_array()
         self.longitude = self.product.get_band('latitude').read_as_array()
         self.cloud_free = self.product.get_band('cloud_flags_nadir').read_as_array() <= 1
-        self.pixel_size = atsr_pixel_size.compute() * 1000000  # convert from km^2 to m^2
-        # TODO repeat pixel size to full array
+        self.pixel_size = np.tile(atsr_pixel_size.compute(), (self.cloud_free.shape[0], 1)) * 1000000  # convert from km^2 to m^2
 
         swir_reflectance = self.product.get_band('reflec_nadir_1600').read_as_array()
         self.swir_16 = np.nan_to_num(self._rad_from_ref(swir_reflectance))  # set nan's to zero
