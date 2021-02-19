@@ -52,6 +52,7 @@ class BaseDetector(ABC):
         self.pixel_size = None
         self.frp = None
         self.hotspots = None
+        self.datetime_info = None
 
     def _make_night_mask(self) -> None:
         """
@@ -125,7 +126,7 @@ class BaseDetector(ABC):
             if self.__dict__[k] is None:
                 continue
             if sampling:
-                df[k] = self.__dict__[k]
+                df[k] = self.__dict__[k]  # Get everything then reduce in the join
             else:
                 df[k] = self.__dict__[k][self.hotspots]
 
@@ -136,6 +137,9 @@ class BaseDetector(ABC):
             df['sample'] = samples
         df['grid_x'] = self._find_arcmin_gridcell(df['latitude'])
         df['grid_y'] = self._find_arcmin_gridcell(df['longitude'])
+        for time_period in self.datetime_info:
+            df[time_period] = self.datetime_info[time_period]
+        df['sensor'] = self.sensor
 
         if joining_df is not None:
             df = pd.merge(joining_df, df, on=['grid_x', 'grid_y'])
@@ -184,12 +188,18 @@ class BaseDetector(ABC):
         raise NotImplementedError("Must override _load_arrays")
 
     @abstractmethod
+    def _extract_datetime(self) -> None:
+        raise NotImplementedError("Must override _extract_datetime")
+
+    @abstractmethod
     def run_detector(self) -> None:
         raise NotImplementedError("Must override run_detector")
 
     @abstractmethod
     def to_dataframe(self) -> pd.DataFrame:
         raise NotImplementedError("Must override to_dataframe")
+
+
 
 
 class ATXDetector(BaseDetector):
@@ -212,8 +222,15 @@ class ATXDetector(BaseDetector):
         """
         super().__init__(day_night_angle, swir_thresh, cloud_window_size)
         self.product = product
-        self.sensor = self._define_sensor()
         self.background_window_size = background_window_size
+        self._define_sensor()
+        self._extract_datetime()
+
+    def _extract_datetime(self) -> None:
+        self.datetime_info = {'year': self.product.id_string[14:18],
+                              'month': self.product.id_string[18:20],
+                              'day': self.product.id_string[20:22],
+                              'hhmm': self.product.id_string[23:27]}
 
     def _define_sensor(self):
         """
@@ -223,11 +240,11 @@ class ATXDetector(BaseDetector):
 
         """
         if 'ATS' in self.product.id_string:
-            return 'ats'
+            self.sensor = 'ats'
         if 'AT2' in self.product.id_string:
-            return 'at2'
+            self.sensor =  'at2'
         if 'AT1' in self.product.id_string:
-            return 'at1'
+            self.sensor =  'at1'
 
     def _load_arrays(self) -> None:
         """
@@ -238,8 +255,7 @@ class ATXDetector(BaseDetector):
         self.latitude = self.product.get_band('latitude').read_as_array()
         self.longitude = self.product.get_band('latitude').read_as_array()
         self.cloud_free = self.product.get_band('cloud_flags_nadir').read_as_array() <= 1
-        self.pixel_size = atsr_pixel_size.compute() * 1000000  # convert from km^2 to m^2
-        # TODO repeat pixel size to full array
+        self.pixel_size = np.tile(atsr_pixel_size.compute(), (self.cloud_free.shape[0], 1)) * 1000000  # convert from km^2 to m^2
 
         swir_reflectance = self.product.get_band('reflec_nadir_1600').read_as_array()
         self.swir_16 = np.nan_to_num(self._rad_from_ref(swir_reflectance))  # set nan's to zero
@@ -348,6 +364,7 @@ class ATXDetector(BaseDetector):
 
     def to_dataframe(self,
                      keys=['latitude', 'longitude'],
+                     sampling=False,
                      joining_df=None) -> pd.DataFrame:
         """
         Used to return a dataframe containing all needed information
@@ -356,6 +373,7 @@ class ATXDetector(BaseDetector):
         using the joining_df keyword arg.
         Args:
             keys: The data required in the dataframe
+            sampling: Flag to determine if hotspot sampling is being evaluated
             joining_df: An optional  joining dataframe that can be used to reduce the hotspots.
 
         Returns:
@@ -364,7 +382,7 @@ class ATXDetector(BaseDetector):
         """
         if not('latitude' in keys and 'longitude' in keys):
             raise KeyError('At a minimum, latitude and longitude are required')
-        return self._build_dataframe(keys, joining_df=joining_df)
+        return self._build_dataframe(keys, sampling=sampling, joining_df=joining_df)
 
 
 class SLSDetector(BaseDetector):
@@ -387,6 +405,14 @@ class SLSDetector(BaseDetector):
         self.product = product
         self.max_view_angle = 22  # degrees
         self.sensor = 'sls'
+        self._extract_datetime()
+
+    def _extract_datetime(self) -> None:
+        dt_info = pd.Timestamp(self.product['time_an'].start_time)
+        self.datetime_info = {'year': str(dt_info.year),
+                              'month': str(dt_info.month).zfill(2),
+                              'day': str(dt_info.day).zfill(2),
+                              'hhmm': str(dt_info.hour).zfill(2) + str(dt_info.minute).zfill(2)}
 
     def _load_arrays(self) -> None:
         """
@@ -472,6 +498,7 @@ class SLSDetector(BaseDetector):
 
     def to_dataframe(self,
                      keys=['latitude', 'longitude'],
+                     sampling=False,
                      joining_df=None) -> pd.DataFrame:
         """
         Used to return a dataframe containing all needed information
@@ -480,6 +507,7 @@ class SLSDetector(BaseDetector):
         using the joining_df keyword arg.
         Args:
             keys: The data required in the dataframe
+            sampling: Flag to determine if hotspot sampling is being evaluated
             joining_df: An optional  joining dataframe that can be used to reduce the hotspots.
 
         Returns:
@@ -488,7 +516,7 @@ class SLSDetector(BaseDetector):
         """
         if not('latitude' in keys and 'longitude' in keys):
             raise KeyError('At a minimum, latitude and longitude are required')
-        return self._build_dataframe(keys, joining_df=joining_df)
+        return self._build_dataframe(keys, sampling=sampling, joining_df=joining_df)
 
 
 

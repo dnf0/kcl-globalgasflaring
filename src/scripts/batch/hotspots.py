@@ -19,7 +19,7 @@ def main():
     else:
         product = utils.extract_zip(file_to_process, fp.slstr_extract_temp)
         HotspotDetector = SLSDetector(product)
-        keys = ['latitude', 'longitude', 'sza', 'vza', 'swir_16', 'swir_22']
+        keys = ['latitude', 'longitude']
 
     HotspotDetector.run_detector()
     df = HotspotDetector.to_dataframe(keys=keys)

@@ -13,7 +13,8 @@ class MyTestCase(unittest.TestCase):
                   "cartesian_an": None,
                   "cartesian_tx": None,
                   "indices_an": None,
-                  "flags_an": None}
+                  "flags_an": None,
+                  'time_an': None}
         path_to_data = glob.glob("../../data/test_data/S3A*.zip")[0]
         path_to_temp = "../../data/temp/"
 

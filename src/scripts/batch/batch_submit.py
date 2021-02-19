@@ -40,9 +40,9 @@ def main():
     sensor = sys.argv[2]
 
     # check args
-    if sensor not in ['atx', 'at2', 'at1', 'sls']:
+    if sensor not in ['ats', 'at2', 'at1', 'sls']:
         raise NotImplementedError(sensor)
-    if script not in ['']:
+    if script not in ['hotspots.py', 'flares.py']:
         raise NotImplementedError(script)
 
     # set processing flags
