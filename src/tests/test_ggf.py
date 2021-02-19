@@ -8,7 +8,6 @@ import src.utils as utils
 from src.ggf.detectors import SLSDetector, ATXDetector
 
 
-
 class MyTestCase(unittest.TestCase):
 
     # -----------------

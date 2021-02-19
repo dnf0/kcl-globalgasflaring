@@ -3,13 +3,13 @@ Holds the filepaths for the project
 '''
 
 
-###########  CEMS PATHS ###########
+###########  JASMIN PATHS ###########
 
-cems_root = '/home/users/dnfisher/projects/kcl-globalgasflaring/'
+jasmin_root = '/home/users/dnfisher/projects/kcl-globalgasflaring/'
 
 # path to ggf code
-script_temp = cems_root + 'src/scripts/'
-slstr_extract_temp = cems_root + 'src/data/'
+script_temp = jasmin_root + 'src/scripts/'
+slstr_extract_temp = jasmin_root + 'src/data/'
 
 # Paths to ATSR data on CEMS (setup for recursive glob searching)
 products = {'ats': '/neodc/aatsr_multimission/aatsr-v3/data/ats_toa_1p/**/*.N1',
@@ -17,10 +17,14 @@ products = {'ats': '/neodc/aatsr_multimission/aatsr-v3/data/ats_toa_1p/**/*.N1',
             'at1': '/neodc/aatsr_multimission/atsr1-v3/data/at1_toa_1p/**/*.E1',
             'sls': '/neodc/sentinel3a/data/SLSTR/L1_RBT/**/*.h5'}
 
-# Paths to processing output folder on CEMS
+# Paths to processing output folder on JASMIN
 output_root = '/group_workspaces/jasmin2/nceo_aerosolfire/data/temp/'
 output_l2 = output_root + 'processed/l2/'
 output_l3 = output_root + 'processed/l3/'
+
+# Paths for product searching during data aggregation steps (setup for recursive glob searching)
+atx_hotspots = output_l2 + '**/*AT*hotspots.csv'  # TODO naming of stages put into constants to ensure consistency
+sls_hotspots = output_l2 + '**/*S3*hotspots.csv'
 
 # TODO slurm logging paths
 slurm_info = ""

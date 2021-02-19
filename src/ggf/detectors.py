@@ -126,7 +126,7 @@ class BaseDetector(ABC):
             if self.__dict__[k] is None:
                 continue
             if sampling:
-                df[k] = self.__dict__[k]
+                df[k] = self.__dict__[k]  # Get everything then reduce in the join
             else:
                 df[k] = self.__dict__[k][self.hotspots]
 

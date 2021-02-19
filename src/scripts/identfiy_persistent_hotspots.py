@@ -1,8 +1,13 @@
+import os
+import sys
+import glob
 import pandas as pd
 import numpy as np
 
+import src.config.filepaths as fp
 
-def extract_dataframes(paths, cols=None) -> pd.DataFrame:
+
+def load_csvs(paths, cols=None) -> pd.DataFrame:
     """
     Generate a dataframe from a set of CSV files retaining
     specified columns.
@@ -14,7 +19,13 @@ def extract_dataframes(paths, cols=None) -> pd.DataFrame:
     Returns:
         Pandas dataframe generated from the input CSV files
     """
-    return pd.concat([pd.read_csv(p, usecols=cols) for p in paths])
+    df_container = []
+    for p in paths:
+        try:
+            df_container.append(pd.read_csv(p, usecols=cols))
+        except pd.errors.EmptyDataError:
+            continue
+    return pd.concat(df_container)
 
 
 def orbits_to_months(df, subset_cols=None) -> pd.DataFrame:
@@ -74,3 +85,29 @@ def months_to_annual_counts(df):
 
     return annual_count_df
 
+
+def main():
+
+    sensor = sys.argv[1]
+    if sensor not in ['atx', 'sls']:
+        raise KeyError("Sensor not in" + "['atx', 'sls']")
+
+    # set paths and target columns
+    if sensor == 'atx':
+        paths = glob.glob(fp.atx_hotspots)
+        cols = ['grid_x', 'grid_y', 'year', 'month']
+        min_count = 4
+    else:
+        paths = glob.glob(fp.sls_hotspots)
+        cols = ['grid_x', 'grid_y', 'year', 'month']
+        min_count = 2
+
+    df = load_csvs(paths, cols=cols)
+    df = orbits_to_months(df)
+    df = months_to_annual_counts(df)
+    df = df[df.counter > min_count]
+    df.to_csv(os.path.join(fp.output_l3, sensor + f"all_flare_locations_{sensor}.csv"))
+
+
+if __name__ == "__main__":
+    main()

@@ -53,13 +53,21 @@ def main():
                             'pixel_size': np.sum,
                             'latitude': np.mean,
                             'longitude': np.mean,
-                            'local_cloudiness': np.mean}
+                            'local_cloudiness': np.mean,
+                            'year': 'first',
+                            'month': 'first',
+                            'day': 'first',
+                            'hhmm': 'first'}
 
         sampling_keys = ['latitude',
                          'longitude',
                          'local_cloudiness']
 
-        sampling_aggregator = {'local_cloudiness': np.mean}
+        sampling_aggregator = {'local_cloudiness': np.mean,
+                               'year': 'first',
+                               'month':  'first',
+                               'day': 'first',
+                               'hhmm': 'first'}
 
         atx_persistent_fp = os.path.join(fp.output_l3,
                                          'all_sensors',
@@ -84,18 +92,28 @@ def main():
                             'pixel_size': np.sum,
                             'latitude': np.mean,
                             'longitude': np.mean,
-                            'local_cloudiness': np.mean}
+                            'local_cloudiness': np.mean,
+                            'year': 'first',
+                            'month':  'first',
+                            'day': 'first',
+                            'hhmm': 'first'}
 
         sampling_keys = ['latitude',
                          'longitude',
-                         'local_cloudiness']
+                         'local_cloudiness',
+                         ]
 
-        sampling_aggregator = {'local_cloudiness': np.mean}
+        sampling_aggregator = {'local_cloudiness': np.mean,
+                               'year': 'first',
+                               'month': 'first',
+                               'day': 'first',
+                               'hhmm': 'first'
+                               }
 
         # merge persistent dataframes for SLSTR
         atx_persistent_fp = os.path.join(fp.output_l3,
                                          'all_sensors',
-                                         'all_flare_locations_ats.csv')
+                                         'all_flare_locations_atx.csv')
         atx_persistent_df = pd.read_csv(atx_persistent_fp)
 
         sls_persistent_fp = os.path.join(fp.output_l3,
