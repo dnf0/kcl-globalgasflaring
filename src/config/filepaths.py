@@ -23,8 +23,13 @@ output_l2 = output_root + 'processed/l2/'
 output_l3 = output_root + 'processed/l3/'
 
 # Paths for product searching during data aggregation steps (setup for recursive glob searching)
-atx_hotspots = output_l2 + '**/*AT*hotspots.csv'  # TODO naming of stages put into constants to ensure consistency
+# TODO naming of stages put into constants to ensure consistency
+atx_hotspots = output_l2 + '**/*AT*hotspots.csv'
 sls_hotspots = output_l2 + '**/*S3*hotspots.csv'
+atx_flares = output_l2 + '**/*AT*flares.csv'
+sls_flares = output_l2 + '**/*S3*flares.csv'
+atx_sampling = output_l2 + '**/*AT*samples.csv'
+sls_sampling = output_l2 + '**/*S3*samples.csv'
 
 # TODO slurm logging paths
 slurm_info = ""

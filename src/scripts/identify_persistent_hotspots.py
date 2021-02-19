@@ -25,7 +25,7 @@ def load_csvs(paths, cols=None) -> pd.DataFrame:
             df_container.append(pd.read_csv(p, usecols=cols))
         except pd.errors.EmptyDataError:
             continue
-    return pd.concat(df_container)
+    return pd.concat(df_container, ignore_index=True)
 
 
 def orbits_to_months(df, subset_cols=None) -> pd.DataFrame:

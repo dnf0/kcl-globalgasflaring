@@ -134,7 +134,7 @@ def main():
     sampling_df = HotspotDetector.to_dataframe(keys=sampling_keys,
                                                joining_df=persistent_df)
     aggregated_sampling_df = aggregate(sampling_df, sampling_aggregator)
-    aggregated_sampling_df.to_csv(utils.build_outpath(sensor, file_to_process, 'sampling'))
+    aggregated_sampling_df.to_csv(utils.build_outpath(sensor, file_to_process, 'samples'))
 
 
 if __name__ =="__main__":
