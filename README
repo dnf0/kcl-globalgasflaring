@@ -1,0 +1,29 @@
+This is the batch processing system used to produce global gas flaring datasets
+from the Along Track Scanning Radiometer (ATSR) sensor series and the Sea and Land
+Surface Temperature Scanning Radiometer (SLSTR) instrument series.
+
+The details of the algorithms used are described in detail in [1] and [2]. To provide
+a quick summary here: Nighttime shortwave infrared (SWIR) image data is used to
+identify thermal anomalies, which are then flagged as gas flaring activity if a
+number of specific tests based on temporal and spectral characteristics are passed.
+
+To run the batch processing systems first update the filepaths in src/config/filepaths
+to your configuration and update the location of the python executable in the shebang
+of the scripts: scripts.batch.flares.py and scripts.batch.hotspots.py
+
+The various steps of the processor must be run in the correct order to produce
+outputs.  The order is as follows:
+
+$ python /src/scripts/batch/batch_submit.py hotspots [sensor]
+$ python /src/scripts/identify_persistent_hotspots.py
+$ python /src/scripts/batch/batch_submit.py flares [sensor]
+$ python /src/scripts/aggregates_flares_samples.py
+
+The [sensor] argument must be one of 'at1', 'at2', 'ats' or 'sls' corresponding to
+ATSR1, ATSR2, AATSR and SLSTR.
+
+[1] https://doi.org/10.3390/rs10020305
+[2] https://doi.org/10.1016/j.rse.2019.111298
+
+
+
