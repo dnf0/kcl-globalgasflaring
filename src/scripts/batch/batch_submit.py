@@ -42,15 +42,14 @@ def main():
     # check args
     if sensor not in ['ats', 'at2', 'at1', 'sls']:
         raise NotImplementedError(sensor)
-    if script not in ['hotspots.py', 'flares.py']:
+    if script not in ['hotspots', 'flares']:
         raise NotImplementedError(script)
 
     # set processing flags
-    proc_flags = {'reprocess': False, 'stage': script.split('.')[0]}
+    proc_flags = {'reprocess': False, 'stage': script}
 
-    # check processing flag stage
-    if proc_flags['stage'] not in ['hotspots', 'flares']:
-        raise NotImplementedError
+    # append filetype to script
+    script += '.py'
 
     # TODO reverse filepath order so that most recent files are processed first
     filepaths = glob.glob(fp.products[sensor], recursive=True)
