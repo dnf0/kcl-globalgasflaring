@@ -3,8 +3,6 @@ import logging
 import scipy.interpolate as interpolate
 import numpy as np
 
-import matplotlib.pyplot as plt
-
 radius_earth = 6371.0  # km
 radius_orbit = 7148.0
 sat_alt = radius_orbit - radius_earth
@@ -48,7 +46,7 @@ def c_d_a(alpha, gamma):
 
 def angles_mannstien(forward=False):
 
-    beta = 23.45*np.pi/180.0 #0.40976452
+    beta = 23.45*np.pi/180.0  # 0.40976452
     n = 1000
 
     # This array describes the angular distance
@@ -114,6 +112,7 @@ def get_semi_major_axis(alpha):
     return (radius_earth / 2) * (np.arcsin(factor * np.sin(alpha + ifov/2)) -
                                  np.arcsin(factor * np.sin(alpha - ifov/2)) - ifov)
 
+
 def get_semi_minor_axis(alpha, theta):
     # alpha: scan angle at nadir
     ifov = 0.00129  # rad
@@ -135,7 +134,8 @@ def main():
     :return: None
     """
     sizes = compute()
-    print(sizes[[1,20,45,366, 511]])
+    print(sizes[[1, 20, 45, 366, 511]])
+
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

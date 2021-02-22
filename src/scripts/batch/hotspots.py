@@ -26,5 +26,5 @@ def main():
     df.to_csv(utils.build_outpath(sensor, file_to_process, 'hotspots'))
 
 
-if __name__ =="__main__":
+if __name__ == "__main__":
     main()

@@ -20,4 +20,3 @@ class MyTestCase(unittest.TestCase):
 
         result = utils.extract_zip(path_to_data, path_to_temp)
         self.assertEqual(target.keys(), result.keys())
-

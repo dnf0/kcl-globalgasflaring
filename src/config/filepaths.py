@@ -3,7 +3,7 @@ Holds the filepaths for the project
 '''
 
 
-###########  JASMIN PATHS ###########
+# JASMIN PATHS
 
 jasmin_root = '/home/users/dnfisher/projects/kcl-globalgasflaring/'
 
@@ -22,7 +22,8 @@ output_root = '/group_workspaces/jasmin2/nceo_aerosolfire/data/temp/'
 output_l2 = output_root + 'processed/l2/'
 output_l3 = output_root + 'processed/l3/'
 
-# Paths for product searching during data aggregation steps (setup for recursive glob searching)
+# Paths for product searching during data aggregation steps
+# (setup for recursive glob searching)
 # TODO naming of stages put into constants to ensure consistency
 atx_hotspots = output_l2 + '**/*AT*hotspots.csv'
 sls_hotspots = output_l2 + '**/*S3*hotspots.csv'
@@ -35,13 +36,11 @@ sls_sampling = output_l2 + '**/*S3*samples.csv'
 slurm_info = ""
 slurm_error = ""
 
-###########  LOCAL PATHS (Data Analysis) ###########
+# LOCAL PATHS (Data Analysis)
 
 local_root = '/Users/danielfisher/Projects/kcl-globalgasflaring/'
-#local_root = '/Users/dnf/Projects/kcl-globalgasflaring/'
+# local_root = '/Users/dnf/Projects/kcl-globalgasflaring/'
 
 # paths for calculating in-band solar irradiance
 path_to_solar_data = local_root + 'data/external/solar_irradiance/SOLAR_IN.txt'
 path_to_srfs = local_root + 'data/external/spectral_response_funtions'
-
-

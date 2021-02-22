@@ -145,7 +145,8 @@ class BaseDetector(ABC):
             df = pd.merge(joining_df, df, on=['grid_x', 'grid_y'])
         return df
 
-    def _find_arcmin_gridcell(self, coordinates):
+    @staticmethod
+    def _find_arcmin_gridcell(coordinates):
         """
         Ingests cartesian coordinates and rescales them
         to an integer representation of a 1-arminute grid.
@@ -200,16 +201,14 @@ class BaseDetector(ABC):
         raise NotImplementedError("Must override to_dataframe")
 
 
-
-
 class ATXDetector(BaseDetector):
 
     def __init__(self,
                  product,
                  day_night_angle=proc_const.day_night_angle,
-                 swir_thresh=proc_const.swir_thresh_ats,
-                 cloud_window_size=17,
-                 background_window_size=17):
+                 swir_thresh=proc_const.atx_swir_threshold,
+                 cloud_window_size=proc_const.atx_cloud_window_size,
+                 background_window_size=proc_const.atx_background_window_size):
         """
         Detector implementation for the Along Track Scanning Radiomter
         instruments (ATSR-1, ATSR-2, AATSR).
@@ -242,9 +241,9 @@ class ATXDetector(BaseDetector):
         if 'ATS' in self.product.id_string:
             self.sensor = 'ats'
         if 'AT2' in self.product.id_string:
-            self.sensor =  'at2'
+            self.sensor = 'at2'
         if 'AT1' in self.product.id_string:
-            self.sensor =  'at1'
+            self.sensor = 'at1'
 
     def _load_arrays(self) -> None:
         """
@@ -255,7 +254,7 @@ class ATXDetector(BaseDetector):
         self.latitude = self.product.get_band('latitude').read_as_array()
         self.longitude = self.product.get_band('latitude').read_as_array()
         self.cloud_free = self.product.get_band('cloud_flags_nadir').read_as_array() <= 1
-        self.pixel_size = np.tile(atsr_pixel_size.compute(), (self.cloud_free.shape[0], 1)) * 1000000  # convert from km^2 to m^2
+        self.pixel_size = np.tile(atsr_pixel_size.compute(), (self.cloud_free.shape[0], 1)) * 1000000  # km^2 to m^2
 
         swir_reflectance = self.product.get_band('reflec_nadir_1600').read_as_array()
         self.swir_16 = np.nan_to_num(self._rad_from_ref(swir_reflectance))  # set nan's to zero
@@ -363,7 +362,7 @@ class ATXDetector(BaseDetector):
             self._compute_background()
 
     def to_dataframe(self,
-                     keys=['latitude', 'longitude'],
+                     keys=None,
                      sampling=False,
                      joining_df=None) -> pd.DataFrame:
         """
@@ -390,8 +389,8 @@ class SLSDetector(BaseDetector):
     def __init__(self,
                  product,
                  day_night_angle=proc_const.day_night_angle,
-                 swir_thresh=proc_const.swir_thresh_sls,
-                 cloud_window_size=33):
+                 swir_thresh=proc_const.sls_swir_threshold,
+                 cloud_window_size=proc_const.sls_cloud_window_size):
         """
         Detector implementation for the Sea and Land Surface Temperature Scanning (SLSTR)
         radiometer instrument series.
@@ -403,7 +402,7 @@ class SLSDetector(BaseDetector):
         """
         super().__init__(day_night_angle, swir_thresh, cloud_window_size)
         self.product = product
-        self.max_view_angle = 22  # degrees
+        self.max_view_angle = proc_const.sls_vza_threshold  # degrees
         self.sensor = 'sls'
         self._extract_datetime()
 
@@ -454,8 +453,7 @@ class SLSDetector(BaseDetector):
         interpolated = spl.ev(an_y_var.compressed(),
                               an_x_var.compressed())
         interpolated = np.ma.masked_invalid(interpolated, copy=False)
-        sat = np.ma.empty(an_y_var.shape,
-                             dtype=sat_zn.dtype)
+        sat = np.ma.empty(an_y_var.shape, dtype=sat_zn.dtype)
         sat[np.logical_not(np.ma.getmaskarray(an_y_var))] = interpolated
         sat.mask = an_y_var.mask
         return sat
@@ -497,7 +495,7 @@ class SLSDetector(BaseDetector):
             self._compute_local_cloudiness()
 
     def to_dataframe(self,
-                     keys=['latitude', 'longitude'],
+                     keys=None,
                      sampling=False,
                      joining_df=None) -> pd.DataFrame:
         """
@@ -517,6 +515,3 @@ class SLSDetector(BaseDetector):
         if not('latitude' in keys and 'longitude' in keys):
             raise KeyError('At a minimum, latitude and longitude are required')
         return self._build_dataframe(keys, sampling=sampling, joining_df=joining_df)
-
-
-

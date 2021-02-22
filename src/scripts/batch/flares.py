@@ -137,5 +137,5 @@ def main():
     aggregated_sampling_df.to_csv(utils.build_outpath(sensor, file_to_process, 'samples'))
 
 
-if __name__ =="__main__":
+if __name__ == "__main__":
     main()

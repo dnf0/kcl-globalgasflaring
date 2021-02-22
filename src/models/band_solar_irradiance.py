@@ -9,8 +9,8 @@ import src.config.filepaths as fp
 
 def crop(sensor_srf, sol_rad):
     sen_wvl = sensor_srf[:, 0] * 1000
-    sol_wvl = sol_rad[:,0]
-    sol_rad = sol_rad[:,1]
+    sol_wvl = sol_rad[:, 0]
+    sol_rad = sol_rad[:, 1]
     sol_mask = (sol_wvl > sen_wvl.min()) & (sol_wvl < sen_wvl.max())
     return sol_rad[sol_mask], sol_wvl[sol_mask]
 
